@@ -25,7 +25,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class ScanResultAdapter(
-    private val items: List<ScanResult>,
+    private var items: List<ScanResult>,
     private val onClickListener: ((device: ScanResult) -> Unit)
 ) : RecyclerView.Adapter<ScanResultAdapter.ViewHolder>() {
 
@@ -62,5 +62,10 @@ class ScanResultAdapter(
             view.findViewById<TextView>(R.id.signal_strength).text = "${result.rssi} dBm"
             view.setOnClickListener { onClickListener.invoke(result) }
         }
+    }
+
+    fun updateList(newList: List<ScanResult>) {
+        this.items = newList
+        notifyDataSetChanged()
     }
 }

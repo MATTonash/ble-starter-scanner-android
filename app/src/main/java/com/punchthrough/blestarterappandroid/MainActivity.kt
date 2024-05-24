@@ -206,6 +206,7 @@ class MainActivity : AppCompatActivity() {
             requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)
         } else {
             scanResults.clear()
+            scanResultAdapter.updateList(scanResults)
             scanResultAdapter.notifyDataSetChanged()
             bleScanner.startScan(null, scanSettings, scanCallback)
             isScanning = true
@@ -284,6 +285,7 @@ class MainActivity : AppCompatActivity() {
                     Timber.i("Found BLE device! Name: ${name ?: "Unnamed"}, address: $address")
                 }
                 scanResults.add(result)
+                scanResults.sortByDescending { it.rssi } // Sort the list by rssi in descending order
                 scanResultAdapter.notifyItemInserted(scanResults.size - 1)
             }
         }
