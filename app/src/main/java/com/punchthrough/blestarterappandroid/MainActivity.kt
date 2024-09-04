@@ -45,6 +45,8 @@ import com.punchthrough.blestarterappandroid.ble.ConnectionEventListener
 import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
+import android.bluetooth.le.ScanFilter
+import android.os.ParcelUuid
 
 private const val PERMISSION_REQUEST_CODE = 1
 
@@ -275,16 +277,22 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            val indexQuery = scanResults.indexOfFirst { it.device.address == result.device.address }
-            if (indexQuery != -1) { // A scan result already exists with the same address
-                scanResults[indexQuery] = result
-                scanResultAdapter.notifyItemChanged(indexQuery)
-            } else {
-                with(result.device) {
-                    Timber.i("Found BLE device! Name: ${name ?: "Unnamed"}, address: $address")
+
+            //beacon order EW03, EW01
+            val targetMacAddresses = listOf("80:EC:CC:CD:33:7E", "80:EC:CC:CD:33:28") // Replace with your target MAC addresses
+
+            if (result.device.address in targetMacAddresses) {
+                val indexQuery = scanResults.indexOfFirst { it.device.address == result.device.address }
+                if (indexQuery != -1) { // A scan result already exists with the same address
+                    scanResults[indexQuery] = result
+                    scanResultAdapter.notifyItemChanged(indexQuery)
+                } else {
+                    with(result.device) {
+                        Timber.i("Found BLE device! Name: ${name ?: "Unnamed"}, address: $address")
+                    }
+                    scanResults.add(result)
+                    scanResultAdapter.notifyItemInserted(scanResults.size - 1)
                 }
-                scanResults.add(result)
-                scanResultAdapter.notifyItemInserted(scanResults.size - 1)
             }
         }
 
