@@ -114,6 +114,12 @@ class MainActivity : AppCompatActivity() {
         }
         binding.scanButton.setOnClickListener { if (isScanning) stopBleScan() else startBleScan() }
         setupRecyclerView()
+
+        // Add this new code
+        binding.trilaterationButton.setOnClickListener {
+            val intent = Intent(this, trilateration::class.java)
+            startActivity(intent)
+        }
     }
 
     override fun onResume() {
@@ -273,6 +279,7 @@ class MainActivity : AppCompatActivity() {
     /*******************************************
      * Callback bodies
      *******************************************/
+    val targetMacAddresses = listOf("80:EC:CC:CD:33:7E", "80:EC:CC:CD:33:28") // Replace with your target MAC addresses
 
     // If we're getting a scan result, we already have the relevant permission(s)
     @SuppressLint("MissingPermission")
@@ -280,7 +287,6 @@ class MainActivity : AppCompatActivity() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
 
             //beacon order EW03, EW01
-            val targetMacAddresses = listOf("80:EC:CC:CD:33:7E", "80:EC:CC:CD:33:28") // Replace with your target MAC addresses
 
             if (result.device.address in targetMacAddresses) {
                 val indexQuery = scanResults.indexOfFirst { it.device.address == result.device.address }
