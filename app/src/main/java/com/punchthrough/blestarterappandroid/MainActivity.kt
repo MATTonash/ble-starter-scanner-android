@@ -120,6 +120,11 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, trilateration::class.java)
             startActivity(intent)
         }
+
+        binding.pointGraphButton.setOnClickListener {
+            val intent = Intent(this, PointGraphActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     override fun onResume() {
