@@ -290,24 +290,23 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-
-            //beacon order EW03, EW01
-
+            // Check if the scanned device is already in the list
             if (result.device.address in targetMacAddresses) {
                 val indexQuery = scanResults.indexOfFirst { it.device.address == result.device.address }
                 if (indexQuery != -1) { // A scan result already exists with the same address
-                    scanResults[indexQuery] = result
+                    scanResults[indexQuery] = result // Update the existing result
                     scanResultAdapter.notifyItemChanged(indexQuery)
                 } else {
+                    // New device found, add it to the list
                     with(result.device) {
                         Timber.i("Found BLE device! Name: ${name ?: "Unnamed"}, address: $address")
                     }
-                    scanResults.add(result)
+                    scanResults.add(result) // Add the new result
                     scanResultAdapter.notifyItemInserted(scanResults.size - 1)
                 }
-                scanResults.add(result)
-                scanResults.sortByDescending { it.rssi } // Sort the list by rssi in descending order
-                scanResultAdapter.notifyItemInserted(scanResults.size - 1)
+                // Sort the list by RSSI in descending order
+                scanResults.sortByDescending { it.rssi }
+                scanResultAdapter.notifyDataSetChanged() // Notify adapter of data change
             }
         }
 
