@@ -18,11 +18,13 @@ package com.punchthrough.blestarterappandroid
 
 import android.annotation.SuppressLint
 import android.bluetooth.le.ScanResult
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import java.util.UUID
 
 class ScanResultAdapter(
     private var items: List<ScanResult>,
@@ -65,7 +67,13 @@ class ScanResultAdapter(
     }
 
     fun updateList(newList: List<ScanResult>) {
-        this.items = newList
-        notifyDataSetChanged()
+
+
+        val filterUuid = UUID.fromString("00002a00-000-1000-8000-00805f9b34fb") // Replace with your UUID string
+        this.items = newList.filter { result ->
+            result.scanRecord?.serviceUuids?.any { it.uuid == filterUuid } == true
+        }
+
+        notifyDataSetChanged();
     }
 }
