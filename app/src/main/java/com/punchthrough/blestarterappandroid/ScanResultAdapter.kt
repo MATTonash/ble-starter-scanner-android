@@ -18,6 +18,7 @@ package com.punchthrough.blestarterappandroid
 
 import android.annotation.SuppressLint
 import android.bluetooth.le.ScanResult
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -25,9 +26,11 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class ScanResultAdapter(
-    private var items: List<ScanResult>,
-    private val onClickListener: ((device: ScanResult) -> Unit)
+    private var scanResults: List<ScanResult>,
+    private val onItemClick: (ScanResult) -> Unit // Correctly reference the lambda here
 ) : RecyclerView.Adapter<ScanResultAdapter.ViewHolder>() {
+
+    private val selectedItems = mutableSetOf<ScanResult>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(
@@ -35,19 +38,37 @@ class ScanResultAdapter(
             parent,
             false
         )
-        return ViewHolder(view, onClickListener)
+        return ViewHolder(view, onItemClick) // Pass the onItemClick lambda to the ViewHolder
     }
 
-    override fun getItemCount() = items.size
+    override fun getItemCount() = scanResults.size
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = items[position]
-        holder.bind(item)
+        val scanResult = scanResults[position]
+        holder.bind(scanResult)
+
+        // Handle item click
+        holder.itemView.setOnClickListener {
+            if (selectedItems.contains(scanResult)) {
+                selectedItems.remove(scanResult)
+                holder.itemView.setBackgroundColor(Color.WHITE) // Deselect
+            } else {
+                if (selectedItems.size < 3) { // Limit selection to 3
+                    selectedItems.add(scanResult)
+                    holder.itemView.setBackgroundColor(Color.LTGRAY) // Select
+                }
+            }
+            onItemClick(scanResult) // Invoke the onItemClick lambda
+        }
+    }
+
+    fun getSelectedItems(): List<ScanResult> {
+        return selectedItems.toList()
     }
 
     class ViewHolder(
         private val view: View,
-        private val onClickListener: ((device: ScanResult) -> Unit)
+        private val onItemClick: (ScanResult) -> Unit // Add this parameter
     ) : RecyclerView.ViewHolder(view) {
 
         @SuppressLint("MissingPermission", "SetTextI18n")
@@ -60,12 +81,12 @@ class ScanResultAdapter(
                 }
             view.findViewById<TextView>(R.id.mac_address).text = result.device.address
             view.findViewById<TextView>(R.id.signal_strength).text = "${result.rssi} dBm"
-            view.setOnClickListener { onClickListener.invoke(result) }
+            view.setOnClickListener { onItemClick(result) } // Use the onItemClick lambda
         }
     }
 
     fun updateList(newList: List<ScanResult>) {
-        this.items = newList
+        this.scanResults = newList
         notifyDataSetChanged()
     }
 }

@@ -61,6 +61,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Add this line to declare the SelectedBeaconsActivity -->
+        <activity android:name=".SelectedBeaconsActivity" />
     </application>
 
 </manifest>

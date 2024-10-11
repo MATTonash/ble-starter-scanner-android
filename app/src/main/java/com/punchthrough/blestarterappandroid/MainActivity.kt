@@ -125,6 +125,19 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, PointGraphActivity::class.java)
             startActivity(intent)
         }
+
+        // Add this new button
+        binding.proceedButton.setOnClickListener {
+            val selectedBeacons = scanResultAdapter.getSelectedItems()
+            if (selectedBeacons.isNotEmpty()) {
+                val intent = Intent(this, SelectedBeaconsActivity::class.java).apply {
+                    putParcelableArrayListExtra("SELECTED_BEACONS", ArrayList(selectedBeacons))
+                }
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "Please select 1-3 beacons", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     override fun onResume() {
@@ -284,7 +297,7 @@ class MainActivity : AppCompatActivity() {
     /*******************************************
      * Callback bodies
      *******************************************/
-    val targetMacAddresses = listOf("80:EC:CC:CD:33:7E", "80:EC:CC:CD:33:28") // Replace with your target MAC addresses
+    val targetMacAddresses = listOf("80:EC:CC:CD:33:7E", "80:EC:CC:CD:33:28", "EC:81:F6:64:F0:86") // Replace with your target MAC addresses
 
     // If we're getting a scan result, we already have the relevant permission(s)
     @SuppressLint("MissingPermission")
