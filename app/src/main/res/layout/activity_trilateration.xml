@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".trilateration"
+    android:padding="16dp">
+
+    <!-- Input fields for Circle 1 -->
+    <EditText
+        android:id="@+id/editTextX1"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:hint="X1"
+        android:inputType="numberDecimal"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/editTextY1"
+        android:layout_marginEnd="8dp"
+        android:importantForAutofill="no"/>
+
+    <EditText
+        android:id="@+id/editTextY1"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:hint="Y1"
+        android:inputType="numberDecimal"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@id/editTextX1"
+        app:layout_constraintEnd_toStartOf="@id/editTextR1"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:importantForAutofill="no"/>
+
+    <EditText
+        android:id="@+id/editTextR1"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:hint="R1"
+        android:inputType="numberDecimal"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@id/editTextY1"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="8dp"
+        android:importantForAutofill="no"/>
+
+    <!-- Input fields for Circle 2 -->
+    <EditText
+        android:id="@+id/editTextX2"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:hint="X2"
+        android:inputType="numberDecimal"
+        app:layout_constraintTop_toBottomOf="@id/editTextX1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/editTextY2"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="8dp"
+        android:importantForAutofill="no"/>
+
+    <EditText
+        android:id="@+id/editTextY2"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:hint="Y2"
+        android:inputType="numberDecimal"
+        app:layout_constraintTop_toTopOf="@id/editTextX2"
+        app:layout_constraintStart_toEndOf="@id/editTextX2"
+        app:layout_constraintEnd_toStartOf="@id/editTextR2"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:importantForAutofill="no"/>
+
+    <EditText
+        android:id="@+id/editTextR2"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:hint="R2"
+        android:inputType="numberDecimal"
+        app:layout_constraintTop_toTopOf="@id/editTextX2"
+        app:layout_constraintStart_toEndOf="@id/editTextY2"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="8dp"
+        android:importantForAutofill="no"/>
+
+    <!-- Input fields for Circle 3 -->
+    <EditText
+        android:id="@+id/editTextX3"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:hint="X3"
+        android:inputType="numberDecimal"
+        app:layout_constraintTop_toBottomOf="@id/editTextX2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/editTextY3"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="8dp"
+        android:importantForAutofill="no"/>
+
+    <EditText
+        android:id="@+id/editTextY3"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:hint="Y3"
+        android:inputType="numberDecimal"
+        app:layout_constraintTop_toTopOf="@id/editTextX3"
+        app:layout_constraintStart_toEndOf="@id/editTextX3"
+        app:layout_constraintEnd_toStartOf="@id/editTextR3"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:importantForAutofill="no"/>
+
+    <EditText
+        android:id="@+id/editTextR3"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:hint="R3"
+        android:inputType="numberDecimal"
+        app:layout_constraintTop_toTopOf="@id/editTextX3"
+        app:layout_constraintStart_toEndOf="@id/editTextY3"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="8dp"
+        android:importantForAutofill="no"/>
+
+    <Button
+        android:id="@+id/buttonCalculate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Calculate"
+        app:layout_constraintTop_toBottomOf="@id/editTextX3"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp"/>
+
+    <TextView
+        android:id="@+id/textViewResult"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Result will appear here"
+        android:textAlignment="center"
+        app:layout_constraintTop_toBottomOf="@id/buttonCalculate"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
