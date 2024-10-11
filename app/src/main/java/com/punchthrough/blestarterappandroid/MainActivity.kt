@@ -297,7 +297,8 @@ class MainActivity : AppCompatActivity() {
     /*******************************************
      * Callback bodies
      *******************************************/
-    val targetMacAddresses = listOf("80:EC:CC:CD:33:7E", "80:EC:CC:CD:33:28", "EC:81:F6:64:F0:86") // Replace with your target MAC addresses
+    // x ,
+    val targetMacAddresses = listOf("80:EC:CC:CD:33:7E", "80:EC:CC:CD:33:28", "80:EC:CC:CD:33:7C") // Replace with your target MAC addresses
 
     // If we're getting a scan result, we already have the relevant permission(s)
     @SuppressLint("MissingPermission")
