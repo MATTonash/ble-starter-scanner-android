@@ -4,8 +4,8 @@ import android.bluetooth.le.ScanResult
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.punchthrough.blestarterappandroid.databinding.ActivitySelectedBeaconsBinding
-import timber.log.Timber // Ensure this import is present
 
 class SelectedBeaconsActivity : AppCompatActivity() {
 
@@ -23,15 +23,6 @@ class SelectedBeaconsActivity : AppCompatActivity() {
         binding.selectedBeaconsRecyclerView.apply {
             adapter = selectedBeaconsAdapter
             layoutManager = LinearLayoutManager(this@SelectedBeaconsActivity)
-        }
-
-        // Ensure the button ID matches the layout
-        binding.proceedButton.setOnClickListener {
-            val coordinates = selectedBeaconsAdapter.getCoordinates()
-            // Use the coordinates for trilateration or other purposes
-            coordinates.forEach { (address, pair) ->
-                Timber.i("Device: $address, X: ${pair.first}, Y: ${pair.second}")
-            }
         }
     }
 }
