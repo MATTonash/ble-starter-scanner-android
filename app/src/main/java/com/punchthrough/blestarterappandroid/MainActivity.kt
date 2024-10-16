@@ -318,6 +318,10 @@ class MainActivity : AppCompatActivity() {
                     scanResults.add(result) // Add the new result
                     scanResultAdapter.notifyItemInserted(scanResults.size - 1)
                 }
+                // Check RSSI value and show toast if below -40 dBm
+                if (result.rssi > -40) {
+                    Toast.makeText(this@MainActivity, "Weak signal from ${result.device.name ?: "Unnamed"}", Toast.LENGTH_SHORT).show()
+                }
                 // Sort the list by RSSI in descending order
                 scanResults.sortByDescending { it.rssi }
                 scanResultAdapter.notifyDataSetChanged() // Notify adapter of data change
