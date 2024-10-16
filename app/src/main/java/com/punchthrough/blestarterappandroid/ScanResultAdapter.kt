@@ -32,6 +32,11 @@ class ScanResultAdapter(
 
     private val selectedItems = mutableSetOf<ScanResult>()
 
+    // New method to get RSSI for a specific device address
+    fun getRssiForDevice(address: String): Int? {
+        return scanResults.find { it.device.address == address }?.rssi
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(
             R.layout.row_scan_result,

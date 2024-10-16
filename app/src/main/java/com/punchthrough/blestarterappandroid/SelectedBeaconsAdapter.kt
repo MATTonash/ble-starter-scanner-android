@@ -51,6 +51,15 @@ class SelectedBeaconsAdapter(
         }
     }
 
+    // New method to get RSSI for a specific device address
+    fun getRssiForDevice(address: String): Int? {
+        return selectedBeacons.find { it.device.address == address }?.rssi
+    }
+
+    fun setCoordinates(address: String, x: Double, y: Double) {
+        coordinatesMap[address] = Pair(x, y)
+    }
+
     fun getCoordinates(): Map<String, Pair<Double, Double>> {
         return coordinatesMap
     }
