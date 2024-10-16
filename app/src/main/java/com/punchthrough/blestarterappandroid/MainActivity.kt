@@ -38,6 +38,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.UiThread
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat // Import for checking permissions
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
@@ -47,6 +48,9 @@ import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
 import android.bluetooth.le.ScanFilter
 import android.os.ParcelUuid
+import android.os.VibratorManager // Import the VibratorManager class
+import android.os.Build // Import Build for checking API levels
+import android.os.Vibrator // Import the traditional Vibrator class
 
 private const val PERMISSION_REQUEST_CODE = 1
 
@@ -101,6 +105,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private lateinit var vibrator: Vibrator // Declare a Vibrator instance
+
     /*******************************************
      * Activity function overrides
      *******************************************/
@@ -137,6 +143,16 @@ class MainActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(this, "Please select 1-3 beacons", Toast.LENGTH_SHORT).show()
             }
+        }
+
+        // Initialize the Vibrator based on API level
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // For API level 31 and above, use VibratorManager
+            val vibratorManager = getSystemService(VibratorManager::class.java)
+            vibratorManager.defaultVibrator
+        } else {
+            // For lower API levels, use the traditional Vibrator
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
     }
 
@@ -321,6 +337,13 @@ class MainActivity : AppCompatActivity() {
                 // Check RSSI value and show toast if below -40 dBm
                 if (result.rssi > -40) {
                     Toast.makeText(this@MainActivity, "Weak signal from ${result.device.name ?: "Unnamed"}", Toast.LENGTH_SHORT).show()
+                    // Check if the VIBRATE permission is granted
+                    if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.VIBRATE) == PackageManager.PERMISSION_GRANTED) {
+                        vibrator.vibrate(500) // Vibrate for 500 milliseconds
+                    } else {
+                        // Request the VIBRATE permission
+                        ActivityCompat.requestPermissions(this@MainActivity, arrayOf(Manifest.permission.VIBRATE), PERMISSION_REQUEST_CODE)
+                    }
                 }
                 // Sort the list by RSSI in descending order
                 scanResults.sortByDescending { it.rssi }

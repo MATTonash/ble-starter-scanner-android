@@ -3,6 +3,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     >
+
+    <uses-permission android:name="android.permission.VIBRATE" /> <!-- Add this line -->
+
     <!-- Request legacy Bluetooth permissions on versions older than API 31 (Android 12). -->
     <uses-permission
         android:name="android.permission.BLUETOOTH"
