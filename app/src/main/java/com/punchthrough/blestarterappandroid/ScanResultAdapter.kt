@@ -113,9 +113,9 @@ class ScanResultAdapter(
                 }
             view.findViewById<TextView>(R.id.mac_address).text = result.device.address
             view.findViewById<TextView>(R.id.signal_strength).text =
-                if (result.rssi < -40 && result.rssi > -60) {
+                if (result.rssi < -60 && result.rssi > -80) {
                     "Far"
-                } else if(result.rssi < -60){
+                } else if(result.rssi < -80){
                     "Very Far"
                 } else {
                     "Near"
