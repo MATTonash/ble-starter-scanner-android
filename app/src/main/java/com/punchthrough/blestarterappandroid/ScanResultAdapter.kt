@@ -112,7 +112,15 @@ class ScanResultAdapter(
                     error("Missing required Bluetooth permissions")
                 }
             view.findViewById<TextView>(R.id.mac_address).text = result.device.address
-            view.findViewById<TextView>(R.id.signal_strength).text = "${result.rssi} dBm"
+            view.findViewById<TextView>(R.id.signal_strength).text =
+                if (result.rssi < -40 && result.rssi > -60) {
+                    "Far"
+                } else if(result.rssi < -60){
+                    "Very Far"
+                } else {
+                    "Near"
+                }
+
             view.setOnClickListener { onItemClick(result) } // Use the onItemClick lambda
         }
     }
