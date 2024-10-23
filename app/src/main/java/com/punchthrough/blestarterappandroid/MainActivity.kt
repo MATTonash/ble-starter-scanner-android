@@ -313,8 +313,44 @@ class MainActivity : AppCompatActivity() {
     /*******************************************
      * Callback bodies
      *******************************************/
-    // x ,
-    val targetMacAddresses = listOf("80:EC:CC:CD:33:7E", "80:EC:CC:CD:33:28", "80:EC:CC:CD:33:7C") // Replace with your target MAC addresses
+    // Beacon names
+    // 1. "80:EC:CC:CD:33:28" - Beacon EW1 - Project 1
+    // 2. "80:EC:CC:CD:33:7C" - Beacon EW2 - Project 2
+    // 3. "80:EC:CC:CD:33:7E" - Beacon EW3 - Project 3
+    // 4. "80:EC:CC:CD:33:58" - Beacon EW6 - Project 4
+    // 5. "EC:81:F6:64:F0:86" - Beacon Apple 06 - Project 5
+    // 6. "EC:BF:E3:25:D5:6C" - Beacon Apple 02 - Project 6
+    // 7. "E0:35:2F:E6:42:46" - Beacon Apple 04 - Project 7
+    // 8. "CB:31:FE:48:1B:CB" - Beacon Apple 05 - Project 8
+    // 9. "D8:F2:C8:9B:33:34" - RDL 04 - Project 9
+    // 10. "00:3C:84:28:87:01" - RFstar-01 - Project 10
+    // 11. "00:3C:84:28:77:AB" - RFstar-05 - Project 11
+    val targetMacAddresses = listOf("80:EC:CC:CD:33:28",
+                                    "80:EC:CC:CD:33:7C",
+                                    "80:EC:CC:CD:33:7E",
+                                    "80:EC:CC:CD:33:58",
+                                    "EC:81:F6:64:F0:86",
+                                    "EC:BF:E3:25:D5:6C",
+                                    "E0:35:2F:E6:42:46",
+                                    "CB:31:FE:48:1B:CB",
+                                    "D8:F2:C8:9B:33:34",
+                                    "00:3C:84:28:87:01",
+                                    "00:3C:84:28:77:AB") // Replace with your target MAC addresses
+
+    private val beaconProjects = mapOf(
+        "80:EC:CC:CD:33:28" to "Project 1",
+        "80:EC:CC:CD:33:7C" to "Project 2",
+        "80:EC:CC:CD:33:7E" to "Project 3",
+        "80:EC:CC:CD:33:58" to "Project 4",
+        "EC:81:F6:64:F0:86" to "Project 5",
+        "EC:BF:E3:25:D5:6C" to "Project 6",
+        "E0:35:2F:E6:42:46" to "Project 7",
+        "CB:31:FE:48:1B:CB" to "Project 8",
+        "D8:F2:C8:9B:33:34" to "Project 9",
+        "00:3C:84:28:87:01" to "Project 10",
+        "00:3C:84:28:77:AB" to "Project 11"
+    )
+
 
     // If we're getting a scan result, we already have the relevant permission(s)
     @SuppressLint("MissingPermission")
@@ -336,7 +372,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 // Check RSSI value and show toast if below -40 dBm
                 if (result.rssi > -40) {
-                    Toast.makeText(this@MainActivity, "Weak signal from ${result.device.name ?: "Unnamed"}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "Close to ${ beaconProjects[result.device.address] ?: "Unknown Beacon"}", Toast.LENGTH_SHORT).show()
                     // Check if the VIBRATE permission is granted
                     if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.VIBRATE) == PackageManager.PERMISSION_GRANTED) {
                         vibrator.vibrate(500) // Vibrate for 500 milliseconds

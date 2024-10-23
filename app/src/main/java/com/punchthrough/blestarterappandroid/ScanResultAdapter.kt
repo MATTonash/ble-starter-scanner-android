@@ -71,16 +71,43 @@ class ScanResultAdapter(
         return selectedItems.toList()
     }
 
+
     class ViewHolder(
         private val view: View,
-        private val onItemClick: (ScanResult) -> Unit // Add this parameter
+        private val onItemClick: (ScanResult) -> Unit
     ) : RecyclerView.ViewHolder(view) {
+        private val beaconProjects = mapOf(
+            "80:EC:CC:CD:33:28" to "Project 1",
+            "80:EC:CC:CD:33:7C" to "Project 2",
+            "80:EC:CC:CD:33:7E" to "Project 3",
+            "80:EC:CC:CD:33:58" to "Project 4",
+            "EC:81:F6:64:F0:86" to "Project 5",
+            "EC:BF:E3:25:D5:6C" to "Project 6",
+            "E0:35:2F:E6:42:46" to "Project 7",
+            "CB:31:FE:48:1B:CB" to "Project 8",
+            "D8:F2:C8:9B:33:34" to "Project 9",
+            "00:3C:84:28:87:01" to "Project 10",
+            "00:3C:84:28:77:AB" to "Project 11"
+        )
+
+        // Beacon names
+        // 1. "80:EC:CC:CD:33:28" - Beacon EW1 - Project 1
+        // 2. "80:EC:CC:CD:33:7C" - Beacon EW2 - Project 2
+        // 3. "80:EC:CC:CD:33:7E" - Beacon EW3 - Project 3
+        // 4. "80:EC:CC:CD:33:58" - Beacon EW6 - Project 4
+        // 5. "EC:81:F6:64:F0:86" - Beacon Apple 06 - Project 5
+        // 6. "EC:BF:E3:25:D5:6C" - Beacon Apple 02 - Project 6
+        // 7. "E0:35:2F:E6:42:46" - Beacon Apple 04 - Project 7
+        // 8. "CB:31:FE:48:1B:CB" - Beacon Apple 05 - Project 8
+        // 9. "D8:F2:C8:9B:33:34" - RDL 04 - Project 9
+        // 10. "00:3C:84:28:87:01" - RFstar-01 - Project 10
+        // 11. "00:3C:84:28:77:AB" - RFstar-05 - Project 11
 
         @SuppressLint("MissingPermission", "SetTextI18n")
         fun bind(result: ScanResult) {
             view.findViewById<TextView>(R.id.device_name).text =
                 if (view.context.hasRequiredBluetoothPermissions()) {
-                    result.device.name ?: "Unnamed"
+                    beaconProjects[result.device.address] ?: "Unknown Beacon"
                 } else {
                     error("Missing required Bluetooth permissions")
                 }
