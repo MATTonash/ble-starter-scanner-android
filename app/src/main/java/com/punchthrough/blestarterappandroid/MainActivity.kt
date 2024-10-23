@@ -84,13 +84,13 @@ class MainActivity : AppCompatActivity() {
     private val scanResults = mutableListOf<ScanResult>()
     private val scanResultAdapter: ScanResultAdapter by lazy {
         ScanResultAdapter(scanResults) { result ->
-            //if (isScanning) {
-             //   stopBleScan()
-            //}
-            //with(result.device) {
-              //  Timber.w("Connecting to $address")
-                //ConnectionManager.connect(this, this@MainActivity)
-            //} Temporary removal of connection logic
+            if (isScanning) {
+                stopBleScan()
+            }
+            with(result.device) {
+                Timber.w("Connecting to $address")
+                ConnectionManager.connect(this, this@MainActivity)
+            }
         }
     }
 
@@ -129,19 +129,19 @@ class MainActivity : AppCompatActivity() {
         // }
 
         // Disable the proceed button to prevent navigation to SelectedBeaconsActivity
-        binding.proceedButton.isEnabled = false // Disable the button
-        binding.proceedButton.alpha = 0.5f // Optionally, change the button's appearance to indicate it's disabled
-
-        binding.pointGraphButton.setOnClickListener {
-            val intent = Intent(this, PointGraphActivity::class.java)
-            startActivity(intent)
-        }
-
-        // Add this new button
-        binding.proceedButton.setOnClickListener {
-            // Remove selection logic since no beacons can be selected
-            Toast.makeText(this, "No beacons can be selected", Toast.LENGTH_SHORT).show()
-        }
+//        binding.proceedButton.isEnabled = false // Disable the button
+//        binding.proceedButton.alpha = 0.5f // Optionally, change the button's appearance to indicate it's disabled
+//
+//        binding.pointGraphButton.setOnClickListener {
+//            val intent = Intent(this, PointGraphActivity::class.java)
+//            startActivity(intent)
+//        }
+//
+//        // Add this new button
+//        binding.proceedButton.setOnClickListener {
+//            // Remove selection logic since no beacons can be selected
+//            Toast.makeText(this, "No beacons can be selected", Toast.LENGTH_SHORT).show()
+//        }
 
         // Initialize the Vibrator based on API level
         vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
