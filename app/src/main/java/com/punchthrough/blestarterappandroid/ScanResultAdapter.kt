@@ -111,7 +111,9 @@ class ScanResultAdapter(
                     "Near"
                 }
 
-            view.setOnClickListener { onItemClick(result) } // Use the onItemClick lambda
+            view.setOnClickListener {
+                //onItemClick(result) Temporary removal of Item Click
+                } //Use the onItemClick lambda
         }
     }
 

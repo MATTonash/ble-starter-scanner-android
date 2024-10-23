@@ -84,13 +84,13 @@ class MainActivity : AppCompatActivity() {
     private val scanResults = mutableListOf<ScanResult>()
     private val scanResultAdapter: ScanResultAdapter by lazy {
         ScanResultAdapter(scanResults) { result ->
-            if (isScanning) {
-                stopBleScan()
-            }
-            with(result.device) {
-                Timber.w("Connecting to $address")
-                ConnectionManager.connect(this, this@MainActivity)
-            }
+            //if (isScanning) {
+             //   stopBleScan()
+            //}
+            //with(result.device) {
+              //  Timber.w("Connecting to $address")
+                //ConnectionManager.connect(this, this@MainActivity)
+            //} Temporary removal of connection logic
         }
     }
 
