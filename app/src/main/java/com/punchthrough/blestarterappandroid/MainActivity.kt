@@ -122,10 +122,15 @@ class MainActivity : AppCompatActivity() {
         setupRecyclerView()
 
         // Add this new code
-        binding.trilaterationButton.setOnClickListener {
-            val intent = Intent(this, trilateration::class.java)
-            startActivity(intent)
-        }
+        // Remove or comment out the button click listener for trilateration
+        // binding.trilaterationButton.setOnClickListener {
+        //     val intent = Intent(this, trilateration::class.java)
+        //     startActivity(intent)
+        // }
+
+        // Disable the proceed button to prevent navigation to SelectedBeaconsActivity
+        binding.proceedButton.isEnabled = false // Disable the button
+        binding.proceedButton.alpha = 0.5f // Optionally, change the button's appearance to indicate it's disabled
 
         binding.pointGraphButton.setOnClickListener {
             val intent = Intent(this, PointGraphActivity::class.java)
@@ -134,15 +139,8 @@ class MainActivity : AppCompatActivity() {
 
         // Add this new button
         binding.proceedButton.setOnClickListener {
-            val selectedBeacons = scanResultAdapter.getSelectedItems()
-            if (selectedBeacons.isNotEmpty()) {
-                val intent = Intent(this, SelectedBeaconsActivity::class.java).apply {
-                    putParcelableArrayListExtra("SELECTED_BEACONS", ArrayList(selectedBeacons))
-                }
-                startActivity(intent)
-            } else {
-                Toast.makeText(this, "Please select 1-3 beacons", Toast.LENGTH_SHORT).show()
-            }
+            // Remove selection logic since no beacons can be selected
+            Toast.makeText(this, "No beacons can be selected", Toast.LENGTH_SHORT).show()
         }
 
         // Initialize the Vibrator based on API level
@@ -158,7 +156,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        ConnectionManager.registerListener(connectionEventListener)
+//        ConnectionManager.registerListener(connectionEventListener)
         if (!bluetoothAdapter.isEnabled) {
             promptEnableBluetooth()
         }
@@ -169,7 +167,7 @@ class MainActivity : AppCompatActivity() {
         if (isScanning) {
             stopBleScan()
         }
-        ConnectionManager.unregisterListener(connectionEventListener)
+//        ConnectionManager.unregisterListener(connectionEventListener)
     }
 
     override fun onRequestPermissionsResult(
@@ -392,31 +390,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val connectionEventListener by lazy {
-        ConnectionEventListener().apply {
-            onConnectionSetupComplete = { gatt ->
-                Intent(this@MainActivity, BleOperationsActivity::class.java).also {
-                    it.putExtra(BluetoothDevice.EXTRA_DEVICE, gatt.device)
-                    startActivity(it)
-                }
-            }
-            @SuppressLint("MissingPermission")
-            onDisconnect = {
-                val deviceName = if (hasRequiredBluetoothPermissions()) {
-                    it.name
-                } else {
-                    "device"
-                }
-                runOnUiThread {
-                    AlertDialog.Builder(this@MainActivity)
-                        .setTitle(R.string.disconnected)
-                        .setMessage(
-                            getString(R.string.disconnected_or_unable_to_connect_to_device, deviceName)
-                        )
-                        .setPositiveButton(R.string.ok, null)
-                        .show()
-                }
-            }
-        }
-    }
+//    private val connectionEventListener by lazy {
+//        ConnectionEventListener().apply {
+//            onConnectionSetupComplete = { gatt ->
+//                Intent(this@MainActivity, BleOperationsActivity::class.java).also {
+//                    it.putExtra(BluetoothDevice.EXTRA_DEVICE, gatt.device)
+//                    startActivity(it)
+//                }
+//            }
+//            @SuppressLint("MissingPermission")
+//            onDisconnect = {
+//                val deviceName = if (hasRequiredBluetoothPermissions()) {
+//                    it.name
+//                } else {
+//                    "device"
+//                }
+//                runOnUiThread {
+//                    AlertDialog.Builder(this@MainActivity)
+//                        .setTitle(R.string.disconnected)
+//                        .setMessage(
+//                            getString(R.string.disconnected_or_unable_to_connect_to_device, deviceName)
+//                        )
+//                        .setPositiveButton(R.string.ok, null)
+//                        .show()
+//                }
+//            }
+//        }
+//    }
 }

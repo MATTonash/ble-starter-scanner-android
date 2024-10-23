@@ -30,8 +30,6 @@ class ScanResultAdapter(
     private val onItemClick: (ScanResult) -> Unit // Correctly reference the lambda here
 ) : RecyclerView.Adapter<ScanResultAdapter.ViewHolder>() {
 
-    private val selectedItems = mutableSetOf<ScanResult>()
-
     // New method to get RSSI for a specific device address
     fun getRssiForDevice(address: String): Int? {
         return scanResults.find { it.device.address == address }?.rssi
@@ -52,23 +50,15 @@ class ScanResultAdapter(
         val scanResult = scanResults[position]
         holder.bind(scanResult)
 
-        // Handle item click
-        holder.itemView.setOnClickListener {
-            if (selectedItems.contains(scanResult)) {
-                selectedItems.remove(scanResult)
-                holder.itemView.setBackgroundColor(Color.WHITE) // Deselect
-            } else {
-                if (selectedItems.size < 3) { // Limit selection to 3
-                    selectedItems.add(scanResult)
-                    holder.itemView.setBackgroundColor(Color.LTGRAY) // Select
-                }
-            }
-            onItemClick(scanResult) // Invoke the onItemClick lambda
-        }
+        // Comment out or remove this part
+        // holder.itemView.setOnClickListener {
+        //     toggleSelection(scanResult)
+        // }
     }
 
     fun getSelectedItems(): List<ScanResult> {
-        return selectedItems.toList()
+//        return selectedItems.toList()
+        return emptyList()
     }
 
 
