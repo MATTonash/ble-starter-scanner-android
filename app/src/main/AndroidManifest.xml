@@ -44,8 +44,11 @@
         >
         <activity
             android:name=".mapView"
-            android:exported="false"
-            />
+            android:screenOrientation="landscape" 
+            android:label="@string/app_name"
+            android:exported="false">
+            <!-- Force landscape mode -->
+        </activity>
         <activity android:name=".PointGraphActivity" /> <!-- Add this line -->
         <activity
             android:name=".trilateration"

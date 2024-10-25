@@ -152,6 +152,12 @@ class MainActivity : AppCompatActivity() {
             // For lower API levels, use the traditional Vibrator
             getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
+
+        // Add this new code for the View Map button
+        binding.viewMapButton.setOnClickListener {
+            val intent = Intent(this, mapView::class.java)
+            startActivity(intent)
+        }
     }
 
     override fun onResume() {
