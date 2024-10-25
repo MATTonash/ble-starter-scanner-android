@@ -342,17 +342,17 @@ class MainActivity : AppCompatActivity() {
                                     "00:3C:84:28:77:AB") // Replace with your target MAC addresses
 
     private val beaconProjects = mapOf(
-        "80:EC:CC:CD:33:28" to "Project 1",
-        "80:EC:CC:CD:33:7C" to "Project 2",
-        "80:EC:CC:CD:33:7E" to "Project 3",
-        "80:EC:CC:CD:33:58" to "Project 4",
-        "EC:81:F6:64:F0:86" to "Project 5",
-        "6C:B2:FD:35:01:6C" to "Project 6",
-        "E0:35:2F:E6:42:46" to "Project 7",
-        "CB:31:FE:48:1B:CB" to "Project 8",
-        "D8:F2:C8:9B:33:34" to "Project 9",
-        "00:3C:84:28:87:01" to "Project 10",
-        "00:3C:84:28:77:AB" to "Project 11"
+        "80:EC:CC:CD:33:28" to "Losing Things (LT)",
+        "80:EC:CC:CD:33:7C" to "Happy Mornings (HM)",
+        "80:EC:CC:CD:33:7E" to "STEM",
+        "80:EC:CC:CD:33:58" to "Visual Clutter",
+        "EC:81:F6:64:F0:86" to "Vision",
+        "6C:B2:FD:35:01:6C" to "Tactile Display",
+        "E0:35:2F:E6:42:46" to "GUIDE 1",
+        "CB:31:FE:48:1B:CB" to "GUIDE 2",
+        "D8:F2:C8:9B:33:34" to "Switch",
+        "00:3C:84:28:87:01" to "MAP",
+        "00:3C:84:28:77:AB" to "Dance"
     )
 
 
