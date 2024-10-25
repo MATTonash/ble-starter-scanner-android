@@ -51,6 +51,8 @@ import android.os.ParcelUuid
 import android.os.VibratorManager // Import the VibratorManager class
 import android.os.Build // Import Build for checking API levels
 import android.os.Vibrator // Import the traditional Vibrator class
+import android.os.Handler
+import android.os.Looper
 
 private const val PERMISSION_REQUEST_CODE = 1
 
@@ -106,6 +108,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var vibrator: Vibrator // Declare a Vibrator instance
+
+    private var isToastShowing = false // Flag to track if a toast is currently displayed
 
     /*******************************************
      * Activity function overrides
@@ -375,8 +379,15 @@ class MainActivity : AppCompatActivity() {
                     scanResultAdapter.notifyItemInserted(scanResults.size - 1)
                 }
                 // Check RSSI value and show toast if below -40 dBm
-                if (result.rssi > -40) {
-                    Toast.makeText(this@MainActivity, "Close to ${ beaconProjects[result.device.address] ?: "Unknown Beacon"}", Toast.LENGTH_SHORT).show()
+                if (result.rssi > -50) {
+                    if (!isToastShowing) { // Check if a toast is already being shown
+                        Toast.makeText(this@MainActivity, "Close to ${beaconProjects[result.device.address] ?: "Unknown Beacon"}", Toast.LENGTH_SHORT).show()
+                        isToastShowing = true // Set the flag to true
+                        // Reset the flag after the toast duration
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            isToastShowing = false
+                        }, Toast.LENGTH_SHORT.toLong()) // Duration of the toast
+                    }
                     // Check if the VIBRATE permission is granted
                     if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.VIBRATE) == PackageManager.PERMISSION_GRANTED) {
                         vibrator.vibrate(500) // Vibrate for 500 milliseconds
