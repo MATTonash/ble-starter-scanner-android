@@ -104,11 +104,11 @@ class ScanResultAdapter(
             view.findViewById<TextView>(R.id.mac_address).text = result.device.address
             view.findViewById<TextView>(R.id.signal_strength).text =
                 if (result.rssi < -60 && result.rssi > -80) {
-                    "Far"
+                    "Far (" +  result.rssi.toString() + " dBm)"
                 } else if(result.rssi < -80){
-                    "Very Far"
+                    "Very Far (" +  result.rssi.toString() + " dBm)"
                 } else {
-                    "Near"
+                    "Near (" +  result.rssi.toString() + " dBm)"
                 }
 
             view.setOnClickListener {
