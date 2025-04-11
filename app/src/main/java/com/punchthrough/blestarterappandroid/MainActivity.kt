@@ -21,7 +21,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -31,28 +30,25 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.UiThread
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat // Import for checking permissions
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
-import com.punchthrough.blestarterappandroid.ble.ConnectionEventListener
 import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
-import android.bluetooth.le.ScanFilter
-import android.os.ParcelUuid
-import android.os.VibratorManager // Import the VibratorManager class
-import android.os.Build // Import Build for checking API levels
-import android.os.Vibrator // Import the traditional Vibrator class
-import android.os.Handler
-import android.os.Looper
 
 private const val PERMISSION_REQUEST_CODE = 1
 
@@ -136,10 +132,10 @@ class MainActivity : AppCompatActivity() {
 //        binding.proceedButton.isEnabled = false // Disable the button
 //        binding.proceedButton.alpha = 0.5f // Optionally, change the button's appearance to indicate it's disabled
 //
-//        binding.pointGraphButton.setOnClickListener {
-//            val intent = Intent(this, PointGraphActivity::class.java)
-//            startActivity(intent)
-//        }
+        binding.viewMapButton.setOnClickListener {
+            val intent = Intent(this, PointGraphActivity::class.java)
+            startActivity(intent)
+        }
 //
 //        // Add this new button
 //        binding.proceedButton.setOnClickListener {
