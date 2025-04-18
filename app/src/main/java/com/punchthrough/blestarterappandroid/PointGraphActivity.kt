@@ -99,7 +99,9 @@ class PointGraphActivity : AppCompatActivity() {
 
         results.find { it.device.address == targetDeviceAddress }?.let { result ->
             // Add new data point
-            dataPoints.add(Entry(timeCounter, result.rssi.toFloat()))
+            dataPoints.add(Entry(timeCounter,
+                bluetoothWorker.rssiToDistance(result.rssi.toFloat()).toFloat()
+            ))
 
             // Keep only last 60 seconds of data
             if (dataPoints.size > 60) {

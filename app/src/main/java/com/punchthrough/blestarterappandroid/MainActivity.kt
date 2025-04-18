@@ -70,10 +70,10 @@ class MainActivity : AppCompatActivity() {
         setupScanButton()
         initializeVibrator()
 
-        binding.viewMapButton.setOnClickListener {
-            val intent = Intent(this, mapView::class.java)
-            startActivity(intent)
-        }
+//        binding.viewMapButton.setOnClickListener {
+//            val intent = Intent(this, mapView::class.java)
+//            startActivity(intent)
+//        }
     }
 
     private fun setupScanButton() {
@@ -148,7 +148,7 @@ class MainActivity : AppCompatActivity() {
     private fun stopBleScan() {
         bluetoothWorker.stopScanning()
         isScanning = false
-        binding.viewMapButton.isClickable = false
+        // binding.viewMapButton.isClickable = false
     }
 
     private fun handleScanResults(results: List<ScanResult>) {

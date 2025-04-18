@@ -10,6 +10,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import timber.log.Timber
+import kotlin.math.pow
 
 class BluetoothWorkerClass private constructor() {
     private var scanResults = mutableListOf<ScanResult>()
@@ -127,6 +128,12 @@ class BluetoothWorkerClass private constructor() {
     fun isScanning(): Boolean = isScanning
 
     fun getCurrentResults(): List<ScanResult> = scanResults.toList()
+
+    fun rssiToDistance(rssi: Float): Double {
+        val calibrationRSSI = -56
+        val txPower = 2.7
+        return 10.0.pow((calibrationRSSI - rssi)/(10*txPower))
+    }
 
     private val bleScanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
