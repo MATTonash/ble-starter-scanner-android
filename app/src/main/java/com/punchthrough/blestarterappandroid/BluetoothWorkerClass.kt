@@ -25,12 +25,20 @@ class BluetoothWorkerClass private constructor() {
         @Volatile
         private var instance: BluetoothWorkerClass? = null
 
+        // Default scan parameters
+        private const val SCAN_PERIOD = 5000L // Scan for 5 seconds
+        private const val SCAN_INTERVAL = 10000L // Wait 10 seconds between scans
+
         fun getInstance(): BluetoothWorkerClass {
             return instance ?: synchronized(this) {
                 instance ?: BluetoothWorkerClass().also { instance = it }
             }
         }
     }
+
+    private var scanPeriod: Long = SCAN_PERIOD
+    private var scanInterval: Long = SCAN_INTERVAL
+    private var continuousScanning = false
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
@@ -40,16 +48,57 @@ class BluetoothWorkerClass private constructor() {
     }
 
     private val scanSettings = ScanSettings.Builder()
-        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+        .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER) // Changed to LOW_POWER mode
         .build()
 
+    private val scanRunnable = object : Runnable {
+        @SuppressLint("MissingPermission")
+        override fun run() {
+            if (isScanning) {
+                // Stop scanning
+                bleScanner.stopScan(bleScanCallback)
+                isScanning = false
+                Timber.d("Stopped BLE scan")
+
+                if (continuousScanning) {
+                    // Schedule next scan after interval
+                    handler.postDelayed({
+                        startScanCycle()
+                    }, scanInterval)
+                }
+            } else {
+                // Start scanning
+                startScanCycle()
+            }
+        }
+    }
+
     @SuppressLint("MissingPermission")
-    fun startScanning(callback: (List<ScanResult>) -> Unit) {
+    private fun startScanCycle() {
         if (!::bluetoothAdapter.isInitialized || !::appContext.isInitialized) {
             Timber.e("BluetoothWorkerClass not initialized")
             return
         }
 
+        if (appContext.hasRequiredBluetoothPermissions()) {
+            bleScanner.startScan(null, scanSettings, bleScanCallback)
+            isScanning = true
+            Timber.d("Started BLE scan")
+
+            // Schedule scan stop after scanPeriod
+            handler.postDelayed(scanRunnable, scanPeriod)
+        } else {
+            Timber.e("Missing required Bluetooth permissions")
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun startScanning(
+        callback: (List<ScanResult>) -> Unit,
+        continuous: Boolean = true,
+        period: Long = SCAN_PERIOD,
+        interval: Long = SCAN_INTERVAL
+    ) {
         if (isScanning) {
             Timber.e("Already scanning")
             return
@@ -57,22 +106,21 @@ class BluetoothWorkerClass private constructor() {
 
         scanCallback = callback
         scanResults.clear()
+        continuousScanning = continuous
+        scanPeriod = period
+        scanInterval = interval
 
-        if (appContext.hasRequiredBluetoothPermissions()) {  // Now using the context extension function
-            bleScanner.startScan(null, scanSettings, bleScanCallback)
-            isScanning = true
-            Timber.d("Started BLE scan")
-        } else {
-            Timber.e("Missing required Bluetooth permissions")
-        }
+        startScanCycle()
     }
 
     @SuppressLint("MissingPermission")
     fun stopScanning() {
         if (!isScanning || !::bluetoothAdapter.isInitialized) return
 
+        handler.removeCallbacks(scanRunnable)
         bleScanner.stopScan(bleScanCallback)
         isScanning = false
+        continuousScanning = false
         Timber.d("Stopped BLE scan")
     }
 

@@ -18,7 +18,6 @@ package com.punchthrough.blestarterappandroid
 
 import android.annotation.SuppressLint
 import android.bluetooth.le.ScanResult
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -112,9 +111,10 @@ class ScanResultAdapter(
                 }
 
             view.setOnClickListener {
-                //onItemClick(result) Temporary removal of Item Click
+                onItemClick(result) //Temporary removal of Item Click
                 } //Use the onItemClick lambda
         }
+
     }
 
     fun updateList(newList: List<ScanResult>) {
