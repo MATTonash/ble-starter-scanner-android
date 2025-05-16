@@ -36,12 +36,20 @@ class MainActivity : AppCompatActivity() {
         }
 
     private val scanResults = mutableListOf<ScanResult>()
-    private val scanResultAdapter: ScanResultAdapter by lazy {
-        ScanResultAdapter(scanResults) { result ->
-            // Launch PointGraphActivity when a device is clicked
-            launchPointGraphActivity(result)
-        }
-    }
+    private val scanResultAdapter = ScanResultAdapter(scanResults)
+//        ScanResultAdapter by lazy {
+//        ScanResultAdapter(scanResults) {
+//            // Launch PointGraphActivity when a device is clicked
+//            launchPointGraphActivity(trilateratingMacAddresses)
+//        }
+//    }
+
+    private val trilateratingMacAddresses = listOf(
+        "EC:81:F6:64:F0:86",
+        "E0:35:2F:E6:42:46",
+        "EC:BF:B3:25:D5:6C")
+
+    private var topThreeDevices = mutableListOf<String>()
 
     private lateinit var vibrator: Vibrator
     private var isToastShowing = false
@@ -66,9 +74,13 @@ class MainActivity : AppCompatActivity() {
         bluetoothWorker.initialize(this)
 
         // Setup UI
-        setupRecyclerView()
+        // setupRecyclerView()
+
         setupScanButton()
         initializeVibrator()
+
+        // only setup viewmap button when 3 beacons collected
+        // setupViewMapButton()
 
 //        binding.viewMapButton.setOnClickListener {
 //            val intent = Intent(this, mapView::class.java)
@@ -82,7 +94,15 @@ class MainActivity : AppCompatActivity() {
                 stopBleScan()
             } else {
                 startBleScan()
+
             }
+        }
+    }
+
+    private fun setupViewMapButton() {
+        // TODO: Only allow clicking if there's 3 addresses in topThreeMacAddresses list
+        binding.viewMapButton.setOnClickListener {
+            launchPointGraphActivity(trilateratingMacAddresses)
         }
     }
 
@@ -110,7 +130,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         binding.scanResultsRecyclerView.apply {
-            adapter = scanResultAdapter
             layoutManager = LinearLayoutManager(
                 this@MainActivity,
                 RecyclerView.VERTICAL,
@@ -132,7 +151,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         scanResults.clear()
-        scanResultAdapter.updateList(scanResults)
+        // scanResultAdapter.updateList(scanResults)
 
         bluetoothWorker.startScanning(
             callback = { results ->
@@ -165,6 +184,20 @@ class MainActivity : AppCompatActivity() {
 
             // Sort and update the display
             scanResults.sortByDescending { it.rssi }
+            if (topThreeDevices.size < 3) {
+                for (res in scanResults) {
+                    if (!topThreeDevices.contains(res.device.address)) {
+                        topThreeDevices.add(res.device.address)
+                    }
+                    if (topThreeDevices.size >= 3) {
+                        launchPointGraphActivity(topThreeDevices)
+                        break
+                    }
+                }
+//                launchPointGraphActivity(scannedResultAddresses)
+            }
+
+
             scanResultAdapter.updateList(scanResults)
         }
     }
@@ -192,11 +225,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun launchPointGraphActivity(scanResult: ScanResult) {
+    // Only for when we were doing one beacon
+//    private fun launchPointGraphActivity(scanResult: ScanResult) {
+//        val intent = Intent(this, PointGraphActivity::class.java).apply {
+//            putExtra("TARGET_DEVICE_ADDRESS", scanResult.device.address)
+//            putExtra("DEVICE_NAME", scanResult.device.address ?: "Unknown Beacon")
+//            putExtra("INITIAL_RSSI", scanResult.rssi)
+//        }
+//        startActivity(intent)
+//    }
+
+    // multiple beacons: TRILATERATION
+    private fun launchPointGraphActivity(list: List<String>) {
         val intent = Intent(this, PointGraphActivity::class.java).apply {
-            putExtra("TARGET_DEVICE_ADDRESS", scanResult.device.address)
-            putExtra("DEVICE_NAME", scanResult.device.address ?: "Unknown Beacon")
-            putExtra("INITIAL_RSSI", scanResult.rssi)
+            putExtra("TARGET_DEVICE_ADDRESS_1", list[0])
+            putExtra("TARGET_DEVICE_ADDRESS_2", list[1])
+            putExtra("TARGET_DEVICE_ADDRESS_3", list[2])
         }
         startActivity(intent)
     }

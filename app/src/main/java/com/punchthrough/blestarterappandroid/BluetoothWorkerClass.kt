@@ -12,6 +12,7 @@ import android.os.Looper
 import timber.log.Timber
 import kotlin.math.pow
 
+
 class BluetoothWorkerClass private constructor() {
     private var scanResults = mutableListOf<ScanResult>()
     private var isScanning = false
@@ -129,7 +130,7 @@ class BluetoothWorkerClass private constructor() {
 
     fun getCurrentResults(): List<ScanResult> = scanResults.toList()
 
-    fun rssiToDistance(rssi: Float): Double {
+    fun rssiToDistance(rssi: Int): Double {
         // need to calibrate beacons
         val calibrationRSSI = -68
         val txPower = 2.3

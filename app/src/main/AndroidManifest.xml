@@ -49,7 +49,10 @@
             android:exported="false">
             <!-- Force landscape mode -->
         </activity>
-        <activity android:name=".PointGraphActivity" /> <!-- Add this line -->
+        <activity
+            android:name=".PointGraphActivity"
+            android:exported="false"
+            android:label="RSSI Graph" /> <!-- Add this line -->
         <activity
             android:name=".trilateration"
             android:exported="false"

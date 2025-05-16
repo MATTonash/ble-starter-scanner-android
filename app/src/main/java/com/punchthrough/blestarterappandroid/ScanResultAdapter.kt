@@ -26,7 +26,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 class ScanResultAdapter(
     private var scanResults: List<ScanResult>,
-    private val onItemClick: (ScanResult) -> Unit // Correctly reference the lambda here
+    // private val onItemClick: (ScanResult) -> Unit // Correctly reference the lambda here
 ) : RecyclerView.Adapter<ScanResultAdapter.ViewHolder>() {
 
     // New method to get RSSI for a specific device address
@@ -34,14 +34,24 @@ class ScanResultAdapter(
         return scanResults.find { it.device.address == address }?.rssi
     }
 
+    // create new views
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(
-            R.layout.row_scan_result,
-            parent,
-            false
-        )
-        return ViewHolder(view, onItemClick) // Pass the onItemClick lambda to the ViewHolder
+        // inflates the card_view_design view
+        // that is used to hold list item
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.row_scan_result, parent, false)
+
+        return ViewHolder(view)
     }
+
+//    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+//        val view = LayoutInflater.from(parent.context).inflate(
+//            R.layout.row_scan_result,
+//            parent,
+//            false
+//        )
+//        return ViewHolder(view, onItemClick) // Pass the onItemClick lambda to the ViewHolder
+//    }
 
     override fun getItemCount() = scanResults.size
 
@@ -63,7 +73,7 @@ class ScanResultAdapter(
 
     class ViewHolder(
         private val view: View,
-        private val onItemClick: (ScanResult) -> Unit
+        // private val onItemClick: (ScanResult) -> Unit
     ) : RecyclerView.ViewHolder(view) {
         private val beaconProjects = mapOf(
             "80:EC:CC:CD:33:28" to "Losing Things (LT)",
@@ -111,7 +121,7 @@ class ScanResultAdapter(
                 }
 
             view.setOnClickListener {
-                onItemClick(result) //Temporary removal of Item Click
+                // onItemClick(result) //Temporary removal of Item Click
                 } //Use the onItemClick lambda
         }
 
