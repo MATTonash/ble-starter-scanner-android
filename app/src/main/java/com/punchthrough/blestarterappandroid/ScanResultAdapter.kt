@@ -26,7 +26,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 class ScanResultAdapter(
     private var scanResults: List<ScanResult>,
-    // private val onItemClick: (ScanResult) -> Unit // Correctly reference the lambda here
+    private val onClickListener: (device : ScanResult) -> Unit // Correctly reference the lambda here
 ) : RecyclerView.Adapter<ScanResultAdapter.ViewHolder>() {
 
     // New method to get RSSI for a specific device address
@@ -41,7 +41,7 @@ class ScanResultAdapter(
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.row_scan_result, parent, false)
 
-        return ViewHolder(view)
+        return ViewHolder(view, onClickListener)
     }
 
 //    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -73,7 +73,7 @@ class ScanResultAdapter(
 
     class ViewHolder(
         private val view: View,
-        // private val onItemClick: (ScanResult) -> Unit
+        private val onClickListener: (device : ScanResult) -> Unit
     ) : RecyclerView.ViewHolder(view) {
         private val beaconProjects = mapOf(
             "80:EC:CC:CD:33:28" to "Losing Things (LT)",
@@ -121,7 +121,7 @@ class ScanResultAdapter(
                 }
 
             view.setOnClickListener {
-                // onItemClick(result) //Temporary removal of Item Click
+                onClickListener(result) //Temporary removal of Item Click
                 } //Use the onItemClick lambda
         }
 

@@ -15,12 +15,14 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.UiThread
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
 
@@ -36,13 +38,17 @@ class MainActivity : AppCompatActivity() {
         }
 
     private val scanResults = mutableListOf<ScanResult>()
-    private val scanResultAdapter = ScanResultAdapter(scanResults)
-//        ScanResultAdapter by lazy {
-//        ScanResultAdapter(scanResults) {
-//            // Launch PointGraphActivity when a device is clicked
-//            launchPointGraphActivity(trilateratingMacAddresses)
-//        }
-//    }
+    private val scanResultAdapter: ScanResultAdapter by lazy {
+        ScanResultAdapter(scanResults) { result ->
+            if (isScanning) {
+                stopBleScan()
+            }
+            with(result.device) {
+                Timber.w("Connecting to $address")
+                ConnectionManager.connect(this, this@MainActivity)
+            }
+        }
+    }
 
     private val trilateratingMacAddresses = listOf(
         "EC:81:F6:64:F0:86",
@@ -74,7 +80,7 @@ class MainActivity : AppCompatActivity() {
         bluetoothWorker.initialize(this)
 
         // Setup UI
-        // setupRecyclerView()
+        setupRecyclerView()
 
         setupScanButton()
         initializeVibrator()
@@ -128,8 +134,10 @@ class MainActivity : AppCompatActivity() {
         stopBleScan()
     }
 
+    @UiThread
     private fun setupRecyclerView() {
         binding.scanResultsRecyclerView.apply {
+            adapter = scanResultAdapter
             layoutManager = LinearLayoutManager(
                 this@MainActivity,
                 RecyclerView.VERTICAL,

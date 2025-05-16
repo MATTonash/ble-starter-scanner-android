@@ -23,6 +23,8 @@ class BluetoothWorkerClass private constructor() {
 
     private val handler = Handler(Looper.getMainLooper())
 
+
+
     companion object {
         @Volatile
         private var instance: BluetoothWorkerClass? = null
