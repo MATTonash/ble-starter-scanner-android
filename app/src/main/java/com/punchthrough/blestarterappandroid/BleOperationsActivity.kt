@@ -49,6 +49,7 @@ import java.util.UUID
 
 class BleOperationsActivity : AppCompatActivity() {
 
+    // I have made a commit
     private lateinit var binding: ActivityBleOperationsBinding
     private val device: BluetoothDevice by lazy {
         intent.parcelableExtraCompat(BluetoothDevice.EXTRA_DEVICE)
