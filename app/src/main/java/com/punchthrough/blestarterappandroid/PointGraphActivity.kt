@@ -9,6 +9,7 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
+import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import kotlin.math.pow
 
 class PointGraphActivity : AppCompatActivity() {
@@ -20,25 +21,28 @@ class PointGraphActivity : AppCompatActivity() {
     private lateinit var deviceName: String
     // Get the target device's RSSI
     // You might want to filter for a specific device address
-    private val beaconProjects = mapOf(
-        "80:EC:CC:CD:33:28" to "Losing Things (LT)",
-        "80:EC:CC:CD:33:7C" to "Happy Mornings (HM)",
-        "80:EC:CC:CD:33:7E" to "STEM",
-        "80:EC:CC:CD:33:58" to "Visual Clutter",
-        "EC:81:F6:64:F0:86" to "Vision",
-        "6C:B2:FD:35:01:6C" to "Tactile Display",
-        "E0:35:2F:E6:42:46" to "GUIDE 1",
-        "CB:31:FE:48:1B:CB" to "GUIDE 2",
-        "D8:F2:C8:9B:33:34" to "Switch",
-        "00:3C:84:28:87:01" to "MAP",
-        "00:3C:84:28:77:AB" to "Dance"
-    )
+
 
     private val radii = mutableMapOf<String, Float>()
+    var deviceAddressList = ArrayList<String>()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val targetDeviceAddress1 = intent.getStringExtra("TARGET_DEVICE_ADDRESS_1")
+        val targetDeviceAddress2 = intent.getStringExtra("TARGET_DEVICE_ADDRESS_2")
+        val targetDeviceAddress3 = intent.getStringExtra("TARGET_DEVICE_ADDRESS_3")
+        if (targetDeviceAddress1 != null) {
+            deviceAddressList.add(targetDeviceAddress1)
+        }
+        if (targetDeviceAddress2 != null) {
+            deviceAddressList.add(targetDeviceAddress2)
+        }
+        if (targetDeviceAddress3 != null) {
+            deviceAddressList.add(targetDeviceAddress3)
+        }
+
 
         setContentView(R.layout.activity_point_graph)
 
@@ -69,8 +73,8 @@ class PointGraphActivity : AppCompatActivity() {
         lineChart.xAxis.apply {
             position = XAxis.XAxisPosition.BOTTOM
             textColor = Color.BLACK
-            axisMaximum = 2f
-            axisMinimum = -2f
+//            axisMaximum = 2f
+//            axisMinimum = -2f
             setDrawGridLines(true)
             setDrawAxisLine(true)
         }
@@ -79,8 +83,8 @@ class PointGraphActivity : AppCompatActivity() {
         lineChart.axisLeft.apply {
             textColor = Color.BLACK
             setDrawGridLines(true)
-            axisMaximum = 2f
-            axisMinimum = -2f
+//            axisMaximum = 2f
+//            axisMinimum = -2f
             setDrawAxisLine(true)
         }
 
@@ -120,29 +124,28 @@ class PointGraphActivity : AppCompatActivity() {
 
 
     private fun handleScanResults(results: List<ScanResult>) {
-        val targetDeviceAddress1 = intent.getStringExtra("TARGET_DEVICE_ADDRESS_1")
-        val targetDeviceAddress2 = intent.getStringExtra("TARGET_DEVICE_ADDRESS_2")
-        val targetDeviceAddress3 = intent.getStringExtra("TARGET_DEVICE_ADDRESS_3")
-        val deviceAddressList = listOf(targetDeviceAddress1, targetDeviceAddress2, targetDeviceAddress3)
+
         val x1 = 0f
         val y1 = 0f
         val x2 = 1f
         val y2 = 0f
         val x3 = 0f
         val y3 = 1f
-        for (address in deviceAddressList) {
-
-            results.find { it.device.address == address }?.let { result ->
-                radii[address.toString()] = bluetoothWorker.rssiToDistance(result.rssi).toFloat()
+        val rFloatList = ArrayList<Float>()
+        // Check if we've established connection (logic in workerclass 178)
+        for (bluetoothDevice in ConnectionManager.deviceGattMap.keys()) {
+            for (result in results) {
+                if (result.device == bluetoothDevice) {
+                    radii[bluetoothDevice.address] = result.rssi.toFloat()
+                    rFloatList.add(result.rssi.toFloat())
+                }
             }
+
         }
-        if (radii.size == 3) {
-            trilaterate(x1, y1, radii[targetDeviceAddress1.toString()]!!.toFloat(), x2, y2,
-                radii[targetDeviceAddress2.toString()]!!.toFloat(), x3, y3,
-                radii[targetDeviceAddress1.toString()]!!.toFloat())
-        } else {
-            startRssiTracking()
+        if (rFloatList.size < 3) {
+            return
         }
+        trilaterate(x1, y1, rFloatList[0], x2, y2,rFloatList[1], x3, y3,rFloatList[2])
 
 
 //        results.find { it.device.address == targetDeviceAddress }?.let { result ->

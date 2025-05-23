@@ -1,6 +1,7 @@
 package com.punchthrough.blestarterappandroid
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.le.ScanResult
@@ -50,11 +51,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val trilateratingMacAddresses = listOf(
-        "EC:81:F6:64:F0:86",
-        "E0:35:2F:E6:42:46",
-        "EC:BF:B3:25:D5:6C")
-
     private var topThreeDevices = mutableListOf<String>()
 
     private lateinit var vibrator: Vibrator
@@ -86,7 +82,7 @@ class MainActivity : AppCompatActivity() {
         initializeVibrator()
 
         // only setup viewmap button when 3 beacons collected
-        // setupViewMapButton()
+        setupViewMapButton()
 
 //        binding.viewMapButton.setOnClickListener {
 //            val intent = Intent(this, mapView::class.java)
@@ -105,10 +101,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun allowClickViewMapButton() : Boolean {
+        return topThreeDevices.size >= 3
+    }
     private fun setupViewMapButton() {
-        // TODO: Only allow clicking if there's 3 addresses in topThreeMacAddresses list
+        binding.viewMapButton.setEnabled(allowClickViewMapButton())
         binding.viewMapButton.setOnClickListener {
-            launchPointGraphActivity(trilateratingMacAddresses)
+            launchPointGraphActivity(topThreeDevices)
         }
     }
 
@@ -170,14 +169,16 @@ class MainActivity : AppCompatActivity() {
             interval = 2000L   // Wait 2 seconds between scans
         )
         isScanning = true
+
     }
 
     private fun stopBleScan() {
         bluetoothWorker.stopScanning()
         isScanning = false
-        // binding.viewMapButton.isClickable = false
+        binding.viewMapButton.setEnabled(allowClickViewMapButton())
     }
 
+    @SuppressLint("LogNotTimber")
     private fun handleScanResults(results: List<ScanResult>) {
         runOnUiThread {
             scanResults.clear()
@@ -195,14 +196,15 @@ class MainActivity : AppCompatActivity() {
             if (topThreeDevices.size < 3) {
                 for (res in scanResults) {
                     if (!topThreeDevices.contains(res.device.address)) {
+                        ConnectionManager.connect(res.device, this)
                         topThreeDevices.add(res.device.address)
                     }
                     if (topThreeDevices.size >= 3) {
-                        launchPointGraphActivity(topThreeDevices)
+                        binding.viewMapButton.setEnabled(allowClickViewMapButton())
                         break
                     }
                 }
-//                launchPointGraphActivity(scannedResultAddresses)
+
             }
 
 

@@ -9,6 +9,7 @@ import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import timber.log.Timber
 import kotlin.math.pow
 
@@ -23,8 +24,23 @@ class BluetoothWorkerClass private constructor() {
 
     private val handler = Handler(Looper.getMainLooper())
 
+    private val beaconProjects = mapOf(
+        "80:EC:CC:CD:33:28" to "Losing Things (LT)",
+        "80:EC:CC:CD:33:7C" to "Happy Mornings (HM)",
+        "80:EC:CC:CD:33:7E" to "STEM",
+        "80:EC:CC:CD:33:58" to "Visual Clutter",
+        "EC:81:F6:64:F0:86" to "Vision",
+        "6C:B2:FD:35:01:6C" to "Tactile Display",
+        "E0:35:2F:E6:42:46" to "GUIDE 1",
+        "CB:31:FE:48:1B:CB" to "GUIDE 2",
+        "D8:F2:C8:9B:33:34" to "Switch",
+        "00:3C:84:28:87:01" to "MAP",
+        "00:3C:84:28:77:AB" to "Dance"
+    )
 
 
+    // Makes sure this class is only instantiated once
+    // Separate from and independent to any other class (not like an activity)
     companion object {
         @Volatile
         private var instance: BluetoothWorkerClass? = null
@@ -44,6 +60,10 @@ class BluetoothWorkerClass private constructor() {
     private var scanInterval: Long = SCAN_INTERVAL
     private var continuousScanning = false
 
+    /**
+     * Initialises the companion object according to the activity
+     * @param context of the environment (typically activity)
+     */
     fun initialize(context: Context) {
         appContext = context.applicationContext
         val bluetoothManager = appContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -59,6 +79,7 @@ class BluetoothWorkerClass private constructor() {
         @SuppressLint("MissingPermission")
         override fun run() {
             if (isScanning) {
+
                 // Stop scanning
                 bleScanner.stopScan(bleScanCallback)
                 isScanning = false
@@ -77,6 +98,20 @@ class BluetoothWorkerClass private constructor() {
         }
     }
 
+    /**
+     * Checks if a certain beacon (based of MAC Address) is in the scan list
+     * @param MACAddress String of address
+     */
+    fun caughtInScan(MACAddress : String) : ScanResult? {
+        for (scanResult in getCurrentResults()) {
+            if (scanResult.device.address == MACAddress) {
+                return scanResult
+            }
+        }
+        return null
+    }
+
+    // WHAT DOES THIS MEANNNNNNN (actually doesn't matter but would be nice to find out eventually...)
     @SuppressLint("MissingPermission")
     private fun startScanCycle() {
         if (!::bluetoothAdapter.isInitialized || !::appContext.isInitialized) {
@@ -95,6 +130,8 @@ class BluetoothWorkerClass private constructor() {
             Timber.e("Missing required Bluetooth permissions")
         }
     }
+
+
 
     @SuppressLint("MissingPermission")
     fun startScanning(
@@ -150,6 +187,12 @@ class BluetoothWorkerClass private constructor() {
 
             // Sort results by RSSI
             scanResults.sortByDescending { it.rssi }
+            for (address in beaconProjects) {
+                if (caughtInScan(address.key) != null) {
+                    caughtInScan(address.key)?.let { ConnectionManager.connect(it.device, PointGraphActivity()) }
+
+                }
+            }
 
             // Notify callback on main thread
             handler.post {
