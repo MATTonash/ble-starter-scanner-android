@@ -21,22 +21,17 @@ class BluetoothWorkerClass private constructor() {
     private lateinit var bleScanner: android.bluetooth.le.BluetoothLeScanner
     private var scanCallback: ((List<ScanResult>) -> Unit)? = null
     private lateinit var appContext: Context
+    val connectedDevices = mutableSetOf<String>() // Track connected devices
+    private val connectionCheckHandler = Handler(Looper.getMainLooper())
+    private val connectionCheckInterval = 5000L // Check connections every 5 seconds
+    private val maxConnections = 3 // Maximum number of simultaneous connections
 
     private val handler = Handler(Looper.getMainLooper())
 
-    private val beaconProjects = mapOf(
-        "80:EC:CC:CD:33:28" to "Losing Things (LT)",
-        "80:EC:CC:CD:33:7C" to "Happy Mornings (HM)",
-        "80:EC:CC:CD:33:7E" to "STEM",
-        "80:EC:CC:CD:33:58" to "Visual Clutter",
-        "EC:81:F6:64:F0:86" to "Vision",
-        "6C:B2:FD:35:01:6C" to "Tactile Display",
-        "E0:35:2F:E6:42:46" to "GUIDE 1",
-        "CB:31:FE:48:1B:CB" to "GUIDE 2",
-        "D8:F2:C8:9B:33:34" to "Switch",
-        "00:3C:84:28:87:01" to "MAP",
-        "00:3C:84:28:77:AB" to "Dance"
-    )
+    private val trilateratingMacAddresses = listOf(
+        "EC:81:F6:64:F0:86",
+        "E0:35:2F:E6:42:46",
+        "EC:BF:B3:25:D5:6C")
 
 
     // Makes sure this class is only instantiated once
@@ -131,7 +126,66 @@ class BluetoothWorkerClass private constructor() {
         }
     }
 
+    private val connectionCheckRunnable = object : Runnable {
+        override fun run() {
+            checkAndMaintainConnections()
+            connectionCheckHandler.postDelayed(this, connectionCheckInterval)
+        }
+    }
 
+    private fun checkAndMaintainConnections() {
+        // Get all available devices from trilateratingMacAddresses that are in range
+        val availableDevices = trilateratingMacAddresses.mapNotNull { address ->
+            caughtInScan(address)?.let { scanResult ->
+                Pair(address, scanResult)
+            }
+        }.sortedByDescending { it.second.rssi } // Sort by RSSI (strongest first)
+
+        // Handle devices that are no longer in range
+        val devicesToRemove = connectedDevices.filter { address ->
+            !availableDevices.any { it.first == address }
+        }
+        devicesToRemove.forEach { address ->
+            Timber.d("Device no longer in range: $address")
+            connectedDevices.remove(address)
+        }
+
+        // Connect to new devices if we have capacity
+        val availableSlots = maxConnections - connectedDevices.size
+        if (availableSlots > 0) {
+            availableDevices
+                .filter { it.first !in connectedDevices }
+                .take(availableSlots)
+                .forEach { (address, scanResult) ->
+                    Timber.d("Attempting to connect to device: $address (RSSI: ${scanResult.rssi})")
+                    scanResult.device.let { device ->
+                        ConnectionManager.connect(device, appContext)
+                        connectedDevices.add(address)
+                    }
+                }
+        }
+//        else if (availableDevices.isNotEmpty()) {
+//            // If we're at max connections but have stronger signals available,
+//            // disconnect the weakest connected device and connect to the stronger one
+//            val weakestConnectedDevice = connectedDevices.minByOrNull { address ->
+//                availableDevices.find { it.first == address }?.second?.rssi ?: Int.MIN_VALUE
+//            }
+//
+//            val strongestAvailableDevice = availableDevices.first()
+//
+//            if (weakestConnectedDevice != null) {
+//                val weakestRssi = availableDevices.find { it.first == weakestConnectedDevice }?.second?.rssi ?: Int.MIN_VALUE
+//                if (strongestAvailableDevice.second.rssi > weakestRssi) {
+//                    Timber.d("Switching connection from $weakestConnectedDevice to ${strongestAvailableDevice.first} due to better signal")
+//                    connectedDevices.remove(weakestConnectedDevice)
+//                    strongestAvailableDevice.second.device.let { device ->
+//                        ConnectionManager.connect(device, appContext)
+//                        connectedDevices.add(strongestAvailableDevice.first)
+//                    }
+//                }
+//            }
+//        }
+    }
 
     @SuppressLint("MissingPermission")
     fun startScanning(
@@ -151,6 +205,9 @@ class BluetoothWorkerClass private constructor() {
         scanPeriod = period
         scanInterval = interval
 
+        // Start connection maintenance
+        connectionCheckHandler.post(connectionCheckRunnable)
+        
         startScanCycle()
     }
 
@@ -159,10 +216,12 @@ class BluetoothWorkerClass private constructor() {
         if (!isScanning || !::bluetoothAdapter.isInitialized) return
 
         handler.removeCallbacks(scanRunnable)
+        connectionCheckHandler.removeCallbacks(connectionCheckRunnable)
         bleScanner.stopScan(bleScanCallback)
         isScanning = false
         continuousScanning = false
-        Timber.d("Stopped BLE scan")
+        connectedDevices.clear()
+        Timber.d("Stopped BLE scan and connection maintenance")
     }
 
     fun isScanning(): Boolean = isScanning
@@ -187,12 +246,9 @@ class BluetoothWorkerClass private constructor() {
 
             // Sort results by RSSI
             scanResults.sortByDescending { it.rssi }
-            for (address in beaconProjects) {
-                if (caughtInScan(address.key) != null) {
-                    caughtInScan(address.key)?.let { ConnectionManager.connect(it.device, PointGraphActivity()) }
-
-                }
-            }
+            
+            // Check and maintain connections
+            checkAndMaintainConnections()
 
             // Notify callback on main thread
             handler.post {

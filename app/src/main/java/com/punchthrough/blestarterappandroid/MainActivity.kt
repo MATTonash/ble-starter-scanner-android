@@ -32,6 +32,7 @@ private const val PERMISSION_REQUEST_CODE = 1
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
+    // private val connectionManager = ConnectionManager
     private var isScanning = false
         set(value) {
             field = value
@@ -247,11 +248,11 @@ class MainActivity : AppCompatActivity() {
 
     // multiple beacons: TRILATERATION
     private fun launchPointGraphActivity(list: List<String>) {
-        val intent = Intent(this, PointGraphActivity::class.java).apply {
-            putExtra("TARGET_DEVICE_ADDRESS_1", list[0])
-            putExtra("TARGET_DEVICE_ADDRESS_2", list[1])
-            putExtra("TARGET_DEVICE_ADDRESS_3", list[2])
-        }
+//        val intent = Intent(this, PointGraphActivity::class.java).apply {
+//            putExtra("TARGET_DEVICE_ADDRESS_1", list[0])
+//            putExtra("TARGET_DEVICE_ADDRESS_2", list[1])
+//            putExtra("TARGET_DEVICE_ADDRESS_3", list[2])
+//        }
         startActivity(intent)
     }
 

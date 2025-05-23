@@ -9,7 +9,6 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
-import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import kotlin.math.pow
 
 class PointGraphActivity : AppCompatActivity() {
@@ -73,8 +72,8 @@ class PointGraphActivity : AppCompatActivity() {
         lineChart.xAxis.apply {
             position = XAxis.XAxisPosition.BOTTOM
             textColor = Color.BLACK
-//            axisMaximum = 2f
-//            axisMinimum = -2f
+            axisMaximum = 2f
+            axisMinimum = -2f
             setDrawGridLines(true)
             setDrawAxisLine(true)
         }
@@ -83,8 +82,8 @@ class PointGraphActivity : AppCompatActivity() {
         lineChart.axisLeft.apply {
             textColor = Color.BLACK
             setDrawGridLines(true)
-//            axisMaximum = 2f
-//            axisMinimum = -2f
+            axisMaximum = 2f
+            axisMinimum = -2f
             setDrawAxisLine(true)
         }
 
@@ -132,21 +131,21 @@ class PointGraphActivity : AppCompatActivity() {
         val x3 = 0f
         val y3 = 1f
         val rFloatList = ArrayList<Float>()
-        // Check if we've established connection (logic in workerclass 178)
-        for (bluetoothDevice in ConnectionManager.deviceGattMap.keys()) {
-            for (result in results) {
-                if (result.device == bluetoothDevice) {
-                    radii[bluetoothDevice.address] = result.rssi.toFloat()
-                    rFloatList.add(result.rssi.toFloat())
-                }
-            }
+//        // Check if we've established connection (logic in workerclass 178)
+//        for (bluetoothDevice in ConnectionManager.deviceGattMap.keys()) {
+//            for (result in results) {
+//                if (result.device == bluetoothDevice) {
+//                    radii[bluetoothDevice.address] = result.rssi.toFloat()
+//                    rFloatList.add(result.rssi.toFloat())
+//                }
+//            }
+//
+//        }
 
-        }
         if (rFloatList.size < 3) {
             return
         }
         trilaterate(x1, y1, rFloatList[0], x2, y2,rFloatList[1], x3, y3,rFloatList[2])
-
 
 //        results.find { it.device.address == targetDeviceAddress }?.let { result ->
 //            // Add new data point
@@ -185,6 +184,17 @@ class PointGraphActivity : AppCompatActivity() {
 
         // dataPoints.clear()
         dataPoints.add(Entry(x,y))
+        if (x > lineChart.data.xMax) {
+            lineChart.xAxis.axisMaximum = x + 1f
+        } else if (x < lineChart.data.xMin) {
+            lineChart.xAxis.axisMaximum = x - 1f
+        }
+
+        if (y > lineChart.data.yMax) {
+            lineChart.axisLeft.axisMinimum = y + 1f
+        } else if (y < lineChart.data.yMin) {
+            lineChart.axisLeft.axisMinimum = y - 1f
+        }
         updateChartData()
     }
 
