@@ -9,7 +9,6 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
-import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import kotlin.math.pow
 
 class PointGraphActivity : AppCompatActivity() {
@@ -73,8 +72,8 @@ class PointGraphActivity : AppCompatActivity() {
         lineChart.xAxis.apply {
             position = XAxis.XAxisPosition.BOTTOM
             textColor = Color.BLACK
-//            axisMaximum = 2f
-//            axisMinimum = -2f
+            axisMaximum = 2f
+            axisMinimum = -2f
             setDrawGridLines(true)
             setDrawAxisLine(true)
         }
@@ -83,8 +82,8 @@ class PointGraphActivity : AppCompatActivity() {
         lineChart.axisLeft.apply {
             textColor = Color.BLACK
             setDrawGridLines(true)
-//            axisMaximum = 2f
-//            axisMinimum = -2f
+            axisMaximum = 2f
+            axisMinimum = -2f
             setDrawAxisLine(true)
         }
 
@@ -107,7 +106,7 @@ class PointGraphActivity : AppCompatActivity() {
         }
 
         lineChart.data = LineData(dataSet)
-        // lineChart.invalidate() // Refresh chart
+        lineChart.invalidate() // Refresh chart
     }
 
     private fun startRssiTracking() {
@@ -133,14 +132,27 @@ class PointGraphActivity : AppCompatActivity() {
         val y3 = 1f
         val rFloatList = ArrayList<Float>()
         // Check if we've established connection (logic in workerclass 178)
-        for (bluetoothDevice in ConnectionManager.deviceGattMap.keys()) {
-            for (result in results) {
-                if (result.device == bluetoothDevice) {
-                    radii[bluetoothDevice.address] = result.rssi.toFloat()
-                    rFloatList.add(result.rssi.toFloat())
-                }
-            }
+//        for (bluetoothDevice in ConnectionManager.deviceGattMap.keys()) {
+//            for (result in results) {
+//                if (result.device == bluetoothDevice) {
+//                    radii[bluetoothDevice.address] = result.rssi.toFloat()
+//                    rFloatList.add(result.rssi.toFloat())
+//                }
+//            }
+//        }
 
+//        for (scanResult in bluetoothWorker.getCurrentResults()) {
+//            for (result in results) {
+//                if (result == scanResult) {
+//                    radii[scanResult.device.address] = result.rssi.toFloat()
+//                    rFloatList.add(result.rssi.toFloat())
+//                }
+//            }
+//        }
+
+        for (scanResult in results) {
+            radii[scanResult.device.address] = scanResult.rssi.toFloat()
+            rFloatList.add(scanResult.rssi.toFloat())
         }
         if (rFloatList.size < 3) {
             return
@@ -183,8 +195,17 @@ class PointGraphActivity : AppCompatActivity() {
         val x = (C * E - F * B) / (E * A - B * D)
         val y = (C * D - A * F) / (B * D - A * E)
 
-        // dataPoints.clear()
         dataPoints.add(Entry(x,y))
+
+        if (dataPoints.size > 60) {
+                dataPoints.removeAt(0)
+                // Shift x-values
+                dataPoints.forEachIndexed { index, entry ->
+                    dataPoints[index] = Entry(index.toFloat(), entry.y)
+                }
+            }
+        // dataPoints.clear()
+
         updateChartData()
     }
 

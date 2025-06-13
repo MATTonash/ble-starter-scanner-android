@@ -205,4 +205,13 @@ class BluetoothWorkerClass private constructor() {
             isScanning = false
         }
     }
+
+    fun getDeviceFromAddress(address : String) : ScanResult? {
+        for (device in getCurrentResults()) {
+            if (device.device.address == address) {
+                return device
+            }
+        }
+        return null
+    }
 }
