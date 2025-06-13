@@ -72,8 +72,8 @@ class PointGraphActivity : AppCompatActivity() {
         lineChart.xAxis.apply {
             position = XAxis.XAxisPosition.BOTTOM
             textColor = Color.BLACK
-            axisMaximum = 2f
-            axisMinimum = -2f
+            axisMaximum = 300f  // Increased range
+            axisMinimum = -300f // Increased range
             setDrawGridLines(true)
             setDrawAxisLine(true)
         }
@@ -82,8 +82,8 @@ class PointGraphActivity : AppCompatActivity() {
         lineChart.axisLeft.apply {
             textColor = Color.BLACK
             setDrawGridLines(true)
-            axisMaximum = 2f
-            axisMinimum = -2f
+            axisMaximum = 300f  // Increased range
+            axisMinimum = -300f // Increased range
             setDrawAxisLine(true)
         }
 
@@ -152,7 +152,7 @@ class PointGraphActivity : AppCompatActivity() {
 
         for (scanResult in results) {
             radii[scanResult.device.address] = scanResult.rssi.toFloat()
-            rFloatList.add(scanResult.rssi.toFloat())
+            rFloatList.add(bluetoothWorker.rssiToDistance(scanResult.rssi).toFloat())
         }
         if (rFloatList.size < 3) {
             return
@@ -195,17 +195,15 @@ class PointGraphActivity : AppCompatActivity() {
         val x = (C * E - F * B) / (E * A - B * D)
         val y = (C * D - A * F) / (B * D - A * E)
 
-        dataPoints.add(Entry(x,y))
+        // Add new point
+        dataPoints.add(Entry(x, y))
 
-        if (dataPoints.size > 60) {
-                dataPoints.removeAt(0)
-                // Shift x-values
-                dataPoints.forEachIndexed { index, entry ->
-                    dataPoints[index] = Entry(index.toFloat(), entry.y)
-                }
-            }
-        // dataPoints.clear()
+        // Keep only last 30 points for better visualization
+        if (dataPoints.size > 5) {
+            dataPoints.removeAt(0)
+        }
 
+        // Update chart
         updateChartData()
     }
 
