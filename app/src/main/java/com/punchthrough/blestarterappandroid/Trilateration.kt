@@ -3,8 +3,6 @@ package com.punchthrough.blestarterappandroid
 import androidx.appcompat.app.AppCompatActivity
 import kotlin.math.pow
 
-import com.example.symlibrary.*;
-
 class Trilateration : AppCompatActivity() {
 
     fun trilaterate(x1: Float, y1: Float, r1: Float,
@@ -22,6 +20,8 @@ class Trilateration : AppCompatActivity() {
 
         return Pair(x, y)
     }
+
+
 
 
 
