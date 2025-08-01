@@ -18,12 +18,22 @@ class PointGraphActivity : AppCompatActivity() {
     private var timeCounter = 0f
     private lateinit var deviceAddress: String
     private lateinit var deviceName: String
+
     // Get the target device's RSSI
     // You might want to filter for a specific device address
 
 
     private val radii = mutableMapOf<String, Float>()
     var deviceAddressList = ArrayList<String>()
+
+    var beacon1 = doubleArrayOf(0.0, 0.0)
+    var beacon2 = doubleArrayOf(0.0, 1.0)
+    var beacon3 = doubleArrayOf(1.0, 0.0)
+
+    var beacon1dist: Double = 0.0
+    var beacon2dist: Double = 0.0
+    var beacon3dist: Double = 0.0
+    private var trilaterationFunction = TrilaterationFunction(beacon1, beacon2, beacon1dist, beacon2dist)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -124,13 +134,16 @@ class PointGraphActivity : AppCompatActivity() {
 
     private fun handleScanResults(results: List<ScanResult>) {
 
-        val x1 = 0f
-        val y1 = 0f
-        val x2 = 1f
-        val y2 = 0f
-        val x3 = 0f
-        val y3 = 1f
+
+
+//        val x1 = 0f
+//        val y1 = 0f
+//        val x2 = 1f
+//        val y2 = 0f
+//        val x3 = 0f
+//        val y3 = 1f
         val rFloatList = ArrayList<Float>()
+
 //        // Check if we've established connection (logic in workerclass 178)
 //        for (bluetoothDevice in ConnectionManager.deviceGattMap.keys()) {
 //            for (result in results) {
@@ -139,14 +152,23 @@ class PointGraphActivity : AppCompatActivity() {
 //                    rFloatList.add(result.rssi.toFloat())
 //                }
 //            }
-//
 //        }
 
-        if (rFloatList.size < 3) {
+        if (results.size < 3) {
             return
         }
-        trilaterate(x1, y1, rFloatList[0], x2, y2,rFloatList[1], x3, y3,rFloatList[2])
+        // trilaterate(x1, y1, rFloatList[0], x2, y2,rFloatList[1], x3, y3,rFloatList[2])
 
+        // TODO: TEST THIS IMPLEMENTATION
+        // Temp is we just grab 1st 2 scan results
+        // Next is to grab specific 2 then grab specific 3
+        trilaterationFunction.setBeacon1Dist(bluetoothWorker.rssiToDistance(results[0].rssi))
+        trilaterationFunction.setBeacon2Dist(bluetoothWorker.rssiToDistance(results[1].rssi))
+        var coordinates = trilaterationFunction.solve()
+        dataPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
+        updateChartData()
+
+        // Updates movement based on one beacon, for initial map testing
 //        results.find { it.device.address == targetDeviceAddress }?.let { result ->
 //            // Add new data point
 //            dataPoints.add(Entry(timeCounter,

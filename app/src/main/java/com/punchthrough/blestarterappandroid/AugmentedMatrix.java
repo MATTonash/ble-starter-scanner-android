@@ -1,6 +1,9 @@
 package com.punchthrough.blestarterappandroid;
 
 import java.util.Scanner;
+
+import symjava.matrix.SymMatrix;
+import symjava.symbolic.Expr;
 /*
  * Author: Sebastian Amara
  * Date: January 8, 2015
