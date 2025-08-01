@@ -26,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 class ScanResultAdapter(
     private var scanResults: List<ScanResult>,
+
     private val onClickListener: (device : ScanResult) -> Unit // Correctly reference the lambda here
 ) : RecyclerView.Adapter<ScanResultAdapter.ViewHolder>() {
 
@@ -126,6 +127,19 @@ class ScanResultAdapter(
         }
 
     }
+    private val beaconProjects = mapOf(
+        "80:EC:CC:CD:33:28" to "Losing Things (LT)",
+        "80:EC:CC:CD:33:7C" to "Happy Mornings (HM)",
+        "80:EC:CC:CD:33:7E" to "STEM",
+        "80:EC:CC:CD:33:58" to "Visual Clutter",
+        "EC:81:F6:64:F0:86" to "Vision",
+        "6C:B2:FD:35:01:6C" to "Tactile Display",
+        "E0:35:2F:E6:42:46" to "GUIDE 1",
+        "CB:31:FE:48:1B:CB" to "GUIDE 2",
+        "D8:F2:C8:9B:33:34" to "Switch",
+        "00:3C:84:28:87:01" to "MAP",
+        "00:3C:84:28:77:AB" to "Dance"
+    )
 
     fun updateList(newList: List<ScanResult>) {
         this.scanResults = newList

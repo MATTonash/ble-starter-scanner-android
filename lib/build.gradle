@@ -8,5 +8,4 @@ java {
 }
 
 dependencies {
-    implementation files('SymJava.jar')
 }
