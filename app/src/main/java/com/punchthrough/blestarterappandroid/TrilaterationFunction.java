@@ -16,22 +16,6 @@
 
 package com.punchthrough.blestarterappandroid;
 
-//import android.opengl.Matrix;
-//
-//import symjava.math.*;
-//import symjava.matrix.SymMatrix;
-//import symjava.matrix.SymVector;
-//import symjava.numeric.NumMatrix;
-//import symjava.relational.Eq;
-//import symjava.symbolic.Expr;
-//import symjava.symbolic.Symbol;
-//
-//import static symjava.symbolic.Symbol.a;
-//import static symjava.symbolic.Symbol.b;
-//import static symjava.symbolic.Symbol.d;
-//import static symjava.symbolic.Symbol.x;
-//import static symjava.symbolic.Symbol.y;
-
 public class TrilaterationFunction {
     // 2D trilateration just uses 2 functions
 //    Expr rearrangedCircleFormula = SymMath.sqrt(SymMath.pow(x.subtract(a), 2)
