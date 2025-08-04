@@ -116,13 +116,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun allowClickViewMapButton() : Boolean {
-        return topThreeDevices.size >= 3
-    }
+//    private fun allowClickViewMapButton() : Boolean {
+//        return scanResults.size >= 3
+//    }
     private fun setupViewMapButton() {
-        binding.viewMapButton.setEnabled(allowClickViewMapButton())
+        // binding.viewMapButton.setEnabled(allowClickViewMapButton())
         binding.viewMapButton.setOnClickListener {
-            launchPointGraphActivity(topThreeDevices)
+            launchPointGraphActivity()
         }
     }
 
@@ -180,8 +180,8 @@ class MainActivity : AppCompatActivity() {
                 handleScanResults(results)
             },
             continuous = true,
-            period = 5000L,    // Scan for 5 seconds
-            interval = 2000L   // Wait 2 seconds between scans
+            period = 1000L,    // Scan for 5 seconds
+            interval = 500L   // Wait 2 seconds between scans
         )
         isScanning = true
 
@@ -190,7 +190,7 @@ class MainActivity : AppCompatActivity() {
     private fun stopBleScan() {
         bluetoothWorker.stopScanning()
         isScanning = false
-        binding.viewMapButton.setEnabled(allowClickViewMapButton())
+
     }
 
     @SuppressLint("LogNotTimber")
@@ -208,19 +208,19 @@ class MainActivity : AppCompatActivity() {
 
             // Sort and update the display
             scanResults.sortByDescending { it.rssi }
-            if (topThreeDevices.size < 3) {
-                for (res in scanResults) {
-                    if (!topThreeDevices.contains(res.device.address)) {
-                        ConnectionManager.connect(res.device, this)
-                        topThreeDevices.add(res.device.address)
-                    }
-                    if (topThreeDevices.size >= 3) {
-                        binding.viewMapButton.setEnabled(allowClickViewMapButton())
-                        break
-                    }
-                }
-
-            }
+//            if (topThreeDevices.size < 3) {
+//                for (res in scanResults) {
+//                    if (!topThreeDevices.contains(res.device.address)) {
+//                        ConnectionManager.connect(res.device, this)
+//                        topThreeDevices.add(res.device.address)
+//                    }
+//                    if (topThreeDevices.size >= 3) {
+//                        binding.viewMapButton.setEnabled(allowClickViewMapButton())
+//                        break
+//                    }
+//                }
+//
+//            }
 
 
             scanResultAdapter.updateList(scanResults)
@@ -250,24 +250,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Only for when we were doing one beacon
-//    private fun launchPointGraphActivity(scanResult: ScanResult) {
-//        val intent = Intent(this, PointGraphActivity::class.java).apply {
-//            putExtra("TARGET_DEVICE_ADDRESS", scanResult.device.address)
-//            putExtra("DEVICE_NAME", scanResult.device.address ?: "Unknown Beacon")
-//            putExtra("INITIAL_RSSI", scanResult.rssi)
-//        }
+    // multiple beacons: TRILATERATION
+//    private fun launchPointGraphActivity(list: List<String>) {
+////        val intent = Intent(this, PointGraphActivity::class.java).apply {
+////            putExtra("TARGET_DEVICE_ADDRESS_1", list[0])
+////            putExtra("TARGET_DEVICE_ADDRESS_2", list[1])
+////            putExtra("TARGET_DEVICE_ADDRESS_3", list[2])
+////        }
 //        startActivity(intent)
 //    }
 
-    // multiple beacons: TRILATERATION
-    private fun launchPointGraphActivity(list: List<String>) {
-//        val intent = Intent(this, PointGraphActivity::class.java).apply {
-//            putExtra("TARGET_DEVICE_ADDRESS_1", list[0])
-//            putExtra("TARGET_DEVICE_ADDRESS_2", list[1])
-//            putExtra("TARGET_DEVICE_ADDRESS_3", list[2])
-//        }
-        startActivity(intent)
+    private fun launchPointGraphActivity() {
+        val pointGraphIntent = Intent(this, PointGraphActivity::class.java)
+        startActivity(pointGraphIntent)
     }
 
     override fun onRequestPermissionsResult(

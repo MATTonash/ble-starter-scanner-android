@@ -24,7 +24,7 @@ class BluetoothWorkerClass private constructor() {
     val connectedDevices = mutableSetOf<String>() // Track connected devices
     private val connectionCheckHandler = Handler(Looper.getMainLooper())
     private val connectionCheckInterval = 5000L // Check connections every 5 seconds
-    private val maxConnections = 3 // Maximum number of simultaneous connections
+    private val maxConnections = 30 // Maximum number of simultaneous connections
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -32,6 +32,20 @@ class BluetoothWorkerClass private constructor() {
         "EC:81:F6:64:F0:86",
         "E0:35:2F:E6:42:46",
         "EC:BF:B3:25:D5:6C")
+
+    private val beaconProjects = mapOf(
+        "80:EC:CC:CD:33:28" to "Losing Things (LT)",
+        "80:EC:CC:CD:33:7C" to "Happy Mornings (HM)",
+        "80:EC:CC:CD:33:7E" to "STEM",
+        "80:EC:CC:CD:33:58" to "Visual Clutter",
+        "EC:81:F6:64:F0:86" to "Vision",
+        "6C:B2:FD:35:01:6C" to "Tactile Display",
+        "E0:35:2F:E6:42:46" to "GUIDE 1",
+        "CB:31:FE:48:1B:CB" to "GUIDE 2",
+        "D8:F2:C8:9B:33:34" to "Switch",
+        "00:3C:84:28:87:01" to "MAP",
+        "00:3C:84:28:77:AB" to "Dance"
+    )
 
 
     // Makes sure this class is only instantiated once
@@ -135,15 +149,15 @@ class BluetoothWorkerClass private constructor() {
 
     private fun checkAndMaintainConnections() {
         // Get all available devices from trilateratingMacAddresses that are in range
-        val availableDevices = trilateratingMacAddresses.mapNotNull { address ->
-            caughtInScan(address)?.let { scanResult ->
+        val availableDevices = beaconProjects.mapNotNull { address ->
+            caughtInScan(address.key)?.let { scanResult ->
                 Pair(address, scanResult)
             }
         }.sortedByDescending { it.second.rssi } // Sort by RSSI (strongest first)
 
         // Handle devices that are no longer in range
         val devicesToRemove = connectedDevices.filter { address ->
-            !availableDevices.any { it.first == address }
+            !availableDevices.any { it.first.key == address }
         }
         devicesToRemove.forEach { address ->
             Timber.d("Device no longer in range: $address")
@@ -154,13 +168,13 @@ class BluetoothWorkerClass private constructor() {
         val availableSlots = maxConnections - connectedDevices.size
         if (availableSlots > 0) {
             availableDevices
-                .filter { it.first !in connectedDevices }
+                .filter { it.first.key !in connectedDevices }
                 .take(availableSlots)
                 .forEach { (address, scanResult) ->
                     Timber.d("Attempting to connect to device: $address (RSSI: ${scanResult.rssi})")
                     scanResult.device.let { device ->
                         ConnectionManager.connect(device, appContext)
-                        connectedDevices.add(address)
+                        connectedDevices.add(address.key)
                     }
                 }
         }
@@ -235,19 +249,7 @@ class BluetoothWorkerClass private constructor() {
         return 10.0.pow((calibrationRSSI - rssi)/(10*txPower))
     }
 
-    private val beaconProjects = mapOf(
-        "80:EC:CC:CD:33:28" to "Losing Things (LT)",
-        "80:EC:CC:CD:33:7C" to "Happy Mornings (HM)",
-        "80:EC:CC:CD:33:7E" to "STEM",
-        "80:EC:CC:CD:33:58" to "Visual Clutter",
-        "EC:81:F6:64:F0:86" to "Vision",
-        "6C:B2:FD:35:01:6C" to "Tactile Display",
-        "E0:35:2F:E6:42:46" to "GUIDE 1",
-        "CB:31:FE:48:1B:CB" to "GUIDE 2",
-        "D8:F2:C8:9B:33:34" to "Switch",
-        "00:3C:84:28:87:01" to "MAP",
-        "00:3C:84:28:77:AB" to "Dance"
-    )
+
     private val bleScanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             if (result.device.address in beaconProjects) {

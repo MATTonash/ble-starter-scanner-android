@@ -14,10 +14,7 @@ import kotlin.math.pow
 class PointGraphActivity : AppCompatActivity() {
     private lateinit var lineChart: LineChart
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
-    private val dataPoints = mutableListOf<Entry>()
-    private var timeCounter = 0f
-    private lateinit var deviceAddress: String
-    private lateinit var deviceName: String
+    private val dataPoints = ArrayList<Entry>()
 
     // Get the target device's RSSI
     // You might want to filter for a specific device address
@@ -36,10 +33,6 @@ class PointGraphActivity : AppCompatActivity() {
         "00:3C:84:28:77:AB" to "Dance"
     )
 
-
-    private val radii = mutableMapOf<String, Float>()
-    var deviceAddressList = ArrayList<String>()
-
     var beacon1 = doubleArrayOf(0.0, 0.0)
     var beacon2 = doubleArrayOf(0.0, 1.0)
     var beacon3 = doubleArrayOf(1.0, 0.0)
@@ -52,19 +45,6 @@ class PointGraphActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val targetDeviceAddress1 = intent.getStringExtra("TARGET_DEVICE_ADDRESS_1")
-        val targetDeviceAddress2 = intent.getStringExtra("TARGET_DEVICE_ADDRESS_2")
-        val targetDeviceAddress3 = intent.getStringExtra("TARGET_DEVICE_ADDRESS_3")
-        if (targetDeviceAddress1 != null) {
-            deviceAddressList.add(targetDeviceAddress1)
-        }
-        if (targetDeviceAddress2 != null) {
-            deviceAddressList.add(targetDeviceAddress2)
-        }
-        if (targetDeviceAddress3 != null) {
-            deviceAddressList.add(targetDeviceAddress3)
-        }
 
 
         setContentView(R.layout.activity_point_graph)
@@ -119,7 +99,7 @@ class PointGraphActivity : AppCompatActivity() {
     }
 
     private fun updateChartData() {
-        val dataSet = LineDataSet(dataPoints, "RSSI Values").apply {
+        val dataSet = LineDataSet(dataPoints, "User position").apply {
             color = Color.BLUE
             setCircleColor(Color.BLUE)
             setDrawCircles(true)
@@ -127,111 +107,63 @@ class PointGraphActivity : AppCompatActivity() {
             lineWidth = 2f
             circleRadius = 4f
             mode = LineDataSet.Mode.LINEAR
+            lineChart.setTouchEnabled(true)
+            lineChart.setPinchZoom(true)
         }
 
         lineChart.data = LineData(dataSet)
-        // lineChart.invalidate() // Refresh chart
+
+        lineChart.invalidate() // Refresh chart
     }
 
     private fun startRssiTracking() {
         bluetoothWorker.startScanning(
             callback = { results ->
-                handleScanResults(results)
+                if (results.size > 2) {
+                    handleScanResults(results)
+                }
             },
             continuous = true,
-            period = 2000L,    // Scan every second
-            interval = 500L    // Small interval between scans
+            period = 500L,    // Scan every second
+            interval = 50L    // Small interval between scans
         )
     }
 
 
 
-    private fun handleScanResults(results: List<ScanResult>) {
+    private fun handleScanResults(rawResults: List<ScanResult>) {
+        val results = rawResults.sortedByDescending { it.rssi }
 
-
-
-//        val x1 = 0f
-//        val y1 = 0f
-//        val x2 = 1f
-//        val y2 = 0f
-//        val x3 = 0f
-//        val y3 = 1f
-        val rFloatList = ArrayList<Float>()
-
-//        // Check if we've established connection (logic in workerclass 178)
-//        for (bluetoothDevice in ConnectionManager.deviceGattMap.keys()) {
-//            for (result in results) {
-//                if (result.device == bluetoothDevice) {
-//                    radii[bluetoothDevice.address] = result.rssi.toFloat()
-//                    rFloatList.add(result.rssi.toFloat())
-//                }
-//            }
-//        }
-
-        if (results.size < 3) {
-            return
+        if (results.size == 2) {
+            trilaterationFunction.setBeacon1Dist(bluetoothWorker.rssiToDistance(results[0].rssi))
+            trilaterationFunction.setBeacon2Dist(bluetoothWorker.rssiToDistance(results[1].rssi))
+            val coordinates = trilaterationFunction.solve()
+            dataPoints.clear()
+            dataPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
         }
-        // trilaterate(x1, y1, rFloatList[0], x2, y2,rFloatList[1], x3, y3,rFloatList[2])
 
-        // TODO: TEST THIS IMPLEMENTATION
-        // Temp is we just grab 1st 2 scan results
-        // Next is to grab specific 2 then grab specific 3
-        trilaterationFunction.setBeacon1Dist(bluetoothWorker.rssiToDistance(results[0].rssi))
-        trilaterationFunction.setBeacon2Dist(bluetoothWorker.rssiToDistance(results[1].rssi))
-        var coordinates = trilaterationFunction.solve()
-        dataPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
+
+        else {
+            val coordinates = trilaterate2D(beacon1, beacon2, beacon3, beacon1dist, beacon2dist, beacon3dist)
+            dataPoints.clear()
+            dataPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
+        }
+
         updateChartData()
-
-        // Updates movement based on one beacon, for initial map testing
-//        results.find { it.device.address == targetDeviceAddress }?.let { result ->
-//            // Add new data point
-//            dataPoints.add(Entry(timeCounter,
-//                bluetoothWorker.rssiToDistance(result.rssi.toFloat()).toFloat()
-//            ))
-//
-//            // Keep only last 60 seconds of data
-//            if (dataPoints.size > 60) {
-//                dataPoints.removeAt(0)
-//                // Shift x-values
-//                dataPoints.forEachIndexed { index, entry ->
-//                    dataPoints[index] = Entry(index.toFloat(), entry.y)
-//                }
-//            }
-//
-//            // Update counter
-//            timeCounter++
-//
-//            // Update chart
-//            updateChartData()
-//        }
     }
-    fun trilaterate(x1: Float, y1: Float, r1: Float,
-                    x2: Float, y2: Float, r2: Float,
-                    x3: Float, y3: Float, r3: Float){
-        val A = 2 * (x2 - x1)
-        val B = 2 * (y2 - y1)
-        val C = r1.pow(2) - r2.pow(2) - x1.pow(2) - y1.pow(2) + x2.pow(2) + y2.pow(2)
-        val D = 2 * (x3 - x2)
-        val E = 2 * (y3 - y2)
-        val F = r2.pow(2) - r3.pow(2) - x2.pow(2) - y2.pow(2) + x3.pow(2) + y3.pow(2)
+
+    private fun trilaterate2D(beacon1: DoubleArray, beacon2: DoubleArray, beacon3: DoubleArray, beacon1dist: Double, beacon2dist: Double, beacon3dist: Double): DoubleArray {
+        val A = 2 * (beacon2[0] - beacon1[0])
+        val B = 2 * (beacon2[1] - beacon1[1])
+        val C = beacon1dist.pow(2) - beacon2dist.pow(2) - beacon1[0].pow(2) - beacon1[1].pow(2) + beacon2[0].pow(2) + beacon2[1].pow(2)
+        val D = 2 * (beacon3[0] - beacon2[0])
+        val E = 2 * (beacon3[1] - beacon2[1])
+        val F = beacon2dist.pow(2) - beacon3dist.pow(2) - beacon2[0].pow(2) - beacon2[1].pow(2) + beacon3[0].pow(2) + beacon3[1].pow(2)
 
         val x = (C * E - F * B) / (E * A - B * D)
         val y = (C * D - A * F) / (B * D - A * E)
 
-        // dataPoints.clear()
-        dataPoints.add(Entry(x,y))
-        if (x > lineChart.data.xMax) {
-            lineChart.xAxis.axisMaximum = x + 1f
-        } else if (x < lineChart.data.xMin) {
-            lineChart.xAxis.axisMaximum = x - 1f
-        }
-
-        if (y > lineChart.data.yMax) {
-            lineChart.axisLeft.axisMinimum = y + 1f
-        } else if (y < lineChart.data.yMin) {
-            lineChart.axisLeft.axisMinimum = y - 1f
-        }
-        updateChartData()
+        return doubleArrayOf(x, y)
     }
 
     override fun onResume() {

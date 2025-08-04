@@ -21,22 +21,54 @@ public class TrilaterationFunction {
 //    Expr rearrangedCircleFormula = SymMath.sqrt(SymMath.pow(x.subtract(a), 2)
 //            .add(SymMath.pow(y.subtract(b), 2))).subtract(SymMath.pow(d,2));
 
-    int numEquations = 2;
-    int numColumns = 3;
+    int numEquations;
+    int numColumns;
     double precision = 1E-3;
-    double[][] fMatrix = new double[numEquations][1];
-    double[][] jacobianMatrix = new double[numEquations][numColumns];
+    double[][] fMatrix;
+    double[][] jacobianMatrix;
     double[] beacon1;
     double[] beacon2;
     double[] beacon3;
     double beacon1dist;
     double beacon2dist;
+    double beacon3dist;
+
+    TrilaterationFunction(double[] coordinates1, double dist1) {
+        this.beacon1 = coordinates1;
+        this.beacon2 = null;
+        this.beacon3 = null;
+        this.beacon1dist = dist1;
+        this.numEquations = 1;
+        this.numColumns = 2;
+        this.fMatrix = new double[numEquations][1];
+        this.jacobianMatrix = new double[numEquations][numColumns];
+    }
 
     TrilaterationFunction(double[] coordinates1, double[] coordinates2,  double dist1, double dist2) {
         this.beacon1 = coordinates1;
         this.beacon2 = coordinates2;
+        this.beacon3 = null;
         this.beacon1dist = dist1;
         this.beacon2dist = dist2;
+        this.numEquations = 2;
+        this.numColumns = 3;
+        this.fMatrix = new double[numEquations][1];
+        this.jacobianMatrix = new double[numEquations][numColumns];
+    }
+
+// For 3D!!!!!!!!!
+    // NOTE: ALL COORDINATES WILL NEED 3 VALUES [X,Y,Z]
+    TrilaterationFunction(double[] coordinates1, double[] coordinates2, double[] coordinates3, double dist1, double dist2, double dist3) {
+        this.beacon1 = coordinates1;
+        this.beacon2 = coordinates2;
+        this.beacon3 = coordinates3;
+        this.beacon1dist = dist1;
+        this.beacon2dist = dist2;
+        this.beacon3dist = dist3;
+        this.numEquations = 3;
+        this.numColumns = 4;
+        this.fMatrix = new double[numEquations][1];
+        this.jacobianMatrix = new double[numEquations][numColumns];
     }
 
     void setBeacon1Dist(double dist) {
@@ -47,72 +79,48 @@ public class TrilaterationFunction {
         this.beacon2dist = dist;
     }
 
+    void setBeacon3Dist(double dist) {
+        this.beacon3dist = dist;
+    }
+
     double[] solve() {
         double[] initial = {1,1};
-        double[] next = this.iterate(beacon1dist, beacon2dist, initial);
+        double[] next = this.iterate(initial);
         while (!this.calcError(initial, next)) {
             initial = next;
-            next = this.iterate(beacon1dist, beacon2dist, initial);
+            next = this.iterate(initial);
         }
         return next;
     }
 
-    double[] iterate(double dist1, double dist2, double[] initial) {
+    double[] iterate(double[] initial) {
 
-//        // Initial function matrix F(X)
-//        Expr f1 = rearrangedCircleFormula.subs(a, initial[0]);
-//        f1.subs(b, initial[1]);
-//        f1.subs(d, dist1);
-//
-//        Expr f2 = rearrangedCircleFormula.subs(a, initial[0]);
-//        f2.subs(b, initial[1]);
-//        f2.subs(d, dist2);
-//
-//        // jacobian matrix is partial diff
-//        SymMatrix jacobian = new SymMatrix();
-//        Expr diff1 = f1.diff(x);
-//        diff1.subs(x, initial[0]);
-//        diff1.subs(y, initial[1]);
-//        diff1.simplify();
-//        jacobian.set(0,0, diff1);
-//
-//        Expr diff2 = f1.diff(x);
-//        diff2.subs(x, initial[0]);
-//        diff2.subs(y, initial[1]);
-//        diff2.simplify();
-//        jacobian.set(0,1, diff2);
-//
-//        Expr diff3 = f1.diff(x);
-//        diff3.subs(x, initial[0]);
-//        diff3.subs(y, initial[1]);
-//        diff3.simplify();
-//        jacobian.set(1,0, diff3);
-//
-//        Expr diff4 = f1.diff(x);
-//        diff4.subs(x, initial[0]);
-//        diff4.subs(y, initial[1]);
-//        diff4.simplify();
-//        jacobian.set(1,1, diff4);
-//
-//        f1.subs(x, initial[0]);
-//        f2.subs(x, initial[0]);
-//        f1.subs(y, initial[1]);
-//        f2.subs(y, initial[1]);
-//        jacobian.set(0, 2, f1.multiply(-1));
-//        jacobian.set(1, 2, f2.multiply(-1));
-//
-//        NumMatrix numJacobian = new NumMatrix(jacobian, f1.args());
+        fMatrix[0][0] = (Math.pow((initial[0]-beacon1[0]), 2) + Math.pow((initial[1]-beacon1[1]), 2) - Math.pow(beacon1dist, 2));
+        if (beacon2 != null) {
+            fMatrix[1][0] = (Math.pow((initial[0]-beacon2[0]), 2) + Math.pow((initial[1]-beacon2[1]), 2) - Math.pow(beacon2dist, 2));
+        }
 
-        fMatrix[0][0] = (Math.pow((initial[0]-beacon1[0]), 2) + Math.pow((initial[1]-beacon1[1]), 2) - Math.pow(dist1, 2));
-        fMatrix[1][0] = (Math.pow((initial[0]-beacon2[0]), 2) + Math.pow((initial[1]-beacon2[1]), 2) - Math.pow(dist2, 2));
+        // for 3D
+        if (beacon3 != null) {
+            fMatrix[2][0] = (Math.pow((initial[0]-beacon3[0]), 2) + Math.pow((initial[1]-beacon3[1]), 2) - Math.pow(beacon3dist, 2));
+        }
 
         jacobianMatrix[0][0] = 2*(initial[0]-beacon1[0]);
         jacobianMatrix[0][1] = 2*(initial[1]-beacon1[1]);
         jacobianMatrix[0][2] = -1*fMatrix[0][0];
 
-        jacobianMatrix[1][0] = 2*(initial[0]-beacon2[0]);
-        jacobianMatrix[1][1] = 2*(initial[1]-beacon2[1]);
-        jacobianMatrix[1][2] = -1*fMatrix[1][0];
+        if (beacon2 != null) {
+            jacobianMatrix[1][0] = 2 * (initial[0] - beacon2[0]);
+            jacobianMatrix[1][1] = 2 * (initial[1] - beacon2[1]);
+            jacobianMatrix[1][2] = -1 * fMatrix[1][0];
+        }
+
+        // for 3D
+        if (beacon3 != null) {
+            jacobianMatrix[2][0] = 2*(initial[0]-beacon3[0]);
+            jacobianMatrix[2][1] = 2*(initial[1]-beacon3[1]);
+            jacobianMatrix[2][2] = -1*fMatrix[2][0];
+        }
 
         double[][] reducedMatrix = rowReduce(jacobianMatrix);
 
