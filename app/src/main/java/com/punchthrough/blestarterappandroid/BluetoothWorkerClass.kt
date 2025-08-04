@@ -24,7 +24,7 @@ class BluetoothWorkerClass private constructor() {
     val connectedDevices = mutableSetOf<String>() // Track connected devices
     private val connectionCheckHandler = Handler(Looper.getMainLooper())
     private val connectionCheckInterval = 5000L // Check connections every 5 seconds
-    private val maxConnections = 3 // Maximum number of simultaneous connections
+    private val maxConnections = 30 // Maximum number of simultaneous connections
 
     private val handler = Handler(Looper.getMainLooper())
 
