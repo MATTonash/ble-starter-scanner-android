@@ -28,11 +28,6 @@ class BluetoothWorkerClass private constructor() {
 
     private val handler = Handler(Looper.getMainLooper())
 
-    private val trilateratingMacAddresses = listOf(
-        "EC:81:F6:64:F0:86",
-        "E0:35:2F:E6:42:46",
-        "EC:BF:B3:25:D5:6C")
-
     private val beaconProjects = mapOf(
         "80:EC:CC:CD:33:28" to "Losing Things (LT)",
         "80:EC:CC:CD:33:7C" to "Happy Mornings (HM)",
@@ -81,7 +76,7 @@ class BluetoothWorkerClass private constructor() {
     }
 
     private val scanSettings = ScanSettings.Builder()
-        .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER) // Changed to LOW_POWER mode
+        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // Changed to LOW_POWER mode
         .build()
 
     private val scanRunnable = object : Runnable {

@@ -180,8 +180,8 @@ class MainActivity : AppCompatActivity() {
                 handleScanResults(results)
             },
             continuous = true,
-            period = 1000L,    // Scan for 5 seconds
-            interval = 500L   // Wait 2 seconds between scans
+            period = 5000L,    // Scan for 5 seconds
+            interval = 2000L   // Wait 2 seconds between scans
         )
         isScanning = true
 
@@ -208,20 +208,6 @@ class MainActivity : AppCompatActivity() {
 
             // Sort and update the display
             scanResults.sortByDescending { it.rssi }
-//            if (topThreeDevices.size < 3) {
-//                for (res in scanResults) {
-//                    if (!topThreeDevices.contains(res.device.address)) {
-//                        ConnectionManager.connect(res.device, this)
-//                        topThreeDevices.add(res.device.address)
-//                    }
-//                    if (topThreeDevices.size >= 3) {
-//                        binding.viewMapButton.setEnabled(allowClickViewMapButton())
-//                        break
-//                    }
-//                }
-//
-//            }
-
 
             scanResultAdapter.updateList(scanResults)
         }
@@ -231,7 +217,7 @@ class MainActivity : AppCompatActivity() {
         if (!isToastShowing) {
             Toast.makeText(
                 this,
-                "Close to ${result.device.address ?: "Unknown Beacon"}",
+                "Close to ${beaconProjects[result.device.address] ?: "Unknown Beacon"}",
                 Toast.LENGTH_SHORT
             ).show()
             isToastShowing = true
