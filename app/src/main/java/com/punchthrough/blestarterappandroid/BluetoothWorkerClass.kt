@@ -39,7 +39,8 @@ class BluetoothWorkerClass private constructor() {
         "CB:31:FE:48:1B:CB" to "GUIDE 2",
         "D8:F2:C8:9B:33:34" to "Switch",
         "00:3C:84:28:87:01" to "MAP",
-        "00:3C:84:28:77:AB" to "Dance"
+        "00:3C:84:28:77:AB" to "Dance",
+        "F4:65:0B:40:5D:0E" to "Homemade Beacon"
     )
 
 
@@ -215,7 +216,7 @@ class BluetoothWorkerClass private constructor() {
         scanInterval = interval
 
         // Start connection maintenance
-        connectionCheckHandler.post(connectionCheckRunnable)
+        //connectionCheckHandler.post(connectionCheckRunnable)
         
         startScanCycle()
     }
@@ -225,7 +226,7 @@ class BluetoothWorkerClass private constructor() {
         if (!isScanning || !::bluetoothAdapter.isInitialized) return
 
         handler.removeCallbacks(scanRunnable)
-        connectionCheckHandler.removeCallbacks(connectionCheckRunnable)
+        //connectionCheckHandler.removeCallbacks(connectionCheckRunnable)
         bleScanner.stopScan(bleScanCallback)
         isScanning = false
         continuousScanning = false
@@ -261,7 +262,7 @@ class BluetoothWorkerClass private constructor() {
             scanResults.sortByDescending { it.rssi }
 
             // Check and maintain connections
-            checkAndMaintainConnections()
+            //checkAndMaintainConnections()
 
             // Notify callback on main thread
             handler.post {
