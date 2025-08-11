@@ -7,8 +7,10 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import androidx.annotation.RequiresApi
 import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import timber.log.Timber
 import kotlin.math.pow
@@ -236,12 +238,13 @@ class BluetoothWorkerClass private constructor() {
 
     fun getCurrentResults(): List<ScanResult> = scanResults.toList()
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun rssiToDistance(beacon:ScanResult): Double {
         // need to calibrate beacons
-        val calibrationRSSI = beaconProjects[beacon.device.address]?.toDouble()
+        val beaconData = beaconProjects[beacon.device.address]
         val txPower = beacon.txPower.toDouble()
-        if (calibrationRSSI != null) {
-            return 10.0.pow((calibrationRSSI - beacon.rssi)/(10*txPower))
+        if (beaconData != null) {
+            return beaconData.calculateDistance(beacon.rssi, txPower)
         }
         return 0.0
     }
