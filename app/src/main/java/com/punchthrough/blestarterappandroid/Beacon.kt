@@ -43,10 +43,6 @@ class Beacon(beaconName: String,
         return buzzerSensitivity
     }
 
-    public fun getBeaconName(): String{
-        return beaconName;
-    }
-
     public override fun toString(): String {
         return beaconName;
     }

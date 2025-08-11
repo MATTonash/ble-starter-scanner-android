@@ -95,7 +95,7 @@ class ScanResultAdapter(
         fun bind(result: ScanResult) {
             view.findViewById<TextView>(R.id.device_name).text =
                 if (view.context.hasRequiredBluetoothPermissions()) {
-                    beaconProjects[result.device.address]?.getBeaconName() ?: "Unknown Beacon"
+                    beaconProjects[result.device.address].toString() ?: "Unknown Beacon"
                 } else {
                     error("Missing required Bluetooth permissions")
                 }
