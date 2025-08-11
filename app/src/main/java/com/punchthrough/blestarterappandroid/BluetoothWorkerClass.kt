@@ -236,11 +236,14 @@ class BluetoothWorkerClass private constructor() {
 
     fun getCurrentResults(): List<ScanResult> = scanResults.toList()
 
-    fun rssiToDistance(rssi: Int): Double {
+    fun rssiToDistance(beacon:ScanResult): Double {
         // need to calibrate beacons
-        val calibrationRSSI = -68
+        val calibrationRSSI = beaconProjects[beacon.device.address]
         val txPower = 2.3
-        return 10.0.pow((calibrationRSSI - rssi)/(10*txPower))
+        if (calibrationRSSI != null) {
+            return 10.0.pow((calibrationRSSI - beacon.rssi)/(10*txPower))
+        }
+        return 0.0
     }
 
 
