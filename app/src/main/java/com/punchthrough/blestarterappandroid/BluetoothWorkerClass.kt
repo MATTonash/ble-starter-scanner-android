@@ -21,26 +21,26 @@ class BluetoothWorkerClass private constructor() {
     private lateinit var bleScanner: android.bluetooth.le.BluetoothLeScanner
     private var scanCallback: ((List<ScanResult>) -> Unit)? = null
     private lateinit var appContext: Context
-    val connectedDevices = mutableSetOf<String>() // Track connected devices
+    private val connectedDevices = mutableSetOf<String>() // Track connected devices
     private val connectionCheckHandler = Handler(Looper.getMainLooper())
     private val connectionCheckInterval = 5000L // Check connections every 5 seconds
     private val maxConnections = 30 // Maximum number of simultaneous connections
 
     private val handler = Handler(Looper.getMainLooper())
 
-    private val beaconProjects = mapOf(
-        "80:EC:CC:CD:33:28" to "Losing Things (LT)",
-        "80:EC:CC:CD:33:7C" to "Happy Mornings (HM)",
-        "80:EC:CC:CD:33:7E" to "STEM",
-        "80:EC:CC:CD:33:58" to "Visual Clutter",
-        "EC:81:F6:64:F0:86" to "Vision",
-        "6C:B2:FD:35:01:6C" to "Tactile Display",
-        "E0:35:2F:E6:42:46" to "GUIDE 1",
-        "CB:31:FE:48:1B:CB" to "GUIDE 2",
-        "D8:F2:C8:9B:33:34" to "Switch",
-        "00:3C:84:28:87:01" to "MAP",
-        "00:3C:84:28:77:AB" to "Dance",
-        "F4:65:0B:40:5D:0E" to "Homemade Beacon"
+    val beaconProjects = mapOf(
+        // Map to calibration rssi
+        "80:EC:CC:CD:33:28" to -50, // "Losing Things (LT)",
+        "80:EC:CC:CD:33:7C" to -50, //"Happy Mornings (HM)",
+        "80:EC:CC:CD:33:7E" to -50, // "STEM",
+        "80:EC:CC:CD:33:58" to -50, // "Visual Clutter",
+        "EC:81:F6:64:F0:86" to -55, // "Vision",
+        "6C:B2:FD:35:01:6C" to -55, // "Tactile Display",
+        "E0:35:2F:E6:42:46" to -55, // "GUIDE 1",
+        "CB:31:FE:48:1B:CB" to -55, // "GUIDE 2",
+        "D8:F2:C8:9B:33:34" to -55, // "Switch",
+        "00:3C:84:28:87:01" to -58, // "MAP",
+        "00:3C:84:28:77:AB" to -63, // "Dance"
     )
 
 
@@ -216,7 +216,7 @@ class BluetoothWorkerClass private constructor() {
         scanInterval = interval
 
         // Start connection maintenance
-        //connectionCheckHandler.post(connectionCheckRunnable)
+        connectionCheckHandler.post(connectionCheckRunnable)
         
         startScanCycle()
     }
@@ -226,7 +226,7 @@ class BluetoothWorkerClass private constructor() {
         if (!isScanning || !::bluetoothAdapter.isInitialized) return
 
         handler.removeCallbacks(scanRunnable)
-        //connectionCheckHandler.removeCallbacks(connectionCheckRunnable)
+        connectionCheckHandler.removeCallbacks(connectionCheckRunnable)
         bleScanner.stopScan(bleScanCallback)
         isScanning = false
         continuousScanning = false
@@ -238,11 +238,14 @@ class BluetoothWorkerClass private constructor() {
 
     fun getCurrentResults(): List<ScanResult> = scanResults.toList()
 
-    fun rssiToDistance(rssi: Int): Double {
+    fun rssiToDistance(beacon:ScanResult): Double {
         // need to calibrate beacons
-        val calibrationRSSI = -68
+        val calibrationRSSI = beaconProjects[beacon.device.address]
         val txPower = 2.3
-        return 10.0.pow((calibrationRSSI - rssi)/(10*txPower))
+        if (calibrationRSSI != null) {
+            return 10.0.pow((calibrationRSSI - beacon.rssi)/(10*txPower))
+        }
+        return 0.0
     }
 
 
@@ -262,7 +265,7 @@ class BluetoothWorkerClass private constructor() {
             scanResults.sortByDescending { it.rssi }
 
             // Check and maintain connections
-            //checkAndMaintainConnections()
+            checkAndMaintainConnections()
 
             // Notify callback on main thread
             handler.post {
