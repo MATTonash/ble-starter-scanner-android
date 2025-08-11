@@ -34,20 +34,7 @@ class MainActivity : AppCompatActivity() {
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
     // private val connectionManager = ConnectionManager
 
-    private val beaconProjects = mapOf(
-        "80:EC:CC:CD:33:28" to "Obstacle 1",
-        "80:EC:CC:CD:33:7C" to "Happy Mornings (HM)",
-        "80:EC:CC:CD:33:7E" to "Obstacle 2",
-        "80:EC:CC:CD:33:58" to "Obstacle 3",
-        "EC:81:F6:64:F0:86" to "Vision",
-        "6C:B2:FD:35:01:6C" to "Tactile Display",
-        "E0:35:2F:E6:42:46" to "GUIDE 1",
-        "CB:31:FE:48:1B:CB" to "GUIDE 2",
-        "D8:F2:C8:9B:33:34" to "Switch",
-        "00:3C:84:28:87:01" to "MAP",
-        "00:3C:84:28:77:AB" to "Dance",
-        "F4:65:0B:40:5D:0E" to "Homemade Beacon"
-    )
+    private val beaconProjects = bluetoothWorker.getBeaconProjects()
     private var isScanning = false
         set(value) {
             field = value

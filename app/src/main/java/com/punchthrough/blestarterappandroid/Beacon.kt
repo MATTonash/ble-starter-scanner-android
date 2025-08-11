@@ -20,16 +20,14 @@ import kotlin.math.pow
 
 class Beacon(beaconName: String,
              callibrationRSSI: Int,
-             txPower: Double,
              x: Double,
              y: Double) {
     private val beaconName = beaconName;
-    private val txPower = txPower
     private val callibrationRSSI = callibrationRSSI
     private val coordinates = arrayOf(x, y)
     private var buzzerSensitivity = 0;
 
-    public fun calculateDistance(rssi: Int): Double{
+    public fun calculateDistance(rssi: Int, txPower: Double): Double{
         return 10.0.pow((callibrationRSSI - rssi)/(10*txPower))
     }
 
@@ -43,5 +41,13 @@ class Beacon(beaconName: String,
 
     public fun getBuzzerSensitivity(): Int{
         return buzzerSensitivity
+    }
+
+    public fun getBeaconName(): String{
+        return beaconName;
+    }
+
+    public override fun toString(): String {
+        return beaconName;
     }
 }
