@@ -10,6 +10,7 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import kotlin.math.pow
+import kotlin.math.sqrt
 
 class PointGraphActivity : AppCompatActivity() {
     private lateinit var lineChart: LineChart
@@ -25,7 +26,7 @@ class PointGraphActivity : AppCompatActivity() {
 
     private val beaconProjects = mapOf(
         "80:EC:CC:CD:33:28" to "Losing Things (LT)",
-        "80:EC:CC:CD:33:7C" to beacon1, //"Happy Mornings (HM)",
+        "80:EC:CC:CD:33:7C" to "Happy Mornings (HM)",
         "80:EC:CC:CD:33:7E" to "STEM",
         "80:EC:CC:CD:33:58" to "Visual Clutter",
         "EC:81:F6:64:F0:86" to "Vision",
@@ -162,35 +163,35 @@ class PointGraphActivity : AppCompatActivity() {
     }
 
     private fun trilaterate2D(beacon1: DoubleArray, beacon2: DoubleArray, beacon3: DoubleArray, beacon1dist: Double, beacon2dist: Double, beacon3dist: Double): DoubleArray {
-        val A = 2 * (beacon2[0] - beacon1[0])
-        val B = 2 * (beacon2[1] - beacon1[1])
-        val C = beacon1dist.pow(2) - beacon2dist.pow(2) - beacon1[0].pow(2) - beacon1[1].pow(2) + beacon2[0].pow(2) + beacon2[1].pow(2)
-        val D = 2 * (beacon3[0] - beacon2[0])
-        val E = 2 * (beacon3[1] - beacon2[1])
-        val F = beacon2dist.pow(2) - beacon3dist.pow(2) - beacon2[0].pow(2) - beacon2[1].pow(2) + beacon3[0].pow(2) + beacon3[1].pow(2)
-
-        val x = (C * E - F * B) / (E * A - B * D)
-        val y = (C * D - A * F) / (B * D - A * E)
-
-        return doubleArrayOf(x, y)
-
-//        // The separation of beacons 1 and 2
-//        // Distance formula
-//        val u = sqrt((beacon1[0] - beacon2[0]).pow(2) + (beacon1[1] - beacon2[1]).pow(2))
+//        val A = 2 * (beacon2[0] - beacon1[0])
+//        val B = 2 * (beacon2[1] - beacon1[1])
+//        val C = beacon1dist.pow(2) - beacon2dist.pow(2) - beacon1[0].pow(2) - beacon1[1].pow(2) + beacon2[0].pow(2) + beacon2[1].pow(2)
+//        val D = 2 * (beacon3[0] - beacon2[0])
+//        val E = 2 * (beacon3[1] - beacon2[1])
+//        val F = beacon2dist.pow(2) - beacon3dist.pow(2) - beacon2[0].pow(2) - beacon2[1].pow(2) + beacon3[0].pow(2) + beacon3[1].pow(2)
 //
-//        val x = (beacon1dist.pow(2)-beacon2dist.pow(2) + u.pow(2))/(2*u)
-//        val negativeY = -sqrt(beacon1dist.pow(2) - x.pow(2))
-//        val positiveY = sqrt(beacon1dist.pow(2) - x.pow(2))
+//        val x = (C * E - F * B) / (E * A - B * D)
+//        val y = (C * D - A * F) / (B * D - A * E)
 //
-//        // See which potential y value is closest to the third beacon
-//        val negGap = sqrt((beacon3[0] - x).pow(2) + (beacon3[1] - negativeY).pow(2))
-//        val posGap = sqrt((beacon3[0] - x).pow(2) + (beacon3[1] - positiveY).pow(2))
-//        if (negGap <= posGap || posGap.isNaN()) {
-//            return doubleArrayOf(x, negativeY)
-//        } else if (negGap.isNaN()) {
-//            return doubleArrayOf(x, positiveY)
-//        }
-//        return doubleArrayOf(x, positiveY)
+//        return doubleArrayOf(x, y)
+
+        // The separation of beacons 1 and 2
+        // Distance formula
+        val u = sqrt((beacon1[0] - beacon2[0]).pow(2) + (beacon1[1] - beacon2[1]).pow(2))
+
+        val x = (beacon1dist.pow(2)-beacon2dist.pow(2) + u.pow(2))/(2*u)
+        val negativeY = -sqrt(beacon1dist.pow(2) - x.pow(2))
+        val positiveY = sqrt(beacon1dist.pow(2) - x.pow(2))
+
+        // See which potential y value is closest to the third beacon
+        val negGap = sqrt((beacon3[0] - x).pow(2) + (beacon3[1] - negativeY).pow(2))
+        val posGap = sqrt((beacon3[0] - x).pow(2) + (beacon3[1] - positiveY).pow(2))
+        if (negGap <= posGap || posGap.isNaN()) {
+            return doubleArrayOf(x, negativeY)
+        } else if (negGap.isNaN()) {
+            return doubleArrayOf(x, positiveY)
+        }
+        return doubleArrayOf(x, positiveY)
     }
 
     override fun onResume() {
