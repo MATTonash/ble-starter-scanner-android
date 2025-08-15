@@ -24,14 +24,14 @@ class Beacon(beaconName: String,
              y: Double) {
     private val beaconName = beaconName;
     private val callibrationRSSI = callibrationRSSI
-    private val coordinates = arrayOf(x, y)
+    private val coordinates = doubleArrayOf(x, y)
     private var buzzerSensitivity = 0;
 
     public fun calculateDistance(rssi: Int, txPower: Double): Double{
         return 10.0.pow((callibrationRSSI - rssi)/(10*txPower))
     }
 
-    public fun getCoordinates(): Array<Double>{
+    public fun getCoordinates(): DoubleArray{
         return coordinates
     }
 

@@ -10,38 +10,26 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import kotlin.math.pow
-import kotlin.math.sqrt
 
 class PointGraphActivity : AppCompatActivity() {
     private lateinit var lineChart: LineChart
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
     private val dataPoints = ArrayList<Entry>()
 
-    // Get the target device's RSSI
-    // You might want to filter for a specific device address
 
-    var beacon1 = doubleArrayOf(0.0, 0.0)
-    var beacon2 = doubleArrayOf(0.0, 0.5)
-    var beacon3 = doubleArrayOf(0.5, 0.0)
-
-    private val beaconProjects = mapOf(
-        "80:EC:CC:CD:33:28" to "Losing Things (LT)",
-        "80:EC:CC:CD:33:7C" to "Happy Mornings (HM)",
-        "80:EC:CC:CD:33:7E" to "STEM",
-        "80:EC:CC:CD:33:58" to "Visual Clutter",
-        "EC:81:F6:64:F0:86" to "Vision",
-        "6C:B2:FD:35:01:6C" to "Tactile Display",
-        "E0:35:2F:E6:42:46" to "GUIDE 1",
-        "CB:31:FE:48:1B:CB" to "GUIDE 2",
-        "D8:F2:C8:9B:33:34" to "Switch",
-        "00:3C:84:28:87:01" to beacon2, //"MAP",
-        "00:3C:84:28:77:AB" to beacon3 //"Dance"
-    )
+    private val beaconProjects = bluetoothWorker.getBeaconProjects()
+    private val beacons = beaconProjects.values.toList()
+    var beacon1 = beacons[0]
+    var beacon2 = beacons[1]
+    var beacon3 = beacons[2]
+    var beacon4 = beacons[3]
+    var beacon5 = beacons[4]
+    var beacon6 = beacons[5]
 
     var beacon1dist: Double = 0.0
     var beacon2dist: Double = 0.0
     var beacon3dist: Double = 0.0
-    private var trilaterationFunction = TrilaterationFunction(beacon1, beacon2, beacon1dist, beacon2dist)
+    private var trilaterationFunction = TrilaterationFunction(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon1dist, beacon2dist)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,19 +79,6 @@ class PointGraphActivity : AppCompatActivity() {
             setDrawAxisLine(true)
         }
 
-        lineChart.setTouchEnabled(true)
-        lineChart.setPinchZoom(true)
-
-
-
-        // Configure right Y axis
-        lineChart.axisRight.isEnabled = false
-
-        // Initialize empty data
-        updateChartData()
-    }
-
-    private fun updateChartData() {
         val dataSet = LineDataSet(dataPoints, "User position").apply {
             color = Color.BLUE
             setCircleColor(Color.BLUE)
@@ -114,7 +89,27 @@ class PointGraphActivity : AppCompatActivity() {
             mode = LineDataSet.Mode.LINEAR
         }
 
+        lineChart.setTouchEnabled(true)
+        lineChart.setPinchZoom(true)
+
+        dataPoints.add(Entry(beacon1.getCoordinates()[0].toFloat(), beacon1.getCoordinates()[1].toFloat()))
+        dataPoints.add(Entry(beacon2.getCoordinates()[0].toFloat(), beacon2.getCoordinates()[1].toFloat()))
+        dataPoints.add(Entry(beacon3.getCoordinates()[0].toFloat(), beacon3.getCoordinates()[1].toFloat()))
+        dataPoints.add(Entry(beacon4.getCoordinates()[0].toFloat(), beacon4.getCoordinates()[1].toFloat()))
+        dataPoints.add(Entry(beacon5.getCoordinates()[0].toFloat(), beacon5.getCoordinates()[1].toFloat()))
+        dataPoints.add(Entry(beacon6.getCoordinates()[0].toFloat(), beacon6.getCoordinates()[1].toFloat()))
+
         lineChart.data = LineData(dataSet)
+//
+//        // Configure right Y axis
+//        lineChart.axisRight.isEnabled = false
+
+        // Initialize data
+        updateChartData()
+    }
+
+    private fun updateChartData() {
+        lineChart.data.notifyDataChanged()
         lineChart.notifyDataSetChanged()
         lineChart.invalidate() // Refresh chart
     }
@@ -125,8 +120,8 @@ class PointGraphActivity : AppCompatActivity() {
                 handleScanResults(results)
             },
             continuous = true,
-            period = 1000L,    // Scan every second
-            interval = 100L    // Small interval between scans
+            period = 5000L,    // Scan every second
+            interval = 2000L    // Small interval between scans
         )
     }
 
@@ -140,22 +135,27 @@ class PointGraphActivity : AppCompatActivity() {
         }
 
         if (results.size == 2) {
-            beacon1dist = bluetoothWorker.rssiToDistance(results[0])
-            beacon2dist = bluetoothWorker.rssiToDistance(results[1])
-            trilaterationFunction.setBeacon1Dist(beacon1dist)
+            beacon1dist = (beaconProjects[results[0].device.address]?.calculateDistance(results[0].rssi, results[0].txPower.toDouble())
+                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double
+            beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())
+                ?: trilaterationFunction.setBeacon2Dist(beacon2dist )) as Double
             trilaterationFunction.setBeacon2Dist(beacon2dist)
             val coordinates = trilaterationFunction.solve()
-            dataPoints.clear()
+
+            dataPoints.removeLast()
             dataPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
         }
 
 
         else {
-            beacon1dist = bluetoothWorker.rssiToDistance(results[0])
-            beacon2dist = bluetoothWorker.rssiToDistance(results[1])
-            beacon3dist = bluetoothWorker.rssiToDistance(results[2])
-            val coordinates = trilaterate2D(beacon1, beacon2, beacon3, beacon1dist, beacon2dist, beacon3dist)
-            dataPoints.clear()
+            beacon1dist = (beaconProjects[results[0].device.address]?.calculateDistance(results[0].rssi, results[0].txPower.toDouble())
+                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double
+            beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())
+                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double
+            beacon3dist = (beaconProjects[results[2].device.address]?.calculateDistance(results[2].rssi, results[2].txPower.toDouble())
+                ?: trilaterationFunction.setBeacon1Dist(beacon3dist )) as Double
+            val coordinates = trilaterate2D(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon3.getCoordinates(), beacon1dist, beacon2dist, beacon3dist)
+            dataPoints.removeLast()
             dataPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
         }
 
@@ -163,35 +163,35 @@ class PointGraphActivity : AppCompatActivity() {
     }
 
     private fun trilaterate2D(beacon1: DoubleArray, beacon2: DoubleArray, beacon3: DoubleArray, beacon1dist: Double, beacon2dist: Double, beacon3dist: Double): DoubleArray {
-//        val A = 2 * (beacon2[0] - beacon1[0])
-//        val B = 2 * (beacon2[1] - beacon1[1])
-//        val C = beacon1dist.pow(2) - beacon2dist.pow(2) - beacon1[0].pow(2) - beacon1[1].pow(2) + beacon2[0].pow(2) + beacon2[1].pow(2)
-//        val D = 2 * (beacon3[0] - beacon2[0])
-//        val E = 2 * (beacon3[1] - beacon2[1])
-//        val F = beacon2dist.pow(2) - beacon3dist.pow(2) - beacon2[0].pow(2) - beacon2[1].pow(2) + beacon3[0].pow(2) + beacon3[1].pow(2)
+        val A = 2 * (beacon2[0] - beacon1[0])
+        val B = 2 * (beacon2[1] - beacon1[1])
+        val C = beacon1dist.pow(2) - beacon2dist.pow(2) - beacon1[0].pow(2) - beacon1[1].pow(2) + beacon2[0].pow(2) + beacon2[1].pow(2)
+        val D = 2 * (beacon3[0] - beacon2[0])
+        val E = 2 * (beacon3[1] - beacon2[1])
+        val F = beacon2dist.pow(2) - beacon3dist.pow(2) - beacon2[0].pow(2) - beacon2[1].pow(2) + beacon3[0].pow(2) + beacon3[1].pow(2)
+
+        val x = (C * E - F * B) / (E * A - B * D)
+        val y = (C * D - A * F) / (B * D - A * E)
+
+        return doubleArrayOf(x, y)
+
+//        // The separation of beacons 1 and 2
+//        // Distance formula
+//        val u = sqrt((beacon1[0] - beacon2[0]).pow(2) + (beacon1[1] - beacon2[1]).pow(2))
 //
-//        val x = (C * E - F * B) / (E * A - B * D)
-//        val y = (C * D - A * F) / (B * D - A * E)
+//        val x = (beacon1dist.pow(2)-beacon2dist.pow(2) + u.pow(2))/(2*u)
+//        val negativeY = -sqrt(beacon1dist.pow(2) - x.pow(2))
+//        val positiveY = sqrt(beacon1dist.pow(2) - x.pow(2))
 //
-//        return doubleArrayOf(x, y)
-
-        // The separation of beacons 1 and 2
-        // Distance formula
-        val u = sqrt((beacon1[0] - beacon2[0]).pow(2) + (beacon1[1] - beacon2[1]).pow(2))
-
-        val x = (beacon1dist.pow(2)-beacon2dist.pow(2) + u.pow(2))/(2*u)
-        val negativeY = -sqrt(beacon1dist.pow(2) - x.pow(2))
-        val positiveY = sqrt(beacon1dist.pow(2) - x.pow(2))
-
-        // See which potential y value is closest to the third beacon
-        val negGap = sqrt((beacon3[0] - x).pow(2) + (beacon3[1] - negativeY).pow(2))
-        val posGap = sqrt((beacon3[0] - x).pow(2) + (beacon3[1] - positiveY).pow(2))
-        if (negGap <= posGap || posGap.isNaN()) {
-            return doubleArrayOf(x, negativeY)
-        } else if (negGap.isNaN()) {
-            return doubleArrayOf(x, positiveY)
-        }
-        return doubleArrayOf(x, positiveY)
+//        // See which potential y value is closest to the third beacon
+//        val negGap = sqrt((beacon3[0] - x).pow(2) + (beacon3[1] - negativeY).pow(2))
+//        val posGap = sqrt((beacon3[0] - x).pow(2) + (beacon3[1] - positiveY).pow(2))
+//        if (negGap <= posGap || posGap.isNaN()) {
+//            return doubleArrayOf(x, negativeY)
+//        } else if (negGap.isNaN()) {
+//            return doubleArrayOf(x, positiveY)
+//        }
+//        return doubleArrayOf(x, positiveY)
     }
 
     override fun onResume() {

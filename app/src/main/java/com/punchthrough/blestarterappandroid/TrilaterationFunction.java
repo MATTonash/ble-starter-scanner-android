@@ -83,6 +83,18 @@ public class TrilaterationFunction {
         this.beacon3dist = dist;
     }
 
+    void setBeacon1(double[] coordinates) {
+        this.beacon1 = coordinates;
+    }
+
+    void setBeacon2(double[] coordinates) {
+        this.beacon2 = coordinates;
+    }
+
+    void setBeacon3(double[] coordinates) {
+        this.beacon3 = coordinates;
+    }
+
     double[] solve() {
         double[] initial = {1,1};
         double[] next = this.iterate(initial);
