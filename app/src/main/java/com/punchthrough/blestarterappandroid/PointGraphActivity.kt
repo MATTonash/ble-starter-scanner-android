@@ -2,20 +2,24 @@ package com.punchthrough.blestarterappandroid
 
 import android.bluetooth.le.ScanResult
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.charts.ScatterChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.data.ScatterData
+import com.github.mikephil.charting.data.ScatterDataSet
+import com.github.mikephil.charting.interfaces.datasets.IScatterDataSet
 import kotlin.math.pow
 
 class PointGraphActivity : AppCompatActivity() {
-    private lateinit var lineChart: LineChart
+    // private lateinit var lineChart: LineChart
+    private lateinit var scatterChart: ScatterChart
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
-    private val dataPoints = ArrayList<Entry>()
-
+    private var userPoints = ArrayList<Entry>()
+    private var locationDataSet = ScatterDataSet(userPoints,"User position")
 
     private val beaconProjects = bluetoothWorker.getBeaconProjects()
     private val beacons = beaconProjects.values.toList()
@@ -25,13 +29,17 @@ class PointGraphActivity : AppCompatActivity() {
     var beacon4 = beacons[3]
     var beacon5 = beacons[4]
     var beacon6 = beacons[5]
+    private var beaconLocations = ArrayList<Entry>()
+    private var beaconsDataSet = ScatterDataSet(beaconLocations, "Beacons")
 
     var beacon1dist: Double = 0.0
     var beacon2dist: Double = 0.0
     var beacon3dist: Double = 0.0
     private var trilaterationFunction = TrilaterationFunction(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon1dist, beacon2dist)
 
+    private var scatterDataSets = ArrayList<IScatterDataSet>()
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -48,87 +56,96 @@ class PointGraphActivity : AppCompatActivity() {
     }
 
     private fun setupChart() {
-        lineChart = findViewById(R.id.lineChart)
+        scatterChart = findViewById(R.id.scatterChart)
 
-        // Configure chart appearance
-        lineChart.apply {
-            description.isEnabled = false
-            setTouchEnabled(true)
-            isDragEnabled = true
-            setScaleEnabled(true)
-            setPinchZoom(true)
-            setBackgroundColor(Color.WHITE)
-        }
+        title = "User location"
 
-        // Configure X axis
-        lineChart.xAxis.apply {
-            position = XAxis.XAxisPosition.BOTTOM
-            textColor = Color.BLACK
-            axisMaximum = 5f
-            axisMinimum = -5f
-            setDrawGridLines(true)
-            setDrawAxisLine(true)
-        }
+        val scatterData = ScatterData()
 
-        // Configure Y axis
-        lineChart.axisLeft.apply {
-            textColor = Color.BLACK
-            setDrawGridLines(true)
-            axisMaximum = 5f
-            axisMinimum = -5f
-            setDrawAxisLine(true)
-        }
+        // Add the data sets to the chart data
+        scatterData.addDataSet(beaconsDataSet)
+        scatterData.addDataSet(locationDataSet)
 
-        val dataSet = LineDataSet(dataPoints, "User position").apply {
-            color = Color.BLUE
-            setCircleColor(Color.BLUE)
-            setDrawCircles(true)
-            setDrawValues(false)
-            lineWidth = 2f
-            circleRadius = 4f
-            mode = LineDataSet.Mode.LINEAR
-        }
+        // Set the data to the chart
+        scatterChart.data = scatterData
 
-        lineChart.setTouchEnabled(true)
-        lineChart.setPinchZoom(true)
+        scatterChart.isDragEnabled = true
+        scatterChart.setPinchZoom(true)
+        scatterChart.setBackgroundColor(Color.WHITE)
+        val xAxis = scatterChart.xAxis
+        xAxis.position = XAxis.XAxisPosition.BOTTOM
+        xAxis.textColor = Color.BLACK
+        xAxis.setDrawGridLines(true)
+        xAxis.axisMinimum = -4f
+        xAxis.axisMaximum = 4f
 
-        dataPoints.add(Entry(beacon1.getCoordinates()[0].toFloat(), beacon1.getCoordinates()[1].toFloat()))
-        dataPoints.add(Entry(beacon2.getCoordinates()[0].toFloat(), beacon2.getCoordinates()[1].toFloat()))
-        dataPoints.add(Entry(beacon3.getCoordinates()[0].toFloat(), beacon3.getCoordinates()[1].toFloat()))
-        dataPoints.add(Entry(beacon4.getCoordinates()[0].toFloat(), beacon4.getCoordinates()[1].toFloat()))
-        dataPoints.add(Entry(beacon5.getCoordinates()[0].toFloat(), beacon5.getCoordinates()[1].toFloat()))
-        dataPoints.add(Entry(beacon6.getCoordinates()[0].toFloat(), beacon6.getCoordinates()[1].toFloat()))
+        val yAxisL = scatterChart.axisLeft
+        yAxisL.textColor = Color.BLACK
+        yAxisL.setDrawGridLines(true)
+        yAxisL.axisMinimum = -4f
+        yAxisL.axisMaximum = 4f
 
-        lineChart.data = LineData(dataSet)
-//
-//        // Configure right Y axis
-//        lineChart.axisRight.isEnabled = false
+        val yAxisR = scatterChart.axisRight
+        yAxisR.isEnabled = false
 
-        // Initialize data
+        locationDataSet.setScatterShape(ScatterChart.ScatterShape.TRIANGLE)
+        locationDataSet.setColor(Color.BLUE)
+        locationDataSet.setDrawValues(true)
+
+        beaconsDataSet.setScatterShape(ScatterChart.ScatterShape.CIRCLE)
+        beaconsDataSet.setColor(Color.BLACK)
+        beaconsDataSet.setDrawValues(false)
+
+        beaconLocations.add(Entry(beacon1.getCoordinates()[0].toFloat(), beacon1.getCoordinates()[1].toFloat()))
+        beaconLocations.add(Entry(beacon2.getCoordinates()[0].toFloat(), beacon2.getCoordinates()[1].toFloat()))
+        beaconLocations.add(Entry(beacon3.getCoordinates()[0].toFloat(), beacon3.getCoordinates()[1].toFloat()))
+        beaconLocations.add(Entry(beacon4.getCoordinates()[0].toFloat(), beacon4.getCoordinates()[1].toFloat()))
+        beaconLocations.add(Entry(beacon5.getCoordinates()[0].toFloat(), beacon5.getCoordinates()[1].toFloat()))
+        beaconLocations.add(Entry(beacon6.getCoordinates()[0].toFloat(), beacon6.getCoordinates()[1].toFloat()))
+
+        beaconsDataSet.notifyDataSetChanged()
+
+        // Initial chart update
         updateChartData()
     }
 
     private fun updateChartData() {
-        lineChart.data.notifyDataChanged()
-        lineChart.notifyDataSetChanged()
-        lineChart.invalidate() // Refresh chart
+
+        // Notify the data set that it has changed
+        locationDataSet.notifyDataSetChanged()
+
+        val scatterData = scatterChart.scatterData
+        scatterData.removeDataSet(1)
+        scatterData.addDataSet(locationDataSet)
+
+        scatterChart.data = scatterData
+
+        // Notify the chart that data has changed
+        scatterChart.data.notifyDataChanged()
+        scatterChart.notifyDataSetChanged()
+
+        // Force the chart to redraw
+        scatterChart.invalidate()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun startRssiTracking() {
         bluetoothWorker.startScanning(
             callback = { results ->
                 handleScanResults(results)
             },
             continuous = true,
-            period = 5000L,    // Scan every second
-            interval = 2000L    // Small interval between scans
+            period = 1000L,    // Scan every second
+            interval = 200L    // Small interval between scans
         )
     }
 
 
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun handleScanResults(rawResults: List<ScanResult>) {
         val results = rawResults.sortedByDescending { it.rssi }
+        var coordinates = doubleArrayOf(0.0, 0.0)
 
         if (results.size < 2) {
             return
@@ -140,23 +157,25 @@ class PointGraphActivity : AppCompatActivity() {
             beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())
                 ?: trilaterationFunction.setBeacon2Dist(beacon2dist )) as Double
             trilaterationFunction.setBeacon2Dist(beacon2dist)
-            val coordinates = trilaterationFunction.solve()
+            coordinates = trilaterationFunction.solve()
 
-            dataPoints.removeLast()
-            dataPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
+            userPoints.clear()
+            userPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
         }
 
 
         else {
+            // or use trilaterateFunction and omit 3rd dimension from map
             beacon1dist = (beaconProjects[results[0].device.address]?.calculateDistance(results[0].rssi, results[0].txPower.toDouble())
                 ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double
             beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())
                 ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double
             beacon3dist = (beaconProjects[results[2].device.address]?.calculateDistance(results[2].rssi, results[2].txPower.toDouble())
                 ?: trilaterationFunction.setBeacon1Dist(beacon3dist )) as Double
-            val coordinates = trilaterate2D(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon3.getCoordinates(), beacon1dist, beacon2dist, beacon3dist)
-            dataPoints.removeLast()
-            dataPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
+            coordinates = trilaterate2D(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon3.getCoordinates(), beacon1dist, beacon2dist, beacon3dist)
+
+            userPoints.clear()
+            userPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
         }
 
         updateChartData()
@@ -192,8 +211,11 @@ class PointGraphActivity : AppCompatActivity() {
 //            return doubleArrayOf(x, positiveY)
 //        }
 //        return doubleArrayOf(x, positiveY)
+
+        // another way (stackexchange)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onResume() {
         super.onResume()
         startRssiTracking()
