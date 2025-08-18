@@ -23,7 +23,7 @@ public class TrilaterationFunction {
 
     int numEquations;
     int numColumns;
-    double precision = 1E-3;
+    double precision = 0.01;
     double[][] fMatrix;
     double[][] jacobianMatrix;
     double[] beacon1;

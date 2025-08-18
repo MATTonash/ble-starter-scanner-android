@@ -63,7 +63,7 @@ class PointGraphActivity : AppCompatActivity() {
         val scatterData = ScatterData()
 
         // Add the data sets to the chart data
-        scatterData.addDataSet(beaconsDataSet)
+        // scatterData.addDataSet(beaconsDataSet)
         scatterData.addDataSet(locationDataSet)
 
         // Set the data to the chart
@@ -71,6 +71,8 @@ class PointGraphActivity : AppCompatActivity() {
 
         scatterChart.isDragEnabled = true
         scatterChart.setPinchZoom(true)
+        scatterChart.setScaleEnabled(true)
+
         scatterChart.setBackgroundColor(Color.WHITE)
         val xAxis = scatterChart.xAxis
         xAxis.position = XAxis.XAxisPosition.BOTTOM
@@ -110,12 +112,16 @@ class PointGraphActivity : AppCompatActivity() {
     }
 
     private fun updateChartData() {
-
-        // Notify the data set that it has changed
-        locationDataSet.notifyDataSetChanged()
+        val locationDataSet = ScatterDataSet(userPoints, "User position").apply {
+            setScatterShape(ScatterChart.ScatterShape.TRIANGLE)
+            color = Color.BLUE
+            setDrawIcons(true)
+            setDrawValues(true)
+            scatterShapeSize = 20f
+        }
 
         val scatterData = scatterChart.scatterData
-        scatterData.removeDataSet(1)
+        scatterData.removeDataSet(0)
         scatterData.addDataSet(locationDataSet)
 
         scatterChart.data = scatterData
