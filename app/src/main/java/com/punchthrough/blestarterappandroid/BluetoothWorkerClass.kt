@@ -1,5 +1,6 @@
 package com.punchthrough.blestarterappandroid
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
@@ -7,8 +8,14 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import timber.log.Timber
 
@@ -35,6 +42,9 @@ class BluetoothWorkerClass private constructor() {
         "00:3C:84:28:87:01" to Beacon("MAP", -58, 1.0, 0.0),
         "00:3C:84:28:77:AB" to Beacon("Dance", -60, 1.00, 1.0),
     )
+
+    private lateinit var vibrator: Vibrator
+    private var isToastShowing = false
 
     public fun getBeaconProjects():Map<String, Beacon>{
         return beaconProjects;
@@ -71,6 +81,8 @@ class BluetoothWorkerClass private constructor() {
         val bluetoothManager = appContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
         bleScanner = bluetoothAdapter.bluetoothLeScanner
+
+        initializeVibrator()
     }
 
     private val scanSettings = ScanSettings.Builder()
@@ -135,7 +147,7 @@ class BluetoothWorkerClass private constructor() {
 
     private val connectionCheckRunnable = object : Runnable {
         override fun run() {
-            checkAndMaintainConnections()
+            //checkAndMaintainConnections()
             connectionCheckHandler.postDelayed(this, connectionCheckInterval)
         }
     }
@@ -223,10 +235,14 @@ class BluetoothWorkerClass private constructor() {
         if (!isScanning || !::bluetoothAdapter.isInitialized) return
 
         handler.removeCallbacks(scanRunnable)
-        //connectionCheckHandler.removeCallbacks(connectionCheckRunnable)
+        connectionCheckHandler.removeCallbacks(connectionCheckRunnable)
         bleScanner.stopScan(bleScanCallback)
         isScanning = false
         continuousScanning = false
+        //connectedDevices.forEach { address ->
+        //    val device = bluetoothAdapter.getRemoteDevice(address)
+        //    ConnectionManager.teardownConnection(device)
+        //}
         connectedDevices.clear()
         Timber.d("Stopped BLE scan and connection maintenance")
     }
@@ -261,8 +277,14 @@ class BluetoothWorkerClass private constructor() {
             // Sort results by RSSI
             scanResults.sortByDescending { it.rssi }
 
+            scanResults.forEach { result ->
+                if (result.rssi > -55) {
+                    handleNearbyDevice(result)
+                }
+            }
+
             // Check and maintain connections
-            checkAndMaintainConnections()
+            //checkAndMaintainConnections()
 
             // Notify callback on main thread
             handler.post {
@@ -273,6 +295,39 @@ class BluetoothWorkerClass private constructor() {
         override fun onScanFailed(errorCode: Int) {
             Timber.e("BLE Scan Failed with code $errorCode")
             isScanning = false
+        }
+    }
+
+    private fun initializeVibrator() {
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = appContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            appContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+    }
+
+    private fun handleNearbyDevice(result: ScanResult) {
+        if (!isToastShowing) {
+            Toast.makeText(
+                appContext,
+                "Close to ${beaconProjects[result.device.address] ?: "Unknown Beacon"}",
+                Toast.LENGTH_SHORT
+            ).show()
+            isToastShowing = true
+
+            Handler(Looper.getMainLooper()).postDelayed({
+                isToastShowing = false
+            }, Toast.LENGTH_SHORT.toLong())
+
+            if (ContextCompat.checkSelfPermission(
+                    appContext,
+                    Manifest.permission.VIBRATE
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                vibrator.vibrate(500)
+            }
         }
     }
 }
