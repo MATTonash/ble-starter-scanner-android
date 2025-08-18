@@ -27,7 +27,7 @@ class BluetoothWorkerClass private constructor() {
     private lateinit var bleScanner: android.bluetooth.le.BluetoothLeScanner
     private var scanCallback: ((List<ScanResult>) -> Unit)? = null
     private lateinit var appContext: Context
-    val connectedDevices = mutableSetOf<String>() // Track connected devices
+    private val connectedDevices = mutableSetOf<String>() // Track connected devices
     private val connectionCheckHandler = Handler(Looper.getMainLooper())
     private val connectionCheckInterval = 5000L // Check connections every 5 seconds
     private val maxConnections = 30 // Maximum number of simultaneous connections
@@ -168,6 +168,7 @@ class BluetoothWorkerClass private constructor() {
             Timber.d("Device no longer in range: $address")
             connectedDevices.remove(address)
         }
+
 
         // Connect to new devices if we have capacity
         val availableSlots = maxConnections - connectedDevices.size

@@ -89,10 +89,6 @@ class MainActivity : AppCompatActivity() {
 
         setupViewMapButton()
 
-//        binding.viewMapButton.setOnClickListener {
-//            val intent = Intent(this, mapView::class.java)
-//            startActivity(intent)
-//        }
     }
 
     private fun setupScanButton() {
@@ -232,16 +228,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    // multiple beacons: TRILATERATION
-//    private fun launchPointGraphActivity(list: List<String>) {
-////        val intent = Intent(this, PointGraphActivity::class.java).apply {
-////            putExtra("TARGET_DEVICE_ADDRESS_1", list[0])
-////            putExtra("TARGET_DEVICE_ADDRESS_2", list[1])
-////            putExtra("TARGET_DEVICE_ADDRESS_3", list[2])
-////        }
-//        startActivity(intent)
-//    }
 
     private fun launchPointGraphActivity() {
         val pointGraphIntent = Intent(this, PointGraphActivity::class.java)
