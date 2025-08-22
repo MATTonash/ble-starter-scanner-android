@@ -64,7 +64,7 @@ class PointGraphActivity : AppCompatActivity() {
         setupChart()
 
         // Start scanning with custom parameters for graphing
-        startRssiTracking()
+        //startRssiTracking()
     }
 
     private fun setupChart() {
@@ -250,7 +250,7 @@ class PointGraphActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onResume() {
         super.onResume()
-        startRssiTracking()
+        //startRssiTracking()
     }
 
     override fun onPause() {

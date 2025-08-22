@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity() {
             }
             with(result.device) {
                 Timber.w("Connecting to $address")
-                ConnectionManager.connect(this, this@MainActivity)
+                //ConnectionManager.connect(this, this@MainActivity)
             }
         }
     }
@@ -73,6 +73,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        isScanning = false
 
         // Initialize BluetoothWorker
         bluetoothWorker.initialize(this)
@@ -81,9 +82,10 @@ class MainActivity : AppCompatActivity() {
         setupRecyclerView()
 
         setupScanButton()
-        initializeVibrator()
+        //initializeVibrator()
 
         // only setup viewmap button when 3 beacons collected
+
         setupViewMapButton()
 
     }
@@ -99,22 +101,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun allowClickViewMapButton() : Boolean {
+        return scanResults.size >= 3
+    }
     private fun setupViewMapButton() {
-        // binding.viewMapButton.setEnabled(allowClickViewMapButton())
+        binding.viewMapButton.setEnabled(allowClickViewMapButton())
         binding.viewMapButton.setOnClickListener {
             launchPointGraphActivity()
         }
     }
 
-    private fun initializeVibrator() {
-        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            vibratorManager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
-    }
+    //private fun initializeVibrator() {
+    //    vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    //        val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+    //        vibratorManager.defaultVibrator
+    //    } else {
+    //        @Suppress("DEPRECATION")
+     //       getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    //    }
+    //}
 
     override fun onResume() {
         super.onResume()
@@ -125,8 +130,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        stopBleScan()
-
+        isScanning = false
+        //stopBleScan()
     }
 
     @UiThread
@@ -183,10 +188,16 @@ class MainActivity : AppCompatActivity() {
             scanResults.addAll(results)
 
             // Process each result for notifications
-            results.forEach { result ->
-                if (result.rssi > -55) {
-                    handleNearbyDevice(result)
-                }
+            //results.forEach { result ->
+            //    if (result.rssi > -55) {
+            //        handleNearbyDevice(result)
+            //    }
+            //}
+
+            if (allowClickViewMapButton()){
+                setupViewMapButton()
+            } else {
+                binding.viewMapButton.setEnabled(false)
             }
 
             // Sort and update the display
