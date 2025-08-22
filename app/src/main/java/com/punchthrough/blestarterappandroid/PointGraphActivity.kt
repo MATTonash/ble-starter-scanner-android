@@ -14,6 +14,15 @@ import com.github.mikephil.charting.data.ScatterDataSet
 import com.github.mikephil.charting.interfaces.datasets.IScatterDataSet
 import kotlin.math.pow
 
+
+/**
+ * The mapping of user position activity
+ * For now hardcoding the beacon locations but later will implement this in a calibration stage
+ * Please see doc for the layout
+ *
+ * To understand mapping methods we use the MPAndroidChart library
+ * https://github.com/PhilJay/MPAndroidChart/wiki/Dynamic-&-Realtime-Data
+ */
 class PointGraphActivity : AppCompatActivity() {
     // private lateinit var lineChart: LineChart
     private lateinit var scatterChart: ScatterChart
@@ -39,6 +48,9 @@ class PointGraphActivity : AppCompatActivity() {
 
     private var scatterDataSets = ArrayList<IScatterDataSet>()
 
+    /**
+     * Bluetooth worker instances are saved but reinitialised in each activity
+     */
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,6 +110,7 @@ class PointGraphActivity : AppCompatActivity() {
         beaconsDataSet.setColor(Color.BLACK)
         beaconsDataSet.setDrawValues(false)
 
+        // This was to map beacons at the same time but this fucks up dynamic updating for some reason :(
         beaconLocations.add(Entry(beacon1.getCoordinates()[0].toFloat(), beacon1.getCoordinates()[1].toFloat()))
         beaconLocations.add(Entry(beacon2.getCoordinates()[0].toFloat(), beacon2.getCoordinates()[1].toFloat()))
         beaconLocations.add(Entry(beacon3.getCoordinates()[0].toFloat(), beacon3.getCoordinates()[1].toFloat()))
@@ -187,18 +200,26 @@ class PointGraphActivity : AppCompatActivity() {
         updateChartData()
     }
 
+    /**
+     * In the scenario that the app is only able to detect 2 beacons, we have implemented trilateration equations
+     * using only 2 coordinates and sets of distances
+     *
+     * NOTE: There are 3 equations here, still testing which is the most accurate
+     */
     private fun trilaterate2D(beacon1: DoubleArray, beacon2: DoubleArray, beacon3: DoubleArray, beacon1dist: Double, beacon2dist: Double, beacon3dist: Double): DoubleArray {
-        val A = 2 * (beacon2[0] - beacon1[0])
-        val B = 2 * (beacon2[1] - beacon1[1])
-        val C = beacon1dist.pow(2) - beacon2dist.pow(2) - beacon1[0].pow(2) - beacon1[1].pow(2) + beacon2[0].pow(2) + beacon2[1].pow(2)
-        val D = 2 * (beacon3[0] - beacon2[0])
-        val E = 2 * (beacon3[1] - beacon2[1])
-        val F = beacon2dist.pow(2) - beacon3dist.pow(2) - beacon2[0].pow(2) - beacon2[1].pow(2) + beacon3[0].pow(2) + beacon3[1].pow(2)
 
-        val x = (C * E - F * B) / (E * A - B * D)
-        val y = (C * D - A * F) / (B * D - A * E)
+//        val A = 2 * (beacon2[0] - beacon1[0])
+//        val B = 2 * (beacon2[1] - beacon1[1])
+//        val C = beacon1dist.pow(2) - beacon2dist.pow(2) - beacon1[0].pow(2) - beacon1[1].pow(2) + beacon2[0].pow(2) + beacon2[1].pow(2)
+//        val D = 2 * (beacon3[0] - beacon2[0])
+//        val E = 2 * (beacon3[1] - beacon2[1])
+//        val F = beacon2dist.pow(2) - beacon3dist.pow(2) - beacon2[0].pow(2) - beacon2[1].pow(2) + beacon3[0].pow(2) + beacon3[1].pow(2)
+//
+//        val x = (C * E - F * B) / (E * A - B * D)
+//        val y = (C * D - A * F) / (B * D - A * E)
+//
+//        return doubleArrayOf(x, y)
 
-        return doubleArrayOf(x, y)
 
 //        // The separation of beacons 1 and 2
 //        // Distance formula
@@ -218,7 +239,12 @@ class PointGraphActivity : AppCompatActivity() {
 //        }
 //        return doubleArrayOf(x, positiveY)
 
+
         // another way (stackexchange)
+        val y = (1 - beacon3dist.pow(2) + beacon1dist.pow(2))/2
+        val x = (beacon2dist.pow(2) - beacon3dist.pow(2) + 2*y)/2
+
+        return doubleArrayOf(x, y)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

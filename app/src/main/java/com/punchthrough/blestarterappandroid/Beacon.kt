@@ -18,6 +18,11 @@ package com.punchthrough.blestarterappandroid
 
 import kotlin.math.pow
 
+/**
+ * We decided to implement a Beacon class that will store and manage all the relevant mapping data and methods
+ * just so that it can be used more simply across the activities
+ * Previously we were relying on referencing MainActivity
+ */
 class Beacon(beaconName: String,
              callibrationRSSI: Int,
              x: Double,

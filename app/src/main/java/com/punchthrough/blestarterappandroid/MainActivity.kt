@@ -32,7 +32,6 @@ private const val PERMISSION_REQUEST_CODE = 1
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
-    // private val connectionManager = ConnectionManager
 
     private val beaconProjects = bluetoothWorker.getBeaconProjects()
     private var isScanning = false
@@ -148,6 +147,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
+
     private fun startBleScan() {
         if (!hasRequiredBluetoothPermissions()) {
             requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)
@@ -155,7 +156,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         scanResults.clear()
-        // scanResultAdapter.updateList(scanResults)
+        scanResultAdapter.updateList(scanResults)
 
         bluetoothWorker.startScanning(
             callback = { results ->

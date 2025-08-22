@@ -13,6 +13,13 @@ import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import timber.log.Timber
 
 
+/**
+ * This is a worker class that continually scans across activities, previously we relied on data
+ * from scanning in MainActivity so this might look a bit rough
+ *
+ * It also stores the MAC addresses of the beacons we are using in this project
+ * More on bluetooth in the doc
+ */
 class BluetoothWorkerClass private constructor() {
     private var scanResults = mutableListOf<ScanResult>()
     private var isScanning = false
@@ -172,6 +179,7 @@ class BluetoothWorkerClass private constructor() {
                     }
                 }
         }
+        // if we want to limit the amount of connections, see maxConnections var in the init
 //        else if (availableDevices.isNotEmpty()) {
 //            // If we're at max connections but have stronger signals available,
 //            // disconnect the weakest connected device and connect to the stronger one
@@ -235,16 +243,6 @@ class BluetoothWorkerClass private constructor() {
     fun isScanning(): Boolean = isScanning
 
     fun getCurrentResults(): List<ScanResult> = scanResults.toList()
-
-//    fun rssiToDistance(beacon:ScanResult): Double {
-//        // need to calibrate beacons
-//        val calibrationRSSI = beaconProjects[beacon.device.address]?.toDouble()
-//        val txPower = beacon.txPower.toDouble()
-//        if (calibrationRSSI != null) {
-//            return 10.0.pow((calibrationRSSI - beacon.rssi)/(10*txPower))
-//        }
-//        return 0.0
-//    }
 
 
     private val bleScanCallback = object : ScanCallback() {

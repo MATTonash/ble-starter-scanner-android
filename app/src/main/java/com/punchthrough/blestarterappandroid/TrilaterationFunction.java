@@ -14,8 +14,17 @@
  * limitations under the License.
  */
 
+
 package com.punchthrough.blestarterappandroid;
 
+/**
+ * This trilateration function uses the newton Raphson's method to solve for 3 simultaneous equations with 3 unknowns
+ * NOTE: This is implemented for 3D use cases but we have temporarily just used it for 2 (only 2 unknowns, 2 beacons)
+ * TODO(The augmented matrix solver is not always correct, either will need to find another one that works or create our
+ * own for this use case)
+ * Please see https://tomrocksmaths.com/wp-content/uploads/2023/06/sunny-miao_-mathematical-approaches-to-global-positioning-systems.pdf
+ * It is basically what they use for GPS mapping
+ */
 public class TrilaterationFunction {
     // 2D trilateration just uses 2 functions
 //    Expr rearrangedCircleFormula = SymMath.sqrt(SymMath.pow(x.subtract(a), 2)
