@@ -214,7 +214,7 @@ class BluetoothWorkerClass private constructor() {
         period: Long = SCAN_PERIOD,
         interval: Long = SCAN_INTERVAL
     ) {
-        if (isScanning) {
+        if (isScanning && !::bluetoothAdapter.isInitialized) {
             Timber.e("Already scanning")
             return
         }
