@@ -24,6 +24,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.punchthrough.blestarterappandroid.ble.printProperties
 
+/**
+ * The adapter for the recyclerview in BleOperations Activity
+ */
 class CharacteristicAdapter(
     private val items: List<BluetoothGattCharacteristic>,
     private val onClickListener: ((characteristic: BluetoothGattCharacteristic) -> Unit)
