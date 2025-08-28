@@ -49,7 +49,7 @@ object ConnectionManager {
     private val listenersAsSet
         get() = listeners.toSet()
 
-    private val deviceGattMap = ConcurrentHashMap<BluetoothDevice, BluetoothGatt>()
+    val deviceGattMap = ConcurrentHashMap<BluetoothDevice, BluetoothGatt>()
     private val operationQueue = ConcurrentLinkedQueue<BleOperationType>()
     private var pendingOperation: BleOperationType? = null
 
@@ -228,7 +228,7 @@ object ConnectionManager {
         if (operation is Connect) {
             with(operation) {
                 Timber.w("Connecting to ${device.address}")
-                device.connectGatt(context, false, callback)
+                device.connectGatt(context, true, callback)//changed autoConnect to true so it connects to multiple devices??
             }
             return
         }

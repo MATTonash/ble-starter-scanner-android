@@ -43,34 +43,25 @@
         tools:ignore="GoogleAppIndexingWarning"
         >
         <activity
-            android:name=".mapView"
-            android:screenOrientation="landscape" 
-            android:label="@string/app_name"
-            android:exported="false">
-            <!-- Force landscape mode -->
-        </activity>
-        <activity android:name=".PointGraphActivity" /> <!-- Add this line -->
-        <activity
-            android:name=".trilateration"
+            android:name=".PointGraphActivity"
             android:exported="false"
-            />
+            android:label="RSSI Graph" /> <!-- Add this line -->
         <activity
             android:name=".BleOperationsActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:screenOrientation="portrait"
-            >
+            android:screenOrientation="portrait" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity> <!-- Add this line to declare the SelectedBeaconsActivity -->
-        <activity android:name=".SelectedBeaconsActivity" />
+        </activity>
     </application>
 
 </manifest>

@@ -10,3 +10,4 @@ dependencyResolutionManagement {
         maven { url 'https://jitpack.io' } //Add this line in your settings.gradle
     }
 }
+include ':lib'

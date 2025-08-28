@@ -47,6 +47,11 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
+/**
+ * This is the page that contains all the bluetooth characteristics of the bluetooth beacon the user
+ * has clicked on from the ScanResultAdapter recycler view on MainActivity (this was temporarily removed
+ * but we plan to add it back, just need to set up the onClickListener functionality)
+ */
 class BleOperationsActivity : AppCompatActivity() {
 
     // I have made a commit

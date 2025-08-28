@@ -5,39 +5,48 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.github.mikephil.charting.charts.LineChart
-        android:id="@+id/lineChart"
+    <com.github.mikephil.charting.charts.ScatterChart
+        android:id="@+id/scatterChart"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/inputLayout"
+        app:layout_constraintTop_toBottomOf="@+id/textLayout"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
     <LinearLayout
-        android:id="@+id/inputLayout"
+        android:id="@+id/textLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         android:padding="16dp">
 
-        <EditText
-            android:id="@+id/xValueInput"
+        <TextView
+            android:id="@+id/lineChartTitle"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Enter X Value"/>
+            android:layout_height="40dp"
+            android:text="User current location"
+            android:textSize="30dp"
+            android:textAlignment="center">
+        </TextView>
 
-        <EditText
-            android:id="@+id/yValueInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Enter Y Value"/>
+<!--        <EditText-->
+<!--            android:id="@+id/xValueInput"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:hint="Enter X Value"/>-->
 
-        <Button
-            android:id="@+id/addButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Add Point"/>
+<!--        <EditText-->
+<!--            android:id="@+id/yValueInput"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:hint="Enter Y Value"/>-->
+
+<!--        <Button-->
+<!--            android:id="@+id/addButton"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Add Point"/>-->
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
