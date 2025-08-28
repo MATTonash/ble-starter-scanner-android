@@ -248,10 +248,10 @@ class BluetoothWorkerClass private constructor() {
         bleScanner.stopScan(bleScanCallback)
         isScanning = false
         continuousScanning = false
-        //connectedDevices.forEach { address ->
-        //    val device = bluetoothAdapter.getRemoteDevice(address)
-        //    ConnectionManager.teardownConnection(device)
-        //}
+        connectedDevices.forEach { address ->
+            val device = bluetoothAdapter.getRemoteDevice(address)
+            ConnectionManager.teardownConnection(device)
+        }
         connectedDevices.clear()
         Timber.d("Stopped BLE scan and connection maintenance")
     }
@@ -283,7 +283,7 @@ class BluetoothWorkerClass private constructor() {
             }
 
             // Check and maintain connections
-            //checkAndMaintainConnections()
+            checkAndMaintainConnections()
 
             // Notify callback on main thread
             handler.post {

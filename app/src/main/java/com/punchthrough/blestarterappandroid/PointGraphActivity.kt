@@ -31,20 +31,17 @@ class PointGraphActivity : AppCompatActivity() {
     private var locationDataSet = ScatterDataSet(userPoints,"User position")
 
     private val beaconProjects = bluetoothWorker.getBeaconProjects()
-    private val beacons = beaconProjects.values.toList()
-    var beacon1 = beacons[0]
-    var beacon2 = beacons[1]
-    var beacon3 = beacons[2]
-    var beacon4 = beacons[3]
-    var beacon5 = beacons[4]
-    var beacon6 = beacons[5]
-    private var beaconLocations = ArrayList<Entry>()
-    private var beaconsDataSet = ScatterDataSet(beaconLocations, "Beacons")
+    private lateinit var trilaterationFunction : TrilaterationFunction
 
-    var beacon1dist: Double = 0.0
-    var beacon2dist: Double = 0.0
-    var beacon3dist: Double = 0.0
-    private var trilaterationFunction = TrilaterationFunction(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon1dist, beacon2dist)
+
+    // For when doing multiple data sets, doesn't work with dynamic updating :(
+    // private var beaconLocations = ArrayList<Entry>()
+    // private var beaconsDataSet = ScatterDataSet(beaconLocations, "Beacons")
+
+//    var beacon1dist: Double = 0.0
+//    var beacon2dist: Double = 0.0
+//    var beacon3dist: Double = 0.0
+//    private var trilaterationFunction = TrilaterationFunction(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon1dist, beacon2dist)
 
     private var scatterDataSets = ArrayList<IScatterDataSet>()
 
@@ -64,7 +61,7 @@ class PointGraphActivity : AppCompatActivity() {
         setupChart()
 
         // Start scanning with custom parameters for graphing
-        //startRssiTracking()
+        startRssiTracking()
     }
 
     private fun setupChart() {
@@ -106,19 +103,19 @@ class PointGraphActivity : AppCompatActivity() {
         locationDataSet.setColor(Color.BLUE)
         locationDataSet.setDrawValues(true)
 
-        beaconsDataSet.setScatterShape(ScatterChart.ScatterShape.CIRCLE)
-        beaconsDataSet.setColor(Color.BLACK)
-        beaconsDataSet.setDrawValues(false)
-
-        // This was to map beacons at the same time but this fucks up dynamic updating for some reason :(
-        beaconLocations.add(Entry(beacon1.getCoordinates()[0].toFloat(), beacon1.getCoordinates()[1].toFloat()))
-        beaconLocations.add(Entry(beacon2.getCoordinates()[0].toFloat(), beacon2.getCoordinates()[1].toFloat()))
-        beaconLocations.add(Entry(beacon3.getCoordinates()[0].toFloat(), beacon3.getCoordinates()[1].toFloat()))
-        beaconLocations.add(Entry(beacon4.getCoordinates()[0].toFloat(), beacon4.getCoordinates()[1].toFloat()))
-        beaconLocations.add(Entry(beacon5.getCoordinates()[0].toFloat(), beacon5.getCoordinates()[1].toFloat()))
-        beaconLocations.add(Entry(beacon6.getCoordinates()[0].toFloat(), beacon6.getCoordinates()[1].toFloat()))
-
-        beaconsDataSet.notifyDataSetChanged()
+//        beaconsDataSet.setScatterShape(ScatterChart.ScatterShape.CIRCLE)
+//        beaconsDataSet.setColor(Color.BLACK)
+//        beaconsDataSet.setDrawValues(false)
+//
+//        // This was to map beacons at the same time but this fucks up dynamic updating for some reason :(
+//        beaconLocations.add(Entry(beacon1.getCoordinates()[0].toFloat(), beacon1.getCoordinates()[1].toFloat()))
+//        beaconLocations.add(Entry(beacon2.getCoordinates()[0].toFloat(), beacon2.getCoordinates()[1].toFloat()))
+//        beaconLocations.add(Entry(beacon3.getCoordinates()[0].toFloat(), beacon3.getCoordinates()[1].toFloat()))
+//        beaconLocations.add(Entry(beacon4.getCoordinates()[0].toFloat(), beacon4.getCoordinates()[1].toFloat()))
+//        beaconLocations.add(Entry(beacon5.getCoordinates()[0].toFloat(), beacon5.getCoordinates()[1].toFloat()))
+//        beaconLocations.add(Entry(beacon6.getCoordinates()[0].toFloat(), beacon6.getCoordinates()[1].toFloat()))
+//
+//        beaconsDataSet.notifyDataSetChanged()
 
         // Initial chart update
         updateChartData()
@@ -133,8 +130,10 @@ class PointGraphActivity : AppCompatActivity() {
             scatterShapeSize = 20f
         }
 
-        val scatterData = scatterChart.scatterData
-        scatterData.removeDataSet(0)
+        val scatterData = scatterChart.scatterData ?: ScatterData()
+        if (scatterData.dataSetCount > 0) {
+            scatterData.removeDataSet(0)
+        }
         scatterData.addDataSet(locationDataSet)
 
         scatterChart.data = scatterData
@@ -146,6 +145,7 @@ class PointGraphActivity : AppCompatActivity() {
         // Force the chart to redraw
         scatterChart.invalidate()
     }
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun startRssiTracking() {
@@ -160,42 +160,35 @@ class PointGraphActivity : AppCompatActivity() {
     }
 
 
-
     @RequiresApi(Build.VERSION_CODES.O)
     private fun handleScanResults(rawResults: List<ScanResult>) {
-        val results = rawResults.sortedByDescending { it.rssi }
-        var coordinates = doubleArrayOf(0.0, 0.0)
+        // Keep only known project beacons and sort by RSSI
+        val knownResults = rawResults
+            .filter { beaconProjects.containsKey(it.device.address) }
+            .sortedByDescending { it.rssi }
 
-        if (results.size < 2) {
+        // Need at least 3 beacons for trilateration
+        if (knownResults.size < 3) {
             return
         }
 
-        if (results.size == 2) {
-            beacon1dist = (beaconProjects[results[0].device.address]?.calculateDistance(results[0].rssi, results[0].txPower.toDouble())
-                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double
-            beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())
-                ?: trilaterationFunction.setBeacon2Dist(beacon2dist )) as Double
-            trilaterationFunction.setBeacon2Dist(beacon2dist)
-            coordinates = trilaterationFunction.solve()
-
-            userPoints.clear()
-            userPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
+        // Build coordinates and distances arrays aligned by index
+        val coords = Array(knownResults.size) { DoubleArray(0) }
+        val distances = DoubleArray(knownResults.size)
+        knownResults.forEachIndexed { index, res ->
+            val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed
+            coords[index] = beacon.getCoordinates()
+            distances[index] = beacon.calculateDistance(res.rssi, res.txPower)
         }
 
+        // Create solver with current beacons and set distances
+        trilaterationFunction = TrilaterationFunction(coords)
+        trilaterationFunction.setBeaconDistances(distances)
 
-        else {
-            // or use trilaterateFunction and omit 3rd dimension from map
-            beacon1dist = (beaconProjects[results[0].device.address]?.calculateDistance(results[0].rssi, results[0].txPower.toDouble())
-                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double
-            beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())
-                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double
-            beacon3dist = (beaconProjects[results[2].device.address]?.calculateDistance(results[2].rssi, results[2].txPower.toDouble())
-                ?: trilaterationFunction.setBeacon1Dist(beacon3dist )) as Double
-            coordinates = trilaterate2D(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon3.getCoordinates(), beacon1dist, beacon2dist, beacon3dist)
+        val coordinates = trilaterationFunction.solve()
 
-            userPoints.clear()
-            userPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
-        }
+        userPoints.clear()
+        userPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
 
         updateChartData()
     }

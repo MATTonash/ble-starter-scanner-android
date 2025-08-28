@@ -5,15 +5,12 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.le.ScanResult
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Vibrator
-import android.os.VibratorManager
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.UiThread
@@ -23,7 +20,6 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
-import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
 
@@ -131,7 +127,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         isScanning = false
-        //stopBleScan()
+        // stopBleScan()
     }
 
     @UiThread
@@ -178,7 +174,6 @@ class MainActivity : AppCompatActivity() {
     private fun stopBleScan() {
         bluetoothWorker.stopScanning()
         isScanning = false
-
     }
 
     @SuppressLint("LogNotTimber")

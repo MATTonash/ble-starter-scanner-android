@@ -32,7 +32,7 @@ class Beacon(beaconName: String,
     private val coordinates = doubleArrayOf(x, y)
     private var buzzerSensitivity = 0;
 
-    public fun calculateDistance(rssi: Int, txPower: Double): Double{
+    public fun calculateDistance(rssi: Int, txPower: Int): Double{
         return 10.0.pow((callibrationRSSI - rssi)/(10*txPower))
     }
 
