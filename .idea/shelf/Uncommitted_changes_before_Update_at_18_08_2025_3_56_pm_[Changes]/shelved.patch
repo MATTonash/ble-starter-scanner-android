@@ -1,0 +1,346 @@
+Index: app/src/main/java/com/punchthrough/blestarterappandroid/MainActivity.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.punchthrough.blestarterappandroid\r\n\r\nimport android.Manifest\r\nimport android.annotation.SuppressLint\r\nimport android.app.Activity\r\nimport android.bluetooth.BluetoothAdapter\r\nimport android.bluetooth.le.ScanResult\r\nimport android.content.Context\r\nimport android.content.Intent\r\nimport android.content.pm.PackageManager\r\nimport android.os.Build\r\nimport android.os.Bundle\r\nimport android.os.Handler\r\nimport android.os.Looper\r\nimport android.os.Vibrator\r\nimport android.os.VibratorManager\r\nimport android.widget.Toast\r\nimport androidx.activity.result.contract.ActivityResultContracts\r\nimport androidx.annotation.UiThread\r\nimport androidx.appcompat.app.AppCompatActivity\r\nimport androidx.core.app.ActivityCompat\r\nimport androidx.core.content.ContextCompat\r\nimport androidx.recyclerview.widget.LinearLayoutManager\r\nimport androidx.recyclerview.widget.RecyclerView\r\nimport androidx.recyclerview.widget.SimpleItemAnimator\r\nimport com.punchthrough.blestarterappandroid.ble.ConnectionManager\r\nimport com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding\r\nimport timber.log.Timber\r\n\r\nprivate const val PERMISSION_REQUEST_CODE = 1\r\n\r\nclass MainActivity : AppCompatActivity() {\r\n    private lateinit var binding: ActivityMainBinding\r\n    private val bluetoothWorker = BluetoothWorkerClass.getInstance()\r\n    // private val connectionManager = ConnectionManager\r\n\r\n    private val beaconProjects = bluetoothWorker.getBeaconProjects()\r\n    private var isScanning = false\r\n        set(value) {\r\n            field = value\r\n            runOnUiThread { binding.scanButton.text = if (value) \"Stop Scan\" else \"Start Scan\" }\r\n        }\r\n\r\n    private val scanResults = mutableListOf<ScanResult>()\r\n    private val scanResultAdapter: ScanResultAdapter by lazy {\r\n        ScanResultAdapter(scanResults) { result ->\r\n            if (isScanning) {\r\n                stopBleScan()\r\n            }\r\n            with(result.device) {\r\n                Timber.w(\"Connecting to $address\")\r\n                //ConnectionManager.connect(this, this@MainActivity)\r\n            }\r\n        }\r\n    }\r\n\r\n    private var topThreeDevices = mutableListOf<String>()\r\n\r\n    private lateinit var vibrator: Vibrator\r\n    private var isToastShowing = false\r\n\r\n    private val bluetoothEnablingResult = registerForActivityResult(\r\n        ActivityResultContracts.StartActivityForResult()\r\n    ) { result ->\r\n        if (result.resultCode == Activity.RESULT_OK) {\r\n            Timber.i(\"Bluetooth is enabled, good to go\")\r\n        } else {\r\n            Timber.e(\"User dismissed or denied Bluetooth prompt\")\r\n            promptEnableBluetooth()\r\n        }\r\n    }\r\n\r\n    override fun onCreate(savedInstanceState: Bundle?) {\r\n        super.onCreate(savedInstanceState)\r\n        binding = ActivityMainBinding.inflate(layoutInflater)\r\n        setContentView(binding.root)\r\n        isScanning = false\r\n\r\n        // Initialize BluetoothWorker\r\n        bluetoothWorker.initialize(this)\r\n\r\n        // Setup UI\r\n        setupRecyclerView()\r\n\r\n        setupScanButton()\r\n        //initializeVibrator()\r\n\r\n        // only setup viewmap button when 3 beacons collected\r\n\r\n        setupViewMapButton()\r\n\r\n//        binding.viewMapButton.setOnClickListener {\r\n//            val intent = Intent(this, mapView::class.java)\r\n//            startActivity(intent)\r\n//        }\r\n    }\r\n\r\n    private fun setupScanButton() {\r\n        binding.scanButton.setOnClickListener {\r\n            if (isScanning) {\r\n                stopBleScan()\r\n            } else {\r\n                startBleScan()\r\n\r\n            }\r\n        }\r\n    }\r\n\r\n    private fun allowClickViewMapButton() : Boolean {\r\n        return scanResults.size >= 3\r\n    }\r\n    private fun setupViewMapButton() {\r\n        binding.viewMapButton.setEnabled(allowClickViewMapButton())\r\n        binding.viewMapButton.setOnClickListener {\r\n            launchPointGraphActivity()\r\n        }\r\n    }\r\n\r\n    //private fun initializeVibrator() {\r\n    //    vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {\r\n    //        val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager\r\n    //        vibratorManager.defaultVibrator\r\n    //    } else {\r\n    //        @Suppress(\"DEPRECATION\")\r\n     //       getSystemService(Context.VIBRATOR_SERVICE) as Vibrator\r\n    //    }\r\n    //}\r\n\r\n    override fun onResume() {\r\n        super.onResume()\r\n        if (!hasRequiredBluetoothPermissions()) {\r\n            requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)\r\n        }\r\n    }\r\n\r\n    override fun onPause() {\r\n        super.onPause()\r\n        isScanning = false\r\n        //stopBleScan()\r\n    }\r\n\r\n    @UiThread\r\n    private fun setupRecyclerView() {\r\n        binding.scanResultsRecyclerView.apply {\r\n            adapter = scanResultAdapter\r\n            layoutManager = LinearLayoutManager(\r\n                this@MainActivity,\r\n                RecyclerView.VERTICAL,\r\n                false\r\n            )\r\n            isNestedScrollingEnabled = false\r\n            itemAnimator.let {\r\n                if (it is SimpleItemAnimator) {\r\n                    it.supportsChangeAnimations = false\r\n                }\r\n            }\r\n        }\r\n    }\r\n\r\n    private fun startBleScan() {\r\n        if (!hasRequiredBluetoothPermissions()) {\r\n            requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)\r\n            return\r\n        }\r\n\r\n        scanResults.clear()\r\n        // scanResultAdapter.updateList(scanResults)\r\n\r\n        bluetoothWorker.startScanning(\r\n            callback = { results ->\r\n                handleScanResults(results)\r\n            },\r\n            continuous = true,\r\n            period = 5000L,    // Scan for 5 seconds\r\n            interval = 2000L   // Wait 2 seconds between scans\r\n        )\r\n        isScanning = true\r\n\r\n    }\r\n\r\n    private fun stopBleScan() {\r\n        bluetoothWorker.stopScanning()\r\n        isScanning = false\r\n\r\n    }\r\n\r\n    @SuppressLint(\"LogNotTimber\")\r\n    private fun handleScanResults(results: List<ScanResult>) {\r\n        runOnUiThread {\r\n            scanResults.clear()\r\n            scanResults.addAll(results)\r\n\r\n            // Process each result for notifications\r\n            //results.forEach { result ->\r\n            //    if (result.rssi > -55) {\r\n            //        handleNearbyDevice(result)\r\n            //    }\r\n            //}\r\n\r\n            if (allowClickViewMapButton()){\r\n                setupViewMapButton()\r\n            } else {\r\n                binding.viewMapButton.setEnabled(false)\r\n            }\r\n\r\n            // Sort and update the display\r\n            scanResults.sortByDescending { it.rssi }\r\n\r\n            scanResultAdapter.updateList(scanResults)\r\n        }\r\n    }\r\n\r\n    private fun handleNearbyDevice(result: ScanResult) {\r\n        if (!isToastShowing) {\r\n            Toast.makeText(\r\n                this,\r\n                \"Close to ${beaconProjects[result.device.address] ?: \"Unknown Beacon\"}\",\r\n                Toast.LENGTH_SHORT\r\n            ).show()\r\n            isToastShowing = true\r\n\r\n            Handler(Looper.getMainLooper()).postDelayed({\r\n                isToastShowing = false\r\n            }, Toast.LENGTH_SHORT.toLong())\r\n\r\n            if (ContextCompat.checkSelfPermission(\r\n                    this,\r\n                    Manifest.permission.VIBRATE\r\n                ) == PackageManager.PERMISSION_GRANTED\r\n            ) {\r\n                vibrator.vibrate(500)\r\n            }\r\n        }\r\n    }\r\n\r\n    // multiple beacons: TRILATERATION\r\n//    private fun launchPointGraphActivity(list: List<String>) {\r\n////        val intent = Intent(this, PointGraphActivity::class.java).apply {\r\n////            putExtra(\"TARGET_DEVICE_ADDRESS_1\", list[0])\r\n////            putExtra(\"TARGET_DEVICE_ADDRESS_2\", list[1])\r\n////            putExtra(\"TARGET_DEVICE_ADDRESS_3\", list[2])\r\n////        }\r\n//        startActivity(intent)\r\n//    }\r\n\r\n    private fun launchPointGraphActivity() {\r\n        val pointGraphIntent = Intent(this, PointGraphActivity::class.java)\r\n        startActivity(pointGraphIntent)\r\n    }\r\n\r\n    override fun onRequestPermissionsResult(\r\n        requestCode: Int,\r\n        permissions: Array<out String>,\r\n        grantResults: IntArray\r\n    ) {\r\n        super.onRequestPermissionsResult(requestCode, permissions, grantResults)\r\n        if (requestCode != PERMISSION_REQUEST_CODE) {\r\n            return\r\n        }\r\n        if (permissions.isEmpty() && grantResults.isEmpty()) {\r\n            Timber.e(\"Empty permissions and grantResults array in onRequestPermissionsResult\")\r\n            Timber.w(\"This is likely a cancellation due to user interaction interrupted\")\r\n            return\r\n        }\r\n\r\n        val resultsDescriptions = grantResults.map {\r\n            when (it) {\r\n                PackageManager.PERMISSION_DENIED -> \"Denied\"\r\n                PackageManager.PERMISSION_GRANTED -> \"Granted\"\r\n                else -> \"Unknown\"\r\n            }\r\n        }\r\n        Timber.w(\"Permissions: ${permissions.toList()}, grant results: $resultsDescriptions\")\r\n\r\n        val containsPermanentDenial = permissions.zip(grantResults.toTypedArray()).any {\r\n            it.second == PackageManager.PERMISSION_DENIED &&\r\n                !ActivityCompat.shouldShowRequestPermissionRationale(this, it.first)\r\n        }\r\n        val containsDenial = grantResults.any { it == PackageManager.PERMISSION_DENIED }\r\n        val allGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }\r\n\r\n        when {\r\n//            containsPermanentDenial -> {\r\n//                promptManualPermissionGranting()\r\n//            }\r\n            containsDenial -> {\r\n                requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)\r\n            }\r\n            allGranted && hasRequiredBluetoothPermissions() -> {\r\n                startBleScan()\r\n            }\r\n            else -> {\r\n                Timber.e(\"Unexpected scenario encountered when handling permissions\")\r\n                recreate()\r\n            }\r\n        }\r\n    }\r\n\r\n    private fun promptEnableBluetooth() {\r\n        if (hasRequiredBluetoothPermissions()) {\r\n            Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE).apply {\r\n                bluetoothEnablingResult.launch(this)\r\n            }\r\n        }\r\n    }\r\n\r\n//    private fun promptManualPermissionGranting() {\r\n//        AlertDialog.Builder(this)\r\n//            .setTitle(R.string.bluetooth_permission_required)\r\n//            //.setMessage(R.string.bluetooth_permission_denied_permanently)\r\n//            .setPositiveButton(R.string.open_settings) { _, _ ->\r\n//                try {\r\n//                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {\r\n//                        data = Uri.fromParts(\"package\", packageName, null)\r\n//                        startActivity(this)\r\n//                    }\r\n//                } catch (e: ActivityNotFoundException) {\r\n//                    Timber.e(\"Could not open Settings: $e\")\r\n//                }\r\n//            }\r\n//            .setNegativeButton(R.string.quit) { _, _ -> finishAndRemoveTask() }\r\n//            .setCancelable(false)\r\n//            .show()\r\n//    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/punchthrough/blestarterappandroid/MainActivity.kt b/app/src/main/java/com/punchthrough/blestarterappandroid/MainActivity.kt
+--- a/app/src/main/java/com/punchthrough/blestarterappandroid/MainActivity.kt	(revision 3b6811f82874cb03efa00e314f5fec70d59ca8a7)
++++ b/app/src/main/java/com/punchthrough/blestarterappandroid/MainActivity.kt	(date 1755496550077)
+@@ -86,7 +86,6 @@
+         //initializeVibrator()
+ 
+         // only setup viewmap button when 3 beacons collected
+-
+         setupViewMapButton()
+ 
+ //        binding.viewMapButton.setOnClickListener {
+Index: app/src/main/java/com/punchthrough/blestarterappandroid/BluetoothWorkerClass.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.punchthrough.blestarterappandroid\r\n\r\nimport android.Manifest\r\nimport android.annotation.SuppressLint\r\nimport android.bluetooth.BluetoothAdapter\r\nimport android.bluetooth.BluetoothManager\r\nimport android.bluetooth.le.ScanCallback\r\nimport android.bluetooth.le.ScanResult\r\nimport android.bluetooth.le.ScanSettings\r\nimport android.content.Context\r\nimport android.content.pm.PackageManager\r\nimport android.os.Build\r\nimport android.os.Handler\r\nimport android.os.Looper\r\nimport android.os.Vibrator\r\nimport android.os.VibratorManager\r\nimport android.widget.Toast\r\nimport androidx.core.content.ContextCompat\r\nimport com.punchthrough.blestarterappandroid.ble.ConnectionManager\r\nimport timber.log.Timber\r\n\r\n\r\nclass BluetoothWorkerClass private constructor() {\r\n    private var scanResults = mutableListOf<ScanResult>()\r\n    private var isScanning = false\r\n    private lateinit var bluetoothAdapter: BluetoothAdapter\r\n    private lateinit var bleScanner: android.bluetooth.le.BluetoothLeScanner\r\n    private var scanCallback: ((List<ScanResult>) -> Unit)? = null\r\n    private lateinit var appContext: Context\r\n    val connectedDevices = mutableSetOf<String>() // Track connected devices\r\n    private val connectionCheckHandler = Handler(Looper.getMainLooper())\r\n    private val connectionCheckInterval = 5000L // Check connections every 5 seconds\r\n    private val maxConnections = 30 // Maximum number of simultaneous connections\r\n\r\n    private val handler = Handler(Looper.getMainLooper())\r\n\r\n    private val beaconProjects = mapOf(\r\n        \"80:EC:CC:CD:33:28\" to Beacon(\"Losing THings\", -60, 0.0, 1.0),\r\n        \"80:EC:CC:CD:33:7C\" to Beacon(\"Happy Mornings\", -57, 1.0, 2.0),\r\n        \"80:EC:CC:CD:33:7E\" to Beacon(\"STEM\", -59, 2.0, 2.0),\r\n        \"80:EC:CC:CD:33:58\" to Beacon(\"Visual Clutter\", -60, 2.0, 1.0),\r\n        \"00:3C:84:28:87:01\" to Beacon(\"MAP\", -58, 1.0, 0.0),\r\n        \"00:3C:84:28:77:AB\" to Beacon(\"Dance\", -60, 1.00, 1.0),\r\n    )\r\n\r\n    private lateinit var vibrator: Vibrator\r\n    private var isToastShowing = false\r\n\r\n    public fun getBeaconProjects():Map<String, Beacon>{\r\n        return beaconProjects;\r\n    }\r\n\r\n\r\n    // Makes sure this class is only instantiated once\r\n    // Separate from and independent to any other class (not like an activity)\r\n    companion object {\r\n        @Volatile\r\n        private var instance: BluetoothWorkerClass? = null\r\n\r\n        // Default scan parameters\r\n        private const val SCAN_PERIOD = 5000L // Scan for 5 seconds\r\n        private const val SCAN_INTERVAL = 10000L // Wait 10 seconds between scans\r\n\r\n        fun getInstance(): BluetoothWorkerClass {\r\n            return instance ?: synchronized(this) {\r\n                instance ?: BluetoothWorkerClass().also { instance = it }\r\n            }\r\n        }\r\n    }\r\n\r\n    private var scanPeriod: Long = SCAN_PERIOD\r\n    private var scanInterval: Long = SCAN_INTERVAL\r\n    private var continuousScanning = false\r\n\r\n    /**\r\n     * Initialises the companion object according to the activity\r\n     * @param context of the environment (typically activity)\r\n     */\r\n    fun initialize(context: Context) {\r\n        appContext = context.applicationContext\r\n        val bluetoothManager = appContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager\r\n        bluetoothAdapter = bluetoothManager.adapter\r\n        bleScanner = bluetoothAdapter.bluetoothLeScanner\r\n\r\n        initializeVibrator()\r\n    }\r\n\r\n    private val scanSettings = ScanSettings.Builder()\r\n        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // Changed to LOW_POWER mode\r\n        .build()\r\n\r\n    private val scanRunnable = object : Runnable {\r\n        @SuppressLint(\"MissingPermission\")\r\n        override fun run() {\r\n            if (isScanning) {\r\n\r\n                // Stop scanning\r\n                bleScanner.stopScan(bleScanCallback)\r\n                isScanning = false\r\n                Timber.d(\"Stopped BLE scan\")\r\n\r\n                if (continuousScanning) {\r\n                    // Schedule next scan after interval\r\n                    handler.postDelayed({\r\n                        startScanCycle()\r\n                    }, scanInterval)\r\n                }\r\n            } else {\r\n                // Start scanning\r\n                startScanCycle()\r\n            }\r\n        }\r\n    }\r\n\r\n    /**\r\n     * Checks if a certain beacon (based of MAC Address) is in the scan list\r\n     * @param MACAddress String of address\r\n     */\r\n    fun caughtInScan(MACAddress : String) : ScanResult? {\r\n        for (scanResult in getCurrentResults()) {\r\n            if (scanResult.device.address == MACAddress) {\r\n                return scanResult\r\n            }\r\n        }\r\n        return null\r\n    }\r\n\r\n    // WHAT DOES THIS MEANNNNNNN (actually doesn't matter but would be nice to find out eventually...)\r\n    @SuppressLint(\"MissingPermission\")\r\n    private fun startScanCycle() {\r\n        if (!::bluetoothAdapter.isInitialized || !::appContext.isInitialized) {\r\n            Timber.e(\"BluetoothWorkerClass not initialized\")\r\n            return\r\n        }\r\n\r\n        if (appContext.hasRequiredBluetoothPermissions()) {\r\n            bleScanner.startScan(null, scanSettings, bleScanCallback)\r\n            isScanning = true\r\n            Timber.d(\"Started BLE scan\")\r\n\r\n            // Schedule scan stop after scanPeriod\r\n            handler.postDelayed(scanRunnable, scanPeriod)\r\n        } else {\r\n            Timber.e(\"Missing required Bluetooth permissions\")\r\n        }\r\n    }\r\n\r\n    private val connectionCheckRunnable = object : Runnable {\r\n        override fun run() {\r\n            //checkAndMaintainConnections()\r\n            connectionCheckHandler.postDelayed(this, connectionCheckInterval)\r\n        }\r\n    }\r\n\r\n    private fun checkAndMaintainConnections() {\r\n        // Get all available devices from trilateratingMacAddresses that are in range\r\n        val availableDevices = beaconProjects.mapNotNull { address ->\r\n            caughtInScan(address.key)?.let { scanResult ->\r\n                Pair(address, scanResult)\r\n            }\r\n        }.sortedByDescending { it.second.rssi } // Sort by RSSI (strongest first)\r\n\r\n        // Handle devices that are no longer in range\r\n        val devicesToRemove = connectedDevices.filter { address ->\r\n            !availableDevices.any { it.first.key == address }\r\n        }\r\n        devicesToRemove.forEach { address ->\r\n            Timber.d(\"Device no longer in range: $address\")\r\n            connectedDevices.remove(address)\r\n        }\r\n\r\n        // Connect to new devices if we have capacity\r\n        val availableSlots = maxConnections - connectedDevices.size\r\n        if (availableSlots > 0) {\r\n            availableDevices\r\n                .filter { it.first.key !in connectedDevices }\r\n                .take(availableSlots)\r\n                .forEach { (address, scanResult) ->\r\n                    Timber.d(\"Attempting to connect to device: $address (RSSI: ${scanResult.rssi})\")\r\n                    scanResult.device.let { device ->\r\n                        ConnectionManager.connect(device, appContext)\r\n                        connectedDevices.add(address.key)\r\n                    }\r\n                }\r\n        }\r\n//        else if (availableDevices.isNotEmpty()) {\r\n//            // If we're at max connections but have stronger signals available,\r\n//            // disconnect the weakest connected device and connect to the stronger one\r\n//            val weakestConnectedDevice = connectedDevices.minByOrNull { address ->\r\n//                availableDevices.find { it.first == address }?.second?.rssi ?: Int.MIN_VALUE\r\n//            }\r\n//\r\n//            val strongestAvailableDevice = availableDevices.first()\r\n//\r\n//            if (weakestConnectedDevice != null) {\r\n//                val weakestRssi = availableDevices.find { it.first == weakestConnectedDevice }?.second?.rssi ?: Int.MIN_VALUE\r\n//                if (strongestAvailableDevice.second.rssi > weakestRssi) {\r\n//                    Timber.d(\"Switching connection from $weakestConnectedDevice to ${strongestAvailableDevice.first} due to better signal\")\r\n//                    connectedDevices.remove(weakestConnectedDevice)\r\n//                    strongestAvailableDevice.second.device.let { device ->\r\n//                        ConnectionManager.connect(device, appContext)\r\n//                        connectedDevices.add(strongestAvailableDevice.first)\r\n//                    }\r\n//                }\r\n//            }\r\n//        }\r\n    }\r\n\r\n    @SuppressLint(\"MissingPermission\")\r\n    fun startScanning(\r\n        callback: (List<ScanResult>) -> Unit,\r\n        continuous: Boolean = true,\r\n        period: Long = SCAN_PERIOD,\r\n        interval: Long = SCAN_INTERVAL\r\n    ) {\r\n        if (isScanning) {\r\n            Timber.e(\"Already scanning\")\r\n            return\r\n        }\r\n\r\n        scanCallback = callback\r\n        scanResults.clear()\r\n        continuousScanning = continuous\r\n        scanPeriod = period\r\n        scanInterval = interval\r\n\r\n        // Start connection maintenance\r\n        //connectionCheckHandler.post(connectionCheckRunnable)\r\n        \r\n        startScanCycle()\r\n    }\r\n\r\n    @SuppressLint(\"MissingPermission\")\r\n    fun stopScanning() {\r\n        if (!isScanning || !::bluetoothAdapter.isInitialized) return\r\n\r\n        handler.removeCallbacks(scanRunnable)\r\n        connectionCheckHandler.removeCallbacks(connectionCheckRunnable)\r\n        bleScanner.stopScan(bleScanCallback)\r\n        isScanning = false\r\n        continuousScanning = false\r\n        //connectedDevices.forEach { address ->\r\n        //    val device = bluetoothAdapter.getRemoteDevice(address)\r\n        //    ConnectionManager.teardownConnection(device)\r\n        //}\r\n        connectedDevices.clear()\r\n        Timber.d(\"Stopped BLE scan and connection maintenance\")\r\n    }\r\n\r\n    fun isScanning(): Boolean = isScanning\r\n\r\n    fun getCurrentResults(): List<ScanResult> = scanResults.toList()\r\n\r\n//    fun rssiToDistance(beacon:ScanResult): Double {\r\n//        // need to calibrate beacons\r\n//        val calibrationRSSI = beaconProjects[beacon.device.address]?.toDouble()\r\n//        val txPower = beacon.txPower.toDouble()\r\n//        if (calibrationRSSI != null) {\r\n//            return 10.0.pow((calibrationRSSI - beacon.rssi)/(10*txPower))\r\n//        }\r\n//        return 0.0\r\n//    }\r\n\r\n\r\n    private val bleScanCallback = object : ScanCallback() {\r\n        override fun onScanResult(callbackType: Int, result: ScanResult) {\r\n            if (result.device.address in beaconProjects) {\r\n                val indexQuery =\r\n                    scanResults.indexOfFirst { it.device.address == result.device.address }\r\n                if (indexQuery != -1) {\r\n                    scanResults[indexQuery] = result\r\n                } else {\r\n                    scanResults.add(result)\r\n                }\r\n            }\r\n\r\n            // Sort results by RSSI\r\n            scanResults.sortByDescending { it.rssi }\r\n\r\n            scanResults.forEach { result ->\r\n                if (result.rssi > -55) {\r\n                    handleNearbyDevice(result)\r\n                }\r\n            }\r\n\r\n            // Check and maintain connections\r\n            //checkAndMaintainConnections()\r\n\r\n            // Notify callback on main thread\r\n            handler.post {\r\n                scanCallback?.invoke(scanResults.toList())\r\n            }\r\n        }\r\n\r\n        override fun onScanFailed(errorCode: Int) {\r\n            Timber.e(\"BLE Scan Failed with code $errorCode\")\r\n            isScanning = false\r\n        }\r\n    }\r\n\r\n    private fun initializeVibrator() {\r\n        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {\r\n            val vibratorManager = appContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager\r\n            vibratorManager.defaultVibrator\r\n        } else {\r\n            @Suppress(\"DEPRECATION\")\r\n            appContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator\r\n        }\r\n    }\r\n\r\n    private fun handleNearbyDevice(result: ScanResult) {\r\n        if (!isToastShowing) {\r\n            Toast.makeText(\r\n                appContext,\r\n                \"Close to ${beaconProjects[result.device.address] ?: \"Unknown Beacon\"}\",\r\n                Toast.LENGTH_SHORT\r\n            ).show()\r\n            isToastShowing = true\r\n\r\n            Handler(Looper.getMainLooper()).postDelayed({\r\n                isToastShowing = false\r\n            }, Toast.LENGTH_SHORT.toLong())\r\n\r\n            if (ContextCompat.checkSelfPermission(\r\n                    appContext,\r\n                    Manifest.permission.VIBRATE\r\n                ) == PackageManager.PERMISSION_GRANTED\r\n            ) {\r\n                vibrator.vibrate(500)\r\n            }\r\n        }\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/punchthrough/blestarterappandroid/BluetoothWorkerClass.kt b/app/src/main/java/com/punchthrough/blestarterappandroid/BluetoothWorkerClass.kt
+--- a/app/src/main/java/com/punchthrough/blestarterappandroid/BluetoothWorkerClass.kt	(revision 3b6811f82874cb03efa00e314f5fec70d59ca8a7)
++++ b/app/src/main/java/com/punchthrough/blestarterappandroid/BluetoothWorkerClass.kt	(date 1755496404179)
+@@ -27,7 +27,7 @@
+     private lateinit var bleScanner: android.bluetooth.le.BluetoothLeScanner
+     private var scanCallback: ((List<ScanResult>) -> Unit)? = null
+     private lateinit var appContext: Context
+-    val connectedDevices = mutableSetOf<String>() // Track connected devices
++    private val connectedDevices = mutableSetOf<String>() // Track connected devices
+     private val connectionCheckHandler = Handler(Looper.getMainLooper())
+     private val connectionCheckInterval = 5000L // Check connections every 5 seconds
+     private val maxConnections = 30 // Maximum number of simultaneous connections
+@@ -169,6 +169,7 @@
+             connectedDevices.remove(address)
+         }
+ 
++
+         // Connect to new devices if we have capacity
+         val availableSlots = maxConnections - connectedDevices.size
+         if (availableSlots > 0) {
+Index: app/src/main/java/com/punchthrough/blestarterappandroid/PointGraphActivity.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.punchthrough.blestarterappandroid\r\n\r\nimport android.bluetooth.le.ScanResult\r\nimport android.graphics.Color\r\nimport android.os.Bundle\r\nimport androidx.appcompat.app.AppCompatActivity\r\nimport com.github.mikephil.charting.charts.LineChart\r\nimport com.github.mikephil.charting.components.XAxis\r\nimport com.github.mikephil.charting.data.Entry\r\nimport com.github.mikephil.charting.data.LineData\r\nimport com.github.mikephil.charting.data.LineDataSet\r\nimport kotlin.math.pow\r\n\r\nclass PointGraphActivity : AppCompatActivity() {\r\n    private lateinit var lineChart: LineChart\r\n    private val bluetoothWorker = BluetoothWorkerClass.getInstance()\r\n    private val dataPoints = ArrayList<Entry>()\r\n\r\n\r\n    private val beaconProjects = bluetoothWorker.getBeaconProjects()\r\n    private val beacons = beaconProjects.values.toList()\r\n    var beacon1 = beacons[0]\r\n    var beacon2 = beacons[1]\r\n    var beacon3 = beacons[2]\r\n    var beacon4 = beacons[3]\r\n    var beacon5 = beacons[4]\r\n    var beacon6 = beacons[5]\r\n\r\n    var beacon1dist: Double = 0.0\r\n    var beacon2dist: Double = 0.0\r\n    var beacon3dist: Double = 0.0\r\n    private var trilaterationFunction = TrilaterationFunction(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon1dist, beacon2dist)\r\n\r\n\r\n    override fun onCreate(savedInstanceState: Bundle?) {\r\n        super.onCreate(savedInstanceState)\r\n\r\n        setContentView(R.layout.activity_point_graph)\r\n\r\n        // Initialize Bluetooth Worker\r\n        bluetoothWorker.initialize(this)\r\n\r\n        // Setup chart\r\n        setupChart()\r\n\r\n        // Start scanning with custom parameters for graphing\r\n        //startRssiTracking()\r\n    }\r\n\r\n    private fun setupChart() {\r\n        lineChart = findViewById(R.id.lineChart)\r\n\r\n        // Configure chart appearance\r\n        lineChart.apply {\r\n            description.isEnabled = false\r\n            setTouchEnabled(true)\r\n            isDragEnabled = true\r\n            setScaleEnabled(true)\r\n            setPinchZoom(true)\r\n            setBackgroundColor(Color.WHITE)\r\n        }\r\n\r\n        // Configure X axis\r\n        lineChart.xAxis.apply {\r\n            position = XAxis.XAxisPosition.BOTTOM\r\n            textColor = Color.BLACK\r\n            axisMaximum = 5f\r\n            axisMinimum = -5f\r\n            setDrawGridLines(true)\r\n            setDrawAxisLine(true)\r\n        }\r\n\r\n        // Configure Y axis\r\n        lineChart.axisLeft.apply {\r\n            textColor = Color.BLACK\r\n            setDrawGridLines(true)\r\n            axisMaximum = 5f\r\n            axisMinimum = -5f\r\n            setDrawAxisLine(true)\r\n        }\r\n\r\n        val dataSet = LineDataSet(dataPoints, \"User position\").apply {\r\n            color = Color.BLUE\r\n            setCircleColor(Color.BLUE)\r\n            setDrawCircles(true)\r\n            setDrawValues(false)\r\n            lineWidth = 2f\r\n            circleRadius = 4f\r\n            mode = LineDataSet.Mode.LINEAR\r\n        }\r\n\r\n        lineChart.setTouchEnabled(true)\r\n        lineChart.setPinchZoom(true)\r\n\r\n        dataPoints.add(Entry(beacon1.getCoordinates()[0].toFloat(), beacon1.getCoordinates()[1].toFloat()))\r\n        dataPoints.add(Entry(beacon2.getCoordinates()[0].toFloat(), beacon2.getCoordinates()[1].toFloat()))\r\n        dataPoints.add(Entry(beacon3.getCoordinates()[0].toFloat(), beacon3.getCoordinates()[1].toFloat()))\r\n        dataPoints.add(Entry(beacon4.getCoordinates()[0].toFloat(), beacon4.getCoordinates()[1].toFloat()))\r\n        dataPoints.add(Entry(beacon5.getCoordinates()[0].toFloat(), beacon5.getCoordinates()[1].toFloat()))\r\n        dataPoints.add(Entry(beacon6.getCoordinates()[0].toFloat(), beacon6.getCoordinates()[1].toFloat()))\r\n\r\n        lineChart.data = LineData(dataSet)\r\n//\r\n//        // Configure right Y axis\r\n//        lineChart.axisRight.isEnabled = false\r\n\r\n        // Initialize data\r\n        updateChartData()\r\n    }\r\n\r\n    private fun updateChartData() {\r\n        lineChart.data.notifyDataChanged()\r\n        lineChart.notifyDataSetChanged()\r\n        lineChart.invalidate() // Refresh chart\r\n    }\r\n\r\n    private fun startRssiTracking() {\r\n        bluetoothWorker.startScanning(\r\n            callback = { results ->\r\n                handleScanResults(results)\r\n            },\r\n            continuous = true,\r\n            period = 5000L,    // Scan every second\r\n            interval = 2000L    // Small interval between scans\r\n        )\r\n    }\r\n\r\n\r\n\r\n    private fun handleScanResults(rawResults: List<ScanResult>) {\r\n        val results = rawResults.sortedByDescending { it.rssi }\r\n\r\n        if (results.size < 2) {\r\n            return\r\n        }\r\n\r\n        if (results.size == 2) {\r\n            beacon1dist = (beaconProjects[results[0].device.address]?.calculateDistance(results[0].rssi, results[0].txPower.toDouble())\r\n                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double\r\n            beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())\r\n                ?: trilaterationFunction.setBeacon2Dist(beacon2dist )) as Double\r\n            trilaterationFunction.setBeacon2Dist(beacon2dist)\r\n            val coordinates = trilaterationFunction.solve()\r\n\r\n            dataPoints.removeLast()\r\n            dataPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))\r\n        }\r\n\r\n\r\n        else {\r\n            beacon1dist = (beaconProjects[results[0].device.address]?.calculateDistance(results[0].rssi, results[0].txPower.toDouble())\r\n                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double\r\n            beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())\r\n                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double\r\n            beacon3dist = (beaconProjects[results[2].device.address]?.calculateDistance(results[2].rssi, results[2].txPower.toDouble())\r\n                ?: trilaterationFunction.setBeacon1Dist(beacon3dist )) as Double\r\n            val coordinates = trilaterate2D(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon3.getCoordinates(), beacon1dist, beacon2dist, beacon3dist)\r\n            dataPoints.removeLast()\r\n            dataPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))\r\n        }\r\n\r\n        updateChartData()\r\n    }\r\n\r\n    private fun trilaterate2D(beacon1: DoubleArray, beacon2: DoubleArray, beacon3: DoubleArray, beacon1dist: Double, beacon2dist: Double, beacon3dist: Double): DoubleArray {\r\n        val A = 2 * (beacon2[0] - beacon1[0])\r\n        val B = 2 * (beacon2[1] - beacon1[1])\r\n        val C = beacon1dist.pow(2) - beacon2dist.pow(2) - beacon1[0].pow(2) - beacon1[1].pow(2) + beacon2[0].pow(2) + beacon2[1].pow(2)\r\n        val D = 2 * (beacon3[0] - beacon2[0])\r\n        val E = 2 * (beacon3[1] - beacon2[1])\r\n        val F = beacon2dist.pow(2) - beacon3dist.pow(2) - beacon2[0].pow(2) - beacon2[1].pow(2) + beacon3[0].pow(2) + beacon3[1].pow(2)\r\n\r\n        val x = (C * E - F * B) / (E * A - B * D)\r\n        val y = (C * D - A * F) / (B * D - A * E)\r\n\r\n        return doubleArrayOf(x, y)\r\n\r\n//        // The separation of beacons 1 and 2\r\n//        // Distance formula\r\n//        val u = sqrt((beacon1[0] - beacon2[0]).pow(2) + (beacon1[1] - beacon2[1]).pow(2))\r\n//\r\n//        val x = (beacon1dist.pow(2)-beacon2dist.pow(2) + u.pow(2))/(2*u)\r\n//        val negativeY = -sqrt(beacon1dist.pow(2) - x.pow(2))\r\n//        val positiveY = sqrt(beacon1dist.pow(2) - x.pow(2))\r\n//\r\n//        // See which potential y value is closest to the third beacon\r\n//        val negGap = sqrt((beacon3[0] - x).pow(2) + (beacon3[1] - negativeY).pow(2))\r\n//        val posGap = sqrt((beacon3[0] - x).pow(2) + (beacon3[1] - positiveY).pow(2))\r\n//        if (negGap <= posGap || posGap.isNaN()) {\r\n//            return doubleArrayOf(x, negativeY)\r\n//        } else if (negGap.isNaN()) {\r\n//            return doubleArrayOf(x, positiveY)\r\n//        }\r\n//        return doubleArrayOf(x, positiveY)\r\n    }\r\n\r\n    override fun onResume() {\r\n        super.onResume()\r\n        //startRssiTracking()\r\n    }\r\n\r\n    override fun onPause() {\r\n        super.onPause()\r\n        bluetoothWorker.stopScanning()\r\n    }\r\n\r\n    override fun onDestroy() {\r\n        super.onDestroy()\r\n        bluetoothWorker.stopScanning()\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/punchthrough/blestarterappandroid/PointGraphActivity.kt b/app/src/main/java/com/punchthrough/blestarterappandroid/PointGraphActivity.kt
+--- a/app/src/main/java/com/punchthrough/blestarterappandroid/PointGraphActivity.kt	(revision 3b6811f82874cb03efa00e314f5fec70d59ca8a7)
++++ b/app/src/main/java/com/punchthrough/blestarterappandroid/PointGraphActivity.kt	(date 1755496404181)
+@@ -2,20 +2,24 @@
+ 
+ import android.bluetooth.le.ScanResult
+ import android.graphics.Color
++import android.os.Build
+ import android.os.Bundle
++import androidx.annotation.RequiresApi
+ import androidx.appcompat.app.AppCompatActivity
+-import com.github.mikephil.charting.charts.LineChart
++import com.github.mikephil.charting.charts.ScatterChart
+ import com.github.mikephil.charting.components.XAxis
+ import com.github.mikephil.charting.data.Entry
+-import com.github.mikephil.charting.data.LineData
+-import com.github.mikephil.charting.data.LineDataSet
++import com.github.mikephil.charting.data.ScatterData
++import com.github.mikephil.charting.data.ScatterDataSet
++import com.github.mikephil.charting.interfaces.datasets.IScatterDataSet
+ import kotlin.math.pow
+ 
+ class PointGraphActivity : AppCompatActivity() {
+-    private lateinit var lineChart: LineChart
++    // private lateinit var lineChart: LineChart
++    private lateinit var scatterChart: ScatterChart
+     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
+-    private val dataPoints = ArrayList<Entry>()
+-
++    private var userPoints = ArrayList<Entry>()
++    private var locationDataSet = ScatterDataSet(userPoints,"User position")
+ 
+     private val beaconProjects = bluetoothWorker.getBeaconProjects()
+     private val beacons = beaconProjects.values.toList()
+@@ -25,13 +29,17 @@
+     var beacon4 = beacons[3]
+     var beacon5 = beacons[4]
+     var beacon6 = beacons[5]
++    private var beaconLocations = ArrayList<Entry>()
++    private var beaconsDataSet = ScatterDataSet(beaconLocations, "Beacons")
+ 
+     var beacon1dist: Double = 0.0
+     var beacon2dist: Double = 0.0
+     var beacon3dist: Double = 0.0
+     private var trilaterationFunction = TrilaterationFunction(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon1dist, beacon2dist)
+ 
++    private var scatterDataSets = ArrayList<IScatterDataSet>()
+ 
++    @RequiresApi(Build.VERSION_CODES.O)
+     override fun onCreate(savedInstanceState: Bundle?) {
+         super.onCreate(savedInstanceState)
+ 
+@@ -48,87 +56,102 @@
+     }
+ 
+     private fun setupChart() {
+-        lineChart = findViewById(R.id.lineChart)
++        scatterChart = findViewById(R.id.scatterChart)
++
++        title = "User location"
+ 
+-        // Configure chart appearance
+-        lineChart.apply {
+-            description.isEnabled = false
+-            setTouchEnabled(true)
+-            isDragEnabled = true
+-            setScaleEnabled(true)
+-            setPinchZoom(true)
+-            setBackgroundColor(Color.WHITE)
+-        }
++        val scatterData = ScatterData()
+ 
+-        // Configure X axis
+-        lineChart.xAxis.apply {
+-            position = XAxis.XAxisPosition.BOTTOM
+-            textColor = Color.BLACK
+-            axisMaximum = 5f
+-            axisMinimum = -5f
+-            setDrawGridLines(true)
+-            setDrawAxisLine(true)
+-        }
++        // Add the data sets to the chart data
++        // scatterData.addDataSet(beaconsDataSet)
++        scatterData.addDataSet(locationDataSet)
+ 
+-        // Configure Y axis
+-        lineChart.axisLeft.apply {
+-            textColor = Color.BLACK
+-            setDrawGridLines(true)
+-            axisMaximum = 5f
+-            axisMinimum = -5f
+-            setDrawAxisLine(true)
+-        }
++        // Set the data to the chart
++        scatterChart.data = scatterData
+ 
+-        val dataSet = LineDataSet(dataPoints, "User position").apply {
+-            color = Color.BLUE
+-            setCircleColor(Color.BLUE)
+-            setDrawCircles(true)
+-            setDrawValues(false)
+-            lineWidth = 2f
+-            circleRadius = 4f
+-            mode = LineDataSet.Mode.LINEAR
+-        }
++        scatterChart.isDragEnabled = true
++        scatterChart.setPinchZoom(true)
++        scatterChart.setScaleEnabled(true)
+ 
+-        lineChart.setTouchEnabled(true)
+-        lineChart.setPinchZoom(true)
++        scatterChart.setBackgroundColor(Color.WHITE)
++        val xAxis = scatterChart.xAxis
++        xAxis.position = XAxis.XAxisPosition.BOTTOM
++        xAxis.textColor = Color.BLACK
++        xAxis.setDrawGridLines(true)
++        xAxis.axisMinimum = -4f
++        xAxis.axisMaximum = 4f
+ 
+-        dataPoints.add(Entry(beacon1.getCoordinates()[0].toFloat(), beacon1.getCoordinates()[1].toFloat()))
+-        dataPoints.add(Entry(beacon2.getCoordinates()[0].toFloat(), beacon2.getCoordinates()[1].toFloat()))
+-        dataPoints.add(Entry(beacon3.getCoordinates()[0].toFloat(), beacon3.getCoordinates()[1].toFloat()))
+-        dataPoints.add(Entry(beacon4.getCoordinates()[0].toFloat(), beacon4.getCoordinates()[1].toFloat()))
+-        dataPoints.add(Entry(beacon5.getCoordinates()[0].toFloat(), beacon5.getCoordinates()[1].toFloat()))
+-        dataPoints.add(Entry(beacon6.getCoordinates()[0].toFloat(), beacon6.getCoordinates()[1].toFloat()))
++        val yAxisL = scatterChart.axisLeft
++        yAxisL.textColor = Color.BLACK
++        yAxisL.setDrawGridLines(true)
++        yAxisL.axisMinimum = -4f
++        yAxisL.axisMaximum = 4f
+ 
+-        lineChart.data = LineData(dataSet)
+-//
+-//        // Configure right Y axis
+-//        lineChart.axisRight.isEnabled = false
++        val yAxisR = scatterChart.axisRight
++        yAxisR.isEnabled = false
+ 
+-        // Initialize data
++        locationDataSet.setScatterShape(ScatterChart.ScatterShape.TRIANGLE)
++        locationDataSet.setColor(Color.BLUE)
++        locationDataSet.setDrawValues(true)
++
++        beaconsDataSet.setScatterShape(ScatterChart.ScatterShape.CIRCLE)
++        beaconsDataSet.setColor(Color.BLACK)
++        beaconsDataSet.setDrawValues(false)
++
++        beaconLocations.add(Entry(beacon1.getCoordinates()[0].toFloat(), beacon1.getCoordinates()[1].toFloat()))
++        beaconLocations.add(Entry(beacon2.getCoordinates()[0].toFloat(), beacon2.getCoordinates()[1].toFloat()))
++        beaconLocations.add(Entry(beacon3.getCoordinates()[0].toFloat(), beacon3.getCoordinates()[1].toFloat()))
++        beaconLocations.add(Entry(beacon4.getCoordinates()[0].toFloat(), beacon4.getCoordinates()[1].toFloat()))
++        beaconLocations.add(Entry(beacon5.getCoordinates()[0].toFloat(), beacon5.getCoordinates()[1].toFloat()))
++        beaconLocations.add(Entry(beacon6.getCoordinates()[0].toFloat(), beacon6.getCoordinates()[1].toFloat()))
++
++        beaconsDataSet.notifyDataSetChanged()
++
++        // Initial chart update
+         updateChartData()
+     }
+ 
+     private fun updateChartData() {
+-        lineChart.data.notifyDataChanged()
+-        lineChart.notifyDataSetChanged()
+-        lineChart.invalidate() // Refresh chart
+-    }
++        val locationDataSet = ScatterDataSet(userPoints, "User position").apply {
++            setScatterShape(ScatterChart.ScatterShape.TRIANGLE)
++            color = Color.BLUE
++            setDrawIcons(true)
++            setDrawValues(true)
++            scatterShapeSize = 20f
++        }
+ 
++        val scatterData = scatterChart.scatterData
++        scatterData.removeDataSet(0)
++        scatterData.addDataSet(locationDataSet)
++
++        scatterChart.data = scatterData
++
++        // Notify the chart that data has changed
++        scatterChart.data.notifyDataChanged()
++        scatterChart.notifyDataSetChanged()
++
++        // Force the chart to redraw
++        scatterChart.invalidate()
++    }
++
++    @RequiresApi(Build.VERSION_CODES.O)
+     private fun startRssiTracking() {
+         bluetoothWorker.startScanning(
+             callback = { results ->
+                 handleScanResults(results)
+             },
+             continuous = true,
+-            period = 5000L,    // Scan every second
+-            interval = 2000L    // Small interval between scans
++            period = 1000L,    // Scan every second
++            interval = 200L    // Small interval between scans
+         )
+     }
+ 
+ 
+ 
++    @RequiresApi(Build.VERSION_CODES.O)
+     private fun handleScanResults(rawResults: List<ScanResult>) {
+         val results = rawResults.sortedByDescending { it.rssi }
++        var coordinates = doubleArrayOf(0.0, 0.0)
+ 
+         if (results.size < 2) {
+             return
+@@ -140,23 +163,25 @@
+             beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())
+                 ?: trilaterationFunction.setBeacon2Dist(beacon2dist )) as Double
+             trilaterationFunction.setBeacon2Dist(beacon2dist)
+-            val coordinates = trilaterationFunction.solve()
++            coordinates = trilaterationFunction.solve()
+ 
+-            dataPoints.removeLast()
+-            dataPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
++            userPoints.clear()
++            userPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
+         }
+ 
+ 
+         else {
++            // or use trilaterateFunction and omit 3rd dimension from map
+             beacon1dist = (beaconProjects[results[0].device.address]?.calculateDistance(results[0].rssi, results[0].txPower.toDouble())
+                 ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double
+             beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())
+                 ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double
+             beacon3dist = (beaconProjects[results[2].device.address]?.calculateDistance(results[2].rssi, results[2].txPower.toDouble())
+                 ?: trilaterationFunction.setBeacon1Dist(beacon3dist )) as Double
+-            val coordinates = trilaterate2D(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon3.getCoordinates(), beacon1dist, beacon2dist, beacon3dist)
+-            dataPoints.removeLast()
+-            dataPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
++            coordinates = trilaterate2D(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon3.getCoordinates(), beacon1dist, beacon2dist, beacon3dist)
++
++            userPoints.clear()
++            userPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))
+         }
+ 
+         updateChartData()
+@@ -192,8 +217,11 @@
+ //            return doubleArrayOf(x, positiveY)
+ //        }
+ //        return doubleArrayOf(x, positiveY)
++
++        // another way (stackexchange)
+     }
+ 
++    @RequiresApi(Build.VERSION_CODES.O)
+     override fun onResume() {
+         super.onResume()
+         //startRssiTracking()
+Index: app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>/*\r\n * Copyright 2025 Punch Through Design LLC\r\n *\r\n * Licensed under the Apache License, Version 2.0 (the \"License\");\r\n * you may not use this file except in compliance with the License.\r\n * You may obtain a copy of the License at\r\n *\r\n *     http://www.apache.org/licenses/LICENSE-2.0\r\n *\r\n * Unless required by applicable law or agreed to in writing, software\r\n * distributed under the License is distributed on an \"AS IS\" BASIS,\r\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\r\n * See the License for the specific language governing permissions and\r\n * limitations under the License.\r\n */\r\n\r\npackage com.punchthrough.blestarterappandroid;\r\n\r\npublic class TrilaterationFunction {\r\n    // 2D trilateration just uses 2 functions\r\n//    Expr rearrangedCircleFormula = SymMath.sqrt(SymMath.pow(x.subtract(a), 2)\r\n//            .add(SymMath.pow(y.subtract(b), 2))).subtract(SymMath.pow(d,2));\r\n\r\n    int numEquations;\r\n    int numColumns;\r\n    double precision = 1E-3;\r\n    double[][] fMatrix;\r\n    double[][] jacobianMatrix;\r\n    double[] beacon1;\r\n    double[] beacon2;\r\n    double[] beacon3;\r\n    double beacon1dist;\r\n    double beacon2dist;\r\n    double beacon3dist;\r\n\r\n    TrilaterationFunction(double[] coordinates1, double dist1) {\r\n        this.beacon1 = coordinates1;\r\n        this.beacon2 = null;\r\n        this.beacon3 = null;\r\n        this.beacon1dist = dist1;\r\n        this.numEquations = 1;\r\n        this.numColumns = 2;\r\n        this.fMatrix = new double[numEquations][1];\r\n        this.jacobianMatrix = new double[numEquations][numColumns];\r\n    }\r\n\r\n    TrilaterationFunction(double[] coordinates1, double[] coordinates2,  double dist1, double dist2) {\r\n        this.beacon1 = coordinates1;\r\n        this.beacon2 = coordinates2;\r\n        this.beacon3 = null;\r\n        this.beacon1dist = dist1;\r\n        this.beacon2dist = dist2;\r\n        this.numEquations = 2;\r\n        this.numColumns = 3;\r\n        this.fMatrix = new double[numEquations][1];\r\n        this.jacobianMatrix = new double[numEquations][numColumns];\r\n    }\r\n\r\n// For 3D!!!!!!!!!\r\n    // NOTE: ALL COORDINATES WILL NEED 3 VALUES [X,Y,Z]\r\n    TrilaterationFunction(double[] coordinates1, double[] coordinates2, double[] coordinates3, double dist1, double dist2, double dist3) {\r\n        this.beacon1 = coordinates1;\r\n        this.beacon2 = coordinates2;\r\n        this.beacon3 = coordinates3;\r\n        this.beacon1dist = dist1;\r\n        this.beacon2dist = dist2;\r\n        this.beacon3dist = dist3;\r\n        this.numEquations = 3;\r\n        this.numColumns = 4;\r\n        this.fMatrix = new double[numEquations][1];\r\n        this.jacobianMatrix = new double[numEquations][numColumns];\r\n    }\r\n\r\n    void setBeacon1Dist(double dist) {\r\n        this.beacon1dist = dist;\r\n    }\r\n\r\n    void setBeacon2Dist(double dist) {\r\n        this.beacon2dist = dist;\r\n    }\r\n\r\n    void setBeacon3Dist(double dist) {\r\n        this.beacon3dist = dist;\r\n    }\r\n\r\n    void setBeacon1(double[] coordinates) {\r\n        this.beacon1 = coordinates;\r\n    }\r\n\r\n    void setBeacon2(double[] coordinates) {\r\n        this.beacon2 = coordinates;\r\n    }\r\n\r\n    void setBeacon3(double[] coordinates) {\r\n        this.beacon3 = coordinates;\r\n    }\r\n\r\n    double[] solve() {\r\n        double[] initial = {1,1};\r\n        double[] next = this.iterate(initial);\r\n        while (!this.calcError(initial, next)) {\r\n            initial = next;\r\n            next = this.iterate(initial);\r\n        }\r\n        return next;\r\n    }\r\n\r\n    double[] iterate(double[] initial) {\r\n\r\n        fMatrix[0][0] = (Math.pow((initial[0]-beacon1[0]), 2) + Math.pow((initial[1]-beacon1[1]), 2) - Math.pow(beacon1dist, 2));\r\n        if (beacon2 != null) {\r\n            fMatrix[1][0] = (Math.pow((initial[0]-beacon2[0]), 2) + Math.pow((initial[1]-beacon2[1]), 2) - Math.pow(beacon2dist, 2));\r\n        }\r\n\r\n        // for 3D\r\n        if (beacon3 != null) {\r\n            fMatrix[2][0] = (Math.pow((initial[0]-beacon3[0]), 2) + Math.pow((initial[1]-beacon3[1]), 2) - Math.pow(beacon3dist, 2));\r\n        }\r\n\r\n        jacobianMatrix[0][0] = 2*(initial[0]-beacon1[0]);\r\n        jacobianMatrix[0][1] = 2*(initial[1]-beacon1[1]);\r\n        jacobianMatrix[0][2] = -1*fMatrix[0][0];\r\n\r\n        if (beacon2 != null) {\r\n            jacobianMatrix[1][0] = 2 * (initial[0] - beacon2[0]);\r\n            jacobianMatrix[1][1] = 2 * (initial[1] - beacon2[1]);\r\n            jacobianMatrix[1][2] = -1 * fMatrix[1][0];\r\n        }\r\n\r\n        // for 3D\r\n        if (beacon3 != null) {\r\n            jacobianMatrix[2][0] = 2*(initial[0]-beacon3[0]);\r\n            jacobianMatrix[2][1] = 2*(initial[1]-beacon3[1]);\r\n            jacobianMatrix[2][2] = -1*fMatrix[2][0];\r\n        }\r\n\r\n        double[][] reducedMatrix = rowReduce(jacobianMatrix);\r\n\r\n        double[] nextGuess = new double[reducedMatrix.length];\r\n\r\n        for (int i = 0; i < reducedMatrix.length; i ++) {\r\n            nextGuess[i] = reducedMatrix[i][this.numEquations] + initial[i];\r\n        }\r\n\r\n        return nextGuess; // return the last column = coordinates\r\n    }\r\n\r\n    public double[][] rowReduce(double[][] matrix)\r\n    {\r\n        //1:\r\n        reduceToTriangleForm:\r\n        for(int pivotColumn = 0, pivotRow = 0; pivotRow < numEquations; pivotRow++)\r\n        {\r\n            int pivotRowCheck = pivotRow; // pivotRowCheck is used to check each row\r\n            // until a pivot point is found in the column\r\n            while ( matrix[pivotRowCheck][pivotColumn] == 0 )\r\n            {\r\n                pivotRowCheck++;\r\n                // if checks all of equations and finds no potential pivot points in the\r\n                // current pivot column, the seach continues in the next pivot column\r\n                if ( pivotRowCheck == numEquations )\r\n                {\r\n                    pivotColumn++;\r\n                    pivotRowCheck = pivotRow;\r\n                }\r\n                // should no more pivot columns points be found, exit search\r\n                if ( pivotColumn == numColumns)\r\n                {\r\n                    // System.out.println(\"Matrix is now in triangle form\");\r\n                    break reduceToTriangleForm;\r\n                }\r\n            }\r\n            // a new pivot poition has been found in pivotRowCheck\r\n            // move this equaiton to the pivotRow\r\n            if ( pivotRow != pivotRowCheck )\r\n            {\r\n                // System.out.println(\"interchanging row \" + pivotRow + \" with row \" + pivotRowCheck);\r\n                interchange(pivotRow,pivotRowCheck, matrix);\r\n                // System.out.print(this);\r\n            }\r\n\r\n//3: row replacement algorithm\r\n            // reduce row so that pivot point is a 1\r\n            if ( Math.abs( matrix[pivotRow][pivotColumn] ) > precision)\r\n            {\r\n                // System.out.println(\"scale row \" + (pivotRow+1) + \" by \" +  (1/matrix[pivotRow][pivotColumn]));\r\n                scale(pivotRow, 1/matrix[pivotRow][pivotColumn], matrix);\r\n                // System.out.print(this);\r\n            }\r\n\r\n//interate through rest of equaitons\r\n            for ( int row = pivotRow+1; row < numEquations; row++)\r\n            {\r\n                // replace all other rows such that pivot column in other rows = 0\r\n                if ( matrix[row][pivotColumn] != 0 )\r\n                {\r\n                    // System.out.println(\"add \" + ( -1*matrix[row][pivotColumn] ) + \" times row \" + (pivotRow+1) + \" to row \" + (row+1));\r\n                    replace(row, -1*matrix[row][pivotColumn], pivotRow, matrix);\r\n                    // System.out.print(this);\r\n                }\r\n\r\n            }\r\n\r\n            //4: itterate through loop and try to find another pivot point in next column\r\n            if ( pivotRow == numEquations-1)\r\n            {\r\n                // System.out.println(\"Matrix is now in triangle form\");\r\n            }\r\n        }\r\n        //reached end of itterating though loop\r\n        //5: Begining with the rightmost pivot and working upward and to the left\r\n        // create zeros above each pivot.\r\n        boolean solved = true;\r\n        reduceToRREF:\r\n        for ( int pivotRow = numEquations-1; pivotRow >= 0; pivotRow-- )\r\n        {\r\n            for (int pivotColumn = 0; pivotColumn < numColumns; pivotColumn++)\r\n            {\r\n                if ( matrix[pivotRow][pivotColumn] != 0 )\r\n                {\r\n// if a pivot is found and is not in last column\r\n                    if ( pivotColumn != numColumns-1 )\r\n                    {\r\n                        // add to the rows above the pivot\r\n                        for ( int row = pivotRow-1; row >= 0; row--)\r\n                        {\r\n                            // System.out.println(\"add \" + ( -1*matrix[row][pivotColumn] ) + \" times row \" + (pivotRow+1) + \" to row \" + (row+1));\r\n                            replace(row, -1*matrix[row][pivotColumn], pivotRow, matrix);\r\n                            // System.out.print(this);\r\n                        }\r\n                        break;\r\n                    }\r\n                    // if a pivot is found but is in the last column -> matrix inconsistent\r\n                    else if ( pivotColumn == numColumns-1 )\r\n                    {\r\n                        solved = false;\r\n                        break reduceToRREF;\r\n                    }\r\n                }\r\n            }\r\n        }\r\n        return matrix;\r\n    }\r\n    // interchange two rows\r\n    public void interchange(int row1, int row2, double[][] matrix)\r\n    {\r\n        if (row1 < 0 || row1 >= numEquations || row2 < 0 || row2 >= numEquations)\r\n            System.err.println(\"one or more invalid equations attempting to be inte\" +\r\n                    \"rchanged\");\r\n\r\n        // if row1 == row2 do nothing\r\n        if( row1 == row2 )\r\n            return;\r\n\r\n        // swap individual coefficents/constants of the two rows\r\n        double temp;\r\n        for (int i = 0; i< numColumns; i++)\r\n        {\r\n            temp = matrix[row1][i];\r\n            matrix[row1][i] = matrix[row2][i];\r\n            matrix[row2][i] = temp;\r\n        }\r\n    }\r\n\r\n    // multiply all entries in a row by a nonzero constant\r\n    public void scale(int equation, double scalar, double[][] matrix)\r\n    {\r\n        if (equation < 0 || equation >= numEquations)\r\n            System.err.println(\"invalid equation attempting to be scaled\");\r\n\r\n        for (int i = 0; i< numColumns; i++)\r\n        {\r\n            if ( Math.abs(matrix[equation][i] = matrix[equation][i]*scalar) < precision)\r\n                matrix[equation][i] = 0;\r\n        }\r\n    }\r\n\r\n    // replace one row by the sum of itself and a multiple of another row\r\n    // row1 = row1 + scalar*row2\r\n    public void replace(int row1, double scalar, int row2, double[][] matrix)\r\n    {\r\n        if (row1 < 0 || row1 >= numEquations || row2 < 0 || row2 >= numEquations)\r\n            System.err.println(\"one or more invalid equations attempting to used in\" +\r\n                    \"replace\");\r\n        for (int i = 0; i< numColumns; i++)\r\n        {\r\n            matrix[row1][i] += matrix[row2][i]*scalar;\r\n            if( Math.abs(matrix[row1][i]) < precision)\r\n                matrix[row1][i] = 0;\r\n        }\r\n    }\r\n\r\n    public boolean calcError(double[] initial, double[] next) {\r\n        boolean sufficientError = false;\r\n        for (int i = 0; i <= this.numEquations-1; i++) {\r\n            double error = Math.abs((initial[i] - next[i])/initial[i]);\r\n            if (error < this.precision) {\r\n                return sufficientError = true;\r\n            }\r\n            sufficientError = false;\r\n        }\r\n        return sufficientError;\r\n    }\r\n}\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java b/app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java
+--- a/app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java	(revision 3b6811f82874cb03efa00e314f5fec70d59ca8a7)
++++ b/app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java	(date 1755496404186)
+@@ -23,7 +23,7 @@
+ 
+     int numEquations;
+     int numColumns;
+-    double precision = 1E-3;
++    double precision = 0.01;
+     double[][] fMatrix;
+     double[][] jacobianMatrix;
+     double[] beacon1;
+Index: app/src/main/res/layout/activity_point_graph.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<androidx.constraintlayout.widget.ConstraintLayout\r\n    xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    xmlns:app=\"http://schemas.android.com/apk/res-auto\"\r\n    android:layout_width=\"match_parent\"\r\n    android:layout_height=\"match_parent\">\r\n\r\n    <com.github.mikephil.charting.charts.LineChart\r\n        android:id=\"@+id/lineChart\"\r\n        android:layout_width=\"0dp\"\r\n        android:layout_height=\"0dp\"\r\n        app:layout_constraintTop_toBottomOf=\"@+id/textLayout\"\r\n        app:layout_constraintBottom_toBottomOf=\"parent\"\r\n        app:layout_constraintStart_toStartOf=\"parent\"\r\n        app:layout_constraintEnd_toEndOf=\"parent\"/>\r\n\r\n    <LinearLayout\r\n        android:id=\"@+id/textLayout\"\r\n        android:layout_width=\"match_parent\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:orientation=\"vertical\"\r\n        app:layout_constraintTop_toTopOf=\"parent\"\r\n        android:padding=\"16dp\">\r\n\r\n        <TextView\r\n            android:id=\"@+id/lineChartTitle\"\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"40dp\"\r\n            android:text=\"User current location\"\r\n            android:textSize=\"30dp\"\r\n            android:textAlignment=\"center\">\r\n        </TextView>\r\n\r\n<!--        <EditText-->\r\n<!--            android:id=\"@+id/xValueInput\"-->\r\n<!--            android:layout_width=\"match_parent\"-->\r\n<!--            android:layout_height=\"wrap_content\"-->\r\n<!--            android:hint=\"Enter X Value\"/>-->\r\n\r\n<!--        <EditText-->\r\n<!--            android:id=\"@+id/yValueInput\"-->\r\n<!--            android:layout_width=\"match_parent\"-->\r\n<!--            android:layout_height=\"wrap_content\"-->\r\n<!--            android:hint=\"Enter Y Value\"/>-->\r\n\r\n<!--        <Button-->\r\n<!--            android:id=\"@+id/addButton\"-->\r\n<!--            android:layout_width=\"wrap_content\"-->\r\n<!--            android:layout_height=\"wrap_content\"-->\r\n<!--            android:text=\"Add Point\"/>-->\r\n    </LinearLayout>\r\n</androidx.constraintlayout.widget.ConstraintLayout>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/activity_point_graph.xml b/app/src/main/res/layout/activity_point_graph.xml
+--- a/app/src/main/res/layout/activity_point_graph.xml	(revision 3b6811f82874cb03efa00e314f5fec70d59ca8a7)
++++ b/app/src/main/res/layout/activity_point_graph.xml	(date 1755496404186)
+@@ -5,8 +5,8 @@
+     android:layout_width="match_parent"
+     android:layout_height="match_parent">
+ 
+-    <com.github.mikephil.charting.charts.LineChart
+-        android:id="@+id/lineChart"
++    <com.github.mikephil.charting.charts.ScatterChart
++        android:id="@+id/scatterChart"
+         android:layout_width="0dp"
+         android:layout_height="0dp"
+         app:layout_constraintTop_toBottomOf="@+id/textLayout"
