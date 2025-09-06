@@ -25,6 +25,8 @@ import timber.log.Timber
 
 private const val PERMISSION_REQUEST_CODE = 1
 
+private const val MIN_DEVICES_FOR_LOCATION = 3
+
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
@@ -98,7 +100,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun allowClickViewMapButton() : Boolean {
-        return scanResults.size >= 3
+        return scanResults.size >= MIN_DEVICES_FOR_LOCATION
     }
     private fun setupViewMapButton() {
         binding.viewMapButton.setEnabled(allowClickViewMapButton())

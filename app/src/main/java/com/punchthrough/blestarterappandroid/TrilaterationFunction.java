@@ -112,15 +112,13 @@ public class TrilaterationFunction {
 
 
     public boolean calcError(double[] initial, double[] next) {
-        boolean sufficientError = false;
         for (int i = 0; i <= this.numEquations-1; i++) {
             double error = Math.abs((initial[i] - next[i])/initial[i]);
             if (error < precision) {
-                return sufficientError = true;
+                return true;
             }
-            sufficientError = false;
         }
-        return sufficientError;
+        return false;
     }
 
     private void buildJacobian() {
