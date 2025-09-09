@@ -1,6 +1,15 @@
 package com.punchthrough.blestarterappandroid;
 
-import com.punchthrough.blestarterappandroid.AugmentedMatrix;
+import org.apache.commons.math3.fitting.leastsquares.LeastSquaresFactory;
+import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
+import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer.Optimum;
+import org.apache.commons.math3.fitting.leastsquares.LeastSquaresProblem;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.util.Pair;
+import org.apache.commons.math3.fitting.leastsquares.MultivariateJacobianFunction;
+
 
 public class TrilaterationFunction {
     // 2D trilateration just uses 2 functions
@@ -10,12 +19,6 @@ public class TrilaterationFunction {
     double precision = 1E-5;
     double[][] fMatrix = new double[numEquations][1];
     double[][] jacobianMatrix = new double[numEquations][numColumns];
-//    double[] beacon1;
-//    double[] beacon2;
-//    double[] beacon3;
-//    double beacon1dist;
-//    double beacon2dist;
-//    double beacon3dist;
 
     double[][] beaconCoordinates;
     double[] beaconDistances;
@@ -38,48 +41,69 @@ public class TrilaterationFunction {
         this.beaconDistances = beaconDistances;
     }
 
-
-//    // For 3D!!!!!!!!! only takes 3 beacons manually
-//    // NOTE: ALL COORDINATES WILL NEED 3 VALUES [X,Y,Z]
-//    TrilaterationFunction(double[] coordinates1, double[] coordinates2, double[] coordinates3, double dist1, double dist2, double dist3) {
-//        this.beacon1 = coordinates1;
-//        this.beacon2 = coordinates2;
-//        this.beacon3 = coordinates3;
-//        this.beacon1dist = dist1;
-//        this.beacon2dist = dist2;
-//        this.beacon3dist = dist3;
-//        this.numEquations = 3;
-//        this.numColumns = 4;
-//        this.fMatrix = new double[numEquations][1];
-//        this.jacobianMatrix = new double[numEquations][numColumns];
-//        this.initial = new double[]{1, 1, 1};
-//    }
-//
-//    void setBeacon1Dist(double dist) {
-//        this.beacon1dist = dist;
-//    }
-//
-//    void setBeacon2Dist(double dist) {
-//        this.beacon2dist = dist;
-//    }
-//
-//    void setBeacon3Dist(double dist) {
-//        this.beacon3dist = dist;
-//    }
-//
-//    void setBeacon1(double[] coordinates) {
-//        this.beacon1 = coordinates;
-//    }
-//
-//    void setBeacon2(double[] coordinates) {
-//        this.beacon2 = coordinates;
-//    }
-//
-//    void setBeacon3(double[] coordinates) {
-//        this.beacon3 = coordinates;
-//    }
-
     double[] solve() {
+        return solveNewtonRaphson();
+    }
+
+    /**
+     * 3D trilateration with 3 beacons at least, assumed
+     * @return DoubleArray of length n (x,y,z coordinate)
+     */
+    double[] solveLevenbergMarquardt() {
+        int n = this.numEquations;
+        int maxIter = 10000;
+        double[][] anchors = beaconCoordinates;
+        double[] ranges = beaconDistances;
+
+        MultivariateJacobianFunction model = point -> {
+            double x = point.getEntry(0);
+            double y = point.getEntry(1);
+            double z = point.getEntry(2);
+
+            double[] values = new double[n];
+            double[][] jacobian = new double[n][3];
+
+            for (int i = 0; i < n; i++) {
+                double dx = x - (beaconCoordinates[i].length > 0 ? beaconCoordinates[i][0] : 0);
+                double dy = y - (beaconCoordinates[i].length > 1 ? beaconCoordinates[i][1] : 0);
+                double dz = z - (beaconCoordinates[i].length > 2 ? beaconCoordinates[i][2] : 0);
+                double dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                if (dist < 1e-8) dist = 1e-8;
+
+                values[i] = dist;
+
+                jacobian[i][0] = dx / dist;
+                jacobian[i][1] = dy / dist;
+                jacobian[i][2] = dz / dist;
+            }
+
+            RealVector value = MatrixUtils.createRealVector(values);
+            RealMatrix jac = MatrixUtils.createRealMatrix(jacobian);
+            return new Pair<>(value, jac);
+        };
+
+        RealVector target = MatrixUtils.createRealVector(ranges);
+
+        // Initial guess = centroid of anchors
+        double sx = 0, sy = 0, sz = 0;
+        for (int i = 0; i < numEquations; i ++) {
+            sx += beaconCoordinates[i].length > 0 ? beaconCoordinates[i][0] : 0;
+            sy += beaconCoordinates[i].length > 1 ? beaconCoordinates[i][1] : 0;
+            sz += beaconCoordinates[i].length > 2 ? beaconCoordinates[i][2] : 0;
+        }
+        sx /= n; sy /= n; sz /= n;
+
+        RealVector start = MatrixUtils.createRealVector(new double[]{sx, sy, sz});
+
+        LeastSquaresProblem problem = LeastSquaresFactory.create(
+                model, target, start, null, Integer.MAX_VALUE, Integer.MAX_VALUE
+        );
+
+        Optimum optimum = new LevenbergMarquardtOptimizer().optimize(problem);
+        return optimum.getPoint().toArray();
+    }
+
+    double[] solveNewtonRaphson() {
         double[] next = this.iterate(initial);
         while (!this.calcError(initial, next)) {
             initial = next;

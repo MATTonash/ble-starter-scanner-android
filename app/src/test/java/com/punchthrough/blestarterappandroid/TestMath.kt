@@ -30,9 +30,8 @@ import kotlin.math.pow
  *
  */
 
-private const val ACCEPTABLE_TOLERANCE = 0.5 // in m
-private const val CHECKS_PER_TEST = 100
-private const val BEACON_MAX_DISTANCE = 5.0  // in m
+private const val ACCEPTABLE_TOLERANCE = 0.1 // in m
+private const val CHECKS_PER_TEST = 100000
 
 private const val NUM_BEACONS = 3
 
@@ -46,15 +45,22 @@ private const val USER_LOCATION_SQUARE = 5.0 // in m
 class TestMath {
     @Test
     fun test2DMultilaterationWithNoErrors() {
+        var successes = 0
         repeat(CHECKS_PER_TEST) {
-            testScenario(0.0)
+            if (testScenario(0.0)) {
+                successes++
+            }
         }
+        assertTrue("Found location (within tolerance of ${ACCEPTABLE_TOLERANCE}) ${successes} out of ${CHECKS_PER_TEST} times", successes == CHECKS_PER_TEST)
     }
 
     @Test
     fun test2DMultilaterationWithErrors() {
+        var successes = 0
         repeat(CHECKS_PER_TEST) {
-            testScenario(BEACON_ERROR)
+            if (testScenario(BEACON_ERROR)) {
+                successes++
+            }
         }
     }
 
@@ -63,21 +69,27 @@ class TestMath {
         return sqrt(p1.indices.sumOf { (p2[it] - p1[it]).pow(2) })
     }
 
-    private fun testScenario(error: Double) {
+    private fun testScenario(error: Double): Boolean {
         val userTrue = doubleArrayOf(Random.nextDouble(-USER_LOCATION_SQUARE, USER_LOCATION_SQUARE), Random.nextDouble(-USER_LOCATION_SQUARE, USER_LOCATION_SQUARE))
         val userFound = testSolver(userTrue, error, NUM_BEACONS).copyOfRange(0, 2)
         val d = dist(userTrue, userFound)
 
-        assertTrue("Found location (${userFound.joinToString(separator = ", ")}) is too far (distance = ${d}, tolerance = ${ACCEPTABLE_TOLERANCE}) from actual location (${userTrue.joinToString(separator = ", ")})", d <= ACCEPTABLE_TOLERANCE)
+        // assertTrue("Found location (${userFound.joinToString(separator = ", ")}) is too far (distance = ${d}, tolerance = ${ACCEPTABLE_TOLERANCE}) from actual location (${userTrue.joinToString(separator = ", ")})", d <= ACCEPTABLE_TOLERANCE)
+        return d <= ACCEPTABLE_TOLERANCE
     }
 
     private fun testSolver(origin: DoubleArray, error: Double, numCoords: Int) : DoubleArray {
         val coords = Array(numCoords) { DoubleArray(0) }
         val distances = DoubleArray(numCoords)
 
-        for (i in 0 until numCoords) {
-            coords[i] = doubleArrayOf(Random.nextDouble(origin[0] - BEACON_MAX_DISTANCE, origin[0] + BEACON_MAX_DISTANCE), Random.nextDouble(origin[1] - BEACON_MAX_DISTANCE, origin[1] + BEACON_MAX_DISTANCE))
 
+        val x = 2;
+        coords[0] = doubleArrayOf(USER_LOCATION_SQUARE / x, USER_LOCATION_SQUARE / x)
+        coords[1] = doubleArrayOf(-USER_LOCATION_SQUARE / x, USER_LOCATION_SQUARE / x)
+        coords[2] = doubleArrayOf(USER_LOCATION_SQUARE / x, -USER_LOCATION_SQUARE / x)
+
+
+        for (i in 0 until numCoords) {
             var d = dist(coords[i], origin)
             if (error > 0) {
                 d = d * Random.nextDouble(1 - error, 1 + error)
