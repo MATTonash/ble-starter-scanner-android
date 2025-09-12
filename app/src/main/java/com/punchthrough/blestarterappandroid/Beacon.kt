@@ -33,7 +33,7 @@ class Beacon(beaconName: String,
     private var buzzerSensitivity = 0;
 
     public fun calculateDistance(rssi: Int, txPower: Int): Double{
-        return 10.0.pow((callibrationRSSI - rssi)/(10*txPower))
+        return 10.0.pow((callibrationRSSI - rssi).toDouble()/(10*txPower).toDouble())
     }
 
     public fun getCoordinates(): DoubleArray{

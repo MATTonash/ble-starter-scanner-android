@@ -166,6 +166,7 @@ class PointGraphActivity : AppCompatActivity() {
         val knownResults = rawResults
             .filter { beaconProjects.containsKey(it.device.address) }
             .sortedByDescending { it.rssi }
+            .take(3) // Limit to top 3 beacons for performance
 
         // Need at least 3 beacons for trilateration
         if (knownResults.size < 3) {
