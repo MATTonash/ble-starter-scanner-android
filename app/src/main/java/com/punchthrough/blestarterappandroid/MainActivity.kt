@@ -24,6 +24,7 @@ import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
 
 private const val PERMISSION_REQUEST_CODE = 1
+private const val MIN_BEACONS_FOR_LOCATION = 0
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -98,12 +99,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun allowClickViewMapButton() : Boolean {
-        return scanResults.size >= 3
+        return scanResults.size >= MIN_BEACONS_FOR_LOCATION;
     }
     private fun setupViewMapButton() {
         binding.viewMapButton.setEnabled(allowClickViewMapButton())
         binding.viewMapButton.setOnClickListener {
-            launchPointGraphActivity()
+            startActivity(Intent(this, MapActivity::class.java))
         }
     }
 

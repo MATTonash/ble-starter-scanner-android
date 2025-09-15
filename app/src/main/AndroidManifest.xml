@@ -45,7 +45,11 @@
         <activity
             android:name=".PointGraphActivity"
             android:exported="false"
-            android:label="RSSI Graph" /> <!-- Add this line -->
+            android:label="RSSI Graph" />
+        <activity
+            android:name=".MapActivity"
+            android:exported="false"
+            android:label="User Map" />
         <activity
             android:name=".BleOperationsActivity"
             android:exported="false"

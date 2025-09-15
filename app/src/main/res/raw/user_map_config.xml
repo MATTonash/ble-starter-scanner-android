@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<floorplan>
+    <!-- <beacon x="1.0" y="1.5" /> -->
+
+    <!-- Top left screen coordinate is 0, 0 | Bottom right screen coordinate is maxX, maxY-->
+    <coordinateSystem maxX="5.0" maxY="5.0" />
+
+    <polygons>
+        <polygon>
+            <point x="1.0" y="1.0"/>
+            <point x="3.0" y="1.0"/>
+            <point x="3.0" y="2.0"/>
+            <point x="1.0" y="2.0"/>
+        </polygon>
+        <rectangle x="1.0" y="3.0" width="1.0" height="2.0" />
+        <rectangle x="3.0" y="0.0" width="1.0" height="3.0" />
+        <rectangle x="3.0" y="4.0" width="2.0" height="1.0" />
+    </polygons>
+
+    <start x="0.0" y="4.0" width="1.0" height="1.0" />
+    <end x="4.0" y="0.0" width="1.0" height="1.0" />
+
+    <path>
+        <point x="0.5" y="4.5" />
+        <point x="0.5" y="2.5" />
+        <point x="2.5" y="2.5" />
+        <point x="2.5" y="3.5" />
+        <point x="4.5" y="3.5" />
+        <point x="4.5" y="0.5" />
+    </path>
+</floorplan>
