@@ -24,7 +24,12 @@ import android.view.View
 import androidx.annotation.RawRes
 import org.xmlpull.v1.XmlPullParser
 import kotlin.math.min
+import kotlin.math.sqrt
+import kotlin.math.abs
 
+private const val LINE_WIDTH = 20f
+private const val DEFAULT_MAX_X = 5f
+private const val DEFAULT_MAX_Y = 5f
 
 data class ConfigPoint(val x: Float, val y: Float)
 
@@ -34,17 +39,16 @@ data class UserMapConfig(
     val paths: List<List<ConfigPoint>> = emptyList(),
     val startRectangles: List<List<ConfigPoint>> = emptyList(),
     val endRectangles: List<List<ConfigPoint>> = emptyList(),
-    val maxX: Float = 5f,
-    val maxY: Float = 5f
+    val maxX: Float = DEFAULT_MAX_X,
+    val maxY: Float = DEFAULT_MAX_Y
 )
 
 
 
 class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
-
     // Logical coordinate system
-    private var maxX = 5f
-    private var maxY = 5f
+    private var maxX = DEFAULT_MAX_X
+    private var maxY = DEFAULT_MAX_Y
 
     // Screen mapping
     private var scale = 1f
@@ -56,7 +60,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     private val mapBackgroundPaint = Paint().apply { color = Color.LTGRAY; style = Paint.Style.FILL }
     private val beaconPaint = Paint().apply { color = Color.CYAN; style = Paint.Style.FILL }
     private val polygonPaint = Paint().apply { color = Color.BLACK; style = Paint.Style.FILL }
-    private val linePaint = Paint().apply { color = Color.BLUE; style = Paint.Style.STROKE; strokeWidth = 20f }
+    private val linePaint = Paint().apply { color = Color.BLUE; style = Paint.Style.STROKE; strokeWidth = LINE_WIDTH }
     private val startRectPaint = Paint().apply { color = Color.YELLOW; style = Paint.Style.FILL }
     private val endRectPaint = Paint().apply { color = Color.MAGENTA; style = Paint.Style.FILL }
     private val userPaint = Paint().apply { color = Color.RED; style = Paint.Style.FILL }
@@ -121,8 +125,8 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
 
         var currentPolygon: MutableList<ConfigPoint>? = null
         var currentPath: MutableList<ConfigPoint>? = null
-        var maxX = 5f
-        var maxY = 5f
+        var maxX = DEFAULT_MAX_X
+        var maxY = DEFAULT_MAX_Y
 
         var eventType = parser.eventType
         while (eventType != XmlPullParser.END_DOCUMENT) {
@@ -130,8 +134,8 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
                 XmlPullParser.START_TAG -> {
                     when (parser.name) {
                         "coordinateSystem" -> {
-                            maxX = parser.getAttributeValue(null, "maxX")?.toFloat() ?: 5f
-                            maxY = parser.getAttributeValue(null, "maxY")?.toFloat() ?: 5f
+                            maxX = parser.getAttributeValue(null, "maxX")?.toFloat() ?: DEFAULT_MAX_X
+                            maxY = parser.getAttributeValue(null, "maxY")?.toFloat() ?: DEFAULT_MAX_Y
                         }
                         "beacon" -> {
                             val x = parser.getAttributeValue(null, "x").toFloat()
@@ -231,6 +235,63 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     }
 
     /**
+     * Checks if the user is on the current path within a certain tolerance
+     */
+    fun isUserOnPath(tolerance: Float = LINE_WIDTH / scale) : Boolean {
+        for (path in paths) {
+            for (i in 0 until path.size - 1) {
+                val a = path[i]
+                val b = path[i + 1]
+                val dist = distancePointToSegment(userPosition, a, b)
+
+                if (dist == null || dist <= tolerance) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    /**
+     * Computes the shortest distance from a point p to the line segment ab
+     * Uses the perpendicular distance formula, with clamping to handle endpoints.
+     */
+    private fun distancePointToSegment(p: ConfigPoint?, a: ConfigPoint, b: ConfigPoint): Float? {
+        if (p == null) {
+            return null
+        }
+        val dx = b.x - a.x
+        val dy = b.y - a.y
+
+        if (dx == 0f && dy == 0f) {
+            // segment is just a single point
+            val dxp = p.x - a.x
+            val dyp = p.y - a.y
+            return sqrt(dxp * dxp + dyp * dyp)
+        }
+
+        // projection parameter t onto the infinite line
+        val t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)
+
+        return when {
+            t < 0f -> {
+                val dxp = p.x - a.x
+                val dyp = p.y - a.y
+                sqrt(dxp * dxp + dyp * dyp)
+            }
+            t > 1f -> {
+                val dxp = p.x - b.x
+                val dyp = p.y - b.y
+                sqrt(dxp * dxp + dyp * dyp)
+            }
+            else -> {
+                abs(dy * p.x - dx * p.y + b.x * a.y - b.y * a.x) /
+                    sqrt(dy * dy + dx * dx)
+            }
+        }
+    }
+
+    /**
      * Called every time 'invalidate()' is called, redraws the map
      */
     override fun onDraw(canvas: Canvas) {
@@ -277,7 +338,8 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
             userAngle?.let { angle ->
                 canvas.drawArc(px - relativeAngleLength * scale, py - relativeAngleLength * scale, px + relativeAngleLength * scale, py + relativeAngleLength * scale, angle - angleSize / 2, angleSize, true, userAnglePaint)
             }
-            canvas.drawCircle(px, py, 0.25f * scale, userPaint)
+            val relativeCircleSize = 0.25f
+            canvas.drawCircle(px, py, relativeCircleSize * scale, userPaint)
         }
     }
 
