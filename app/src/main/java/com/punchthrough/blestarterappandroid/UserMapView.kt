@@ -23,7 +23,6 @@ import android.util.Xml
 import android.view.View
 import androidx.annotation.RawRes
 import org.xmlpull.v1.XmlPullParser
-import kotlin.math.hypot
 import kotlin.math.min
 
 
@@ -55,14 +54,17 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     // Paints
     private val screenBackgroundPaint = Paint().apply { color = Color.DKGRAY; style = Paint.Style.FILL }
     private val mapBackgroundPaint = Paint().apply { color = Color.LTGRAY; style = Paint.Style.FILL }
-    private val beaconPaint = Paint().apply { color = Color.RED; style = Paint.Style.FILL; alpha = 200 }
-    private val polygonPaint = Paint().apply { color = Color.BLUE; style = Paint.Style.FILL; alpha = 100 }
-    private val linePaint = Paint().apply { color = Color.GREEN; style = Paint.Style.STROKE; strokeWidth = 20f }
+    private val beaconPaint = Paint().apply { color = Color.CYAN; style = Paint.Style.FILL }
+    private val polygonPaint = Paint().apply { color = Color.BLACK; style = Paint.Style.FILL }
+    private val linePaint = Paint().apply { color = Color.BLUE; style = Paint.Style.STROKE; strokeWidth = 20f }
     private val startRectPaint = Paint().apply { color = Color.YELLOW; style = Paint.Style.FILL }
     private val endRectPaint = Paint().apply { color = Color.MAGENTA; style = Paint.Style.FILL }
-    private val userPaint = Paint().apply { color = Color.CYAN; style = Paint.Style.FILL }
+    private val userPaint = Paint().apply { color = Color.RED; style = Paint.Style.FILL }
+    private val userAnglePaint = Paint().apply { color = Color.GREEN; style = Paint.Style.FILL }
 
+    // Geometry
     private var userPosition: ConfigPoint? = null
+    private var userAngle: Float? = null
     private val beacons = mutableListOf<ConfigPoint>()
     private val polygons = mutableListOf<List<ConfigPoint>>()
     private val paths = mutableListOf<List<ConfigPoint>>()
@@ -70,7 +72,9 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     private val endRectangles = mutableListOf<List<ConfigPoint>>()
 
 
-    /** Load XML configuration from res/raw */
+    /**
+     * Loads XML configuration from res/raw
+     */
     fun loadConfigFromRawXml(@RawRes resId: Int) {
         context.resources.openRawResource(resId).use { inputStream ->
             val parser = Xml.newPullParser()
@@ -80,6 +84,9 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         }
     }
 
+    /**
+     * Updates self based to given config values
+     */
     fun applyConfig(config: UserMapConfig) {
         beacons.clear()
         beacons.addAll(config.beacons)
@@ -102,6 +109,9 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         setUserPosition((startRectangles[0][0].x + startRectangles[0][2].x) / 2, (startRectangles[0][0].y + startRectangles[0][2].y) / 2)
     }
 
+    /**
+     * Returns userMapConfig object with values specified as from the given parser object
+     */
     private fun parseXmlConfigFromParser(parser: XmlPullParser): UserMapConfig {
         val beacons = mutableListOf<ConfigPoint>()
         val polygons = mutableListOf<List<ConfigPoint>>()
@@ -134,8 +144,8 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
                             val x = parser.getAttributeValue(null, "x").toFloat()
                             val y = parser.getAttributeValue(null, "y").toFloat()
                             when {
-                                currentPolygon != null -> currentPolygon!!.add(ConfigPoint(x, y))
-                                currentPath != null -> currentPath!!.add(ConfigPoint(x, y))
+                                currentPolygon != null -> currentPolygon.add(ConfigPoint(x, y))
+                                currentPath != null -> currentPath.add(ConfigPoint(x, y))
                             }
                         }
                         "rectangle" -> {
@@ -201,6 +211,18 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
 
     }
 
+    /**
+     * Updates the current userAngle (which way does the map show the user facing?)
+     * and redraws the map
+     */
+    fun setUserAngle(angle: Float?) {
+        userAngle = angle
+        invalidate()
+    }
+
+    /**
+     * Updates the current userPosition and redraws the map
+     */
     fun setUserPosition(x: Float, y: Float) {
         val clampedX = x.coerceIn(0f, maxX)
         val clampedY = y.coerceIn(0f, maxY)
@@ -208,6 +230,9 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         invalidate()
     }
 
+    /**
+     * Called every time 'invalidate()' is called, redraws the map
+     */
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
@@ -247,11 +272,18 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         userPosition?.let { user ->
             val px = offsetX + user.x * scale
             val py = offsetY + user.y * scale
+            val angleSize = 60f
+            val relativeAngleLength = 0.8f
+            userAngle?.let { angle ->
+                canvas.drawArc(px - relativeAngleLength * scale, py - relativeAngleLength * scale, px + relativeAngleLength * scale, py + relativeAngleLength * scale, angle - angleSize / 2, angleSize, true, userAnglePaint)
+            }
             canvas.drawCircle(px, py, 0.25f * scale, userPaint)
         }
-
     }
 
+    /**
+     * Draws a polygon to a canvas with a paint
+     */
     private fun drawPolygon(canvas: Canvas, points: List<ConfigPoint>, paint: Paint) {
         val path = Path()
         points.forEachIndexed { index, point ->
@@ -262,8 +294,5 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         path.close()
         canvas.drawPath(path, paint)
     }
-
-    private fun distance(x1: Float, y1: Float, x2: Float, y2: Float): Float =
-        hypot((x2 - x1).toDouble(), (y2 - y1).toDouble()).toFloat()
 }
 

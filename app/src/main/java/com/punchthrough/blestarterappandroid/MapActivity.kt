@@ -44,8 +44,6 @@ class MapActivity : AppCompatActivity() {
         bluetoothWorker.initialize(this)
 
         startRssiTracking()
-
-        userMapView.setUserPosition(1.5.toFloat(), 2.5.toFloat())
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -89,11 +87,14 @@ class MapActivity : AppCompatActivity() {
         }
 
         solveForUser(coords, distances)
+
+        // add here to show the angle that the user is facing
+        userMapView.setUserAngle(null)
     }
 
     /**
      * Updates user position based on given distances and coordinates:
-     * distances[i] denotes how far the user is from coords[i]
+     * each element in distances denotes how far the user is from the corresponding element in coords
      */
     private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray) {
         // Create solver with current beacons and set distances
