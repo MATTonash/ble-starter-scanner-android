@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.matt.guidebeacons.activities.CalibrationActivity
 import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
 
@@ -84,6 +85,7 @@ class MainActivity : AppCompatActivity() {
 
         setupViewMapButton()
 
+        setupCalibrationButton()
     }
 
     private fun setupScanButton() {
@@ -92,7 +94,6 @@ class MainActivity : AppCompatActivity() {
                 stopBleScan()
             } else {
                 startBleScan()
-
             }
         }
     }
@@ -104,6 +105,12 @@ class MainActivity : AppCompatActivity() {
         binding.viewMapButton.setEnabled(allowClickViewMapButton())
         binding.viewMapButton.setOnClickListener {
             launchPointGraphActivity()
+        }
+    }
+
+    private fun setupCalibrationButton() {
+        binding.calibrationButton.setOnClickListener {
+            launchCalibrationActivity()
         }
     }
 
@@ -228,6 +235,11 @@ class MainActivity : AppCompatActivity() {
     private fun launchPointGraphActivity() {
         val pointGraphIntent = Intent(this, PointGraphActivity::class.java)
         startActivity(pointGraphIntent)
+    }
+
+    private fun launchCalibrationActivity() {
+        val calibrationIntent = Intent(this, CalibrationActivity::class.java)
+        startActivity(calibrationIntent)
     }
 
     override fun onRequestPermissionsResult(
