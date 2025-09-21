@@ -20,8 +20,17 @@ class Beacon(beaconName: String,
         return 10.0.pow((calibrationRSSI - rssi).toDouble()/(10*txPower).toDouble())
     }
 
+    public fun getCalibrationRSSI(): Int {
+        return calibrationRSSI
+    }
+
     public fun getCoordinates(): DoubleArray{
         return coordinates
+    }
+
+    public fun getCoordinatesString(): String {
+        // bit gross to hard-code indices, is there a better way?
+        return "(${coordinates[0]}, ${coordinates[1]})"
     }
 
     public fun setBuzzerSensitivity(sensitivity: Int){

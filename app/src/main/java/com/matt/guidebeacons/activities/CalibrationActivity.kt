@@ -4,10 +4,21 @@ import android.os.Bundle
 import androidx.annotation.UiThread
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
 import com.matt.guidebeacons.beacons.BeaconsAdapter
 import com.punchthrough.blestarterappandroid.databinding.ActivityCalibrationBinding
 
+/* TODO
+ * fix recycler view layout (current offset and not taking full space; cut off)
+ * moving hard-coded data into a stored local file?
+ * adding/removing beacons from list
+ * editing beacons (app-side; no plans to write to beacon)
+ *  * coordinates
+ *  * calibration (1m) RSSI value
+ *  * display name
+ *  * type (buzzer/start/destination)
+ */
 class CalibrationActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityCalibrationBinding
@@ -26,7 +37,7 @@ class CalibrationActivity : AppCompatActivity() {
 
         view.adapter = BeaconsAdapter()
 
-        view.layoutManager = LinearLayoutManager(this)
+        view.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
         view.isNestedScrollingEnabled = false
         view.itemAnimator.let {
             if (it is SimpleItemAnimator) {
@@ -35,19 +46,5 @@ class CalibrationActivity : AppCompatActivity() {
         }
 
         binding.beaconsList.isNestedScrollingEnabled = false
-//        binding.scanResultsRecyclerView.apply {
-//            adapter = scanResultAdapter
-//            layoutManager = LinearLayoutManager(
-//                this@CalibrationActivity,
-//                RecyclerView.VERTICAL,
-//                false
-//            )
-//            isNestedScrollingEnabled = false
-//            itemAnimator.let {
-//                if (it is SimpleItemAnimator) {
-//                    it.supportsChangeAnimations = false
-//                }
-//            }
-//        }
     }
 }

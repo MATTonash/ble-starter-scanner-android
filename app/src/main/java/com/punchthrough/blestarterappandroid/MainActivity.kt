@@ -72,6 +72,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         isScanning = false
 
+        Timber.plant(Timber.DebugTree()) // show Timber log messages in Logcat
+
         // Initialize BluetoothWorker
         bluetoothWorker.initialize(this)
 
