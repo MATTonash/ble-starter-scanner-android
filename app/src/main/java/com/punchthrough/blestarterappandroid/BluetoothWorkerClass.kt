@@ -16,6 +16,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import com.matt.guidebeacons.beacons.Beacon
 import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import timber.log.Timber
 
