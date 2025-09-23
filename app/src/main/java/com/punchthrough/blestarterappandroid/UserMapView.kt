@@ -41,7 +41,7 @@ data class UserMapConfig(
 
 
 
-class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
+class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context, attrs), TextToSpeech.OnInitListener {
 
     // Logical coordinate system
     private var maxX = 5f
@@ -206,6 +206,17 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         val clampedY = y.coerceIn(0f, maxY)
         userPosition = ConfigPoint(clampedX, clampedY)
         invalidate()
+
+        PoiHandler.handleUserAtPOI(
+            user = userPosition,
+            startRectangle = startRectangles,
+            endRectangles = endRectangles,
+            paths = paths,
+            onStart = { speak("Hello!, You are at Starting Position") },
+            onEnd = { speak("You have Reached Your Destination")},
+            onPath = { /* Action when on path */ },
+            onNone = { /* Action when at none */ }
+        )
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -265,5 +276,8 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
 
     private fun distance(x1: Float, y1: Float, x2: Float, y2: Float): Float =
         hypot((x2 - x1).toDouble(), (y2 - y1).toDouble()).toFloat()
+
+    // using this function to check the user position at the POIs
+
 }
 
