@@ -25,6 +25,8 @@ import androidx.annotation.RawRes
 import org.xmlpull.v1.XmlPullParser
 import kotlin.math.hypot
 import kotlin.math.min
+import android.speech.tts.TextToSpeech
+import android.view.MotionEvent
 
 
 data class ConfigPoint(val x: Float, val y: Float)
@@ -68,6 +70,27 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     private val paths = mutableListOf<List<ConfigPoint>>()
     private val startRectangles = mutableListOf<List<ConfigPoint>>()
     private val endRectangles = mutableListOf<List<ConfigPoint>>()
+
+
+    // variable for the text to speech
+    private var tts: TextToSpeech? = null
+
+    init{
+        tts = TextToSpeech(context, this)
+    }
+
+
+    override fun onDetachedFromWindow() {
+      tts?.shutdown()
+        super.onDetachedFromWindow()
+    }
+
+
+    override fun onInit(status: Int){}
+
+    private fun speak(text:String){
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+    }
 
 
     /** Load XML configuration from res/raw */
@@ -199,6 +222,18 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
             maxY = maxY
         )
 
+    }
+
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.action == MotionEvent.ACTION_DOWN) {
+            val mapX = ((event.x - offsetX) / scale).coerceIn(0f, maxX)
+            val mapY = ((event.y - offsetY) / scale).coerceIn(0f, maxY)
+            setUserPosition(mapX, mapY)
+            performClick()
+            return true
+        }
+        return super.onTouchEvent(event)
     }
 
     fun setUserPosition(x: Float, y: Float) {
