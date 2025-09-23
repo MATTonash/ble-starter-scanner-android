@@ -10,7 +10,6 @@ import com.matt.guidebeacons.beacons.BeaconsAdapter
 import com.punchthrough.blestarterappandroid.databinding.ActivityCalibrationBinding
 
 /* TODO
- * fix recycler view layout (current offset and not taking full space; cut off)
  * moving hard-coded data into a stored local file?
  * adding/removing beacons from list
  * editing beacons (app-side; no plans to write to beacon)
