@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.punchthrough.blestarterappandroid.BluetoothWorkerClass
 import com.punchthrough.blestarterappandroid.R
 import timber.log.Timber
 
@@ -14,7 +13,7 @@ class BeaconsAdapter(
     private val onClickListener: (beacon: Beacon) -> Unit
 ) : RecyclerView.Adapter<BeaconsAdapter.ViewHolder>() {
 
-    private val beacons = BluetoothWorkerClass.getInstance().getBeaconProjects().values.toList()
+    private val beacons = BeaconData.getBeaconProjects().values.toList()
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

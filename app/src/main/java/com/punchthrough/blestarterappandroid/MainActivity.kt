@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
 import com.matt.guidebeacons.activities.CalibrationActivity
+import com.matt.guidebeacons.beacons.BeaconData
 import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
 
@@ -30,7 +31,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
 
-    private val beaconProjects = bluetoothWorker.getBeaconProjects()
+    private val beaconProjects = BeaconData.getBeaconProjects()
     private var isScanning = false
         set(value) {
             field = value
