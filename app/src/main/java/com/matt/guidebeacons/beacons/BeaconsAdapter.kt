@@ -10,7 +10,9 @@ import com.punchthrough.blestarterappandroid.BluetoothWorkerClass
 import com.punchthrough.blestarterappandroid.R
 import timber.log.Timber
 
-class BeaconsAdapter : RecyclerView.Adapter<BeaconsAdapter.ViewHolder>() {
+class BeaconsAdapter(
+    private val onClickListener: (beacon: Beacon) -> Unit
+) : RecyclerView.Adapter<BeaconsAdapter.ViewHolder>() {
 
     private val beacons = BluetoothWorkerClass.getInstance().getBeaconProjects().values.toList()
 
@@ -20,7 +22,7 @@ class BeaconsAdapter : RecyclerView.Adapter<BeaconsAdapter.ViewHolder>() {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.row_scan_result, parent, false)
 
-        return ViewHolder(view)
+        return ViewHolder(view, onClickListener)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -32,7 +34,8 @@ class BeaconsAdapter : RecyclerView.Adapter<BeaconsAdapter.ViewHolder>() {
 
 
     class ViewHolder(
-        private val view: View
+        private val view: View,
+        private val onClickListener: (Beacon) -> Unit
     ) : RecyclerView.ViewHolder(view) {
 
         @SuppressLint("SetTextI18n")
@@ -43,6 +46,7 @@ class BeaconsAdapter : RecyclerView.Adapter<BeaconsAdapter.ViewHolder>() {
 
             view.setOnClickListener {
                 Timber.i("Clicked on beacon ${beacon}")
+                onClickListener.invoke(beacon)
             }
         }
     }

@@ -1,16 +1,18 @@
 package com.matt.guidebeacons.activities
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.annotation.UiThread
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconsAdapter
 import com.punchthrough.blestarterappandroid.databinding.ActivityCalibrationBinding
 
 /* TODO
- * moving hard-coded data into a stored local file?
+ * move hard-coded data into a stored local file?
  * adding/removing beacons from list
  * editing beacons (app-side; no plans to write to beacon)
  *  * coordinates
@@ -34,7 +36,11 @@ class CalibrationActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         val view = binding.beaconsList
 
-        view.adapter = BeaconsAdapter()
+        view.adapter = BeaconsAdapter { beacon: Beacon ->
+            val editIntent = Intent(this, EditBeaconActivity::class.java)
+            // editIntent.putExtra("SELECTED_BEACON", beacon)
+            startActivity(editIntent)
+        }
 
         view.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
         view.isNestedScrollingEnabled = false
