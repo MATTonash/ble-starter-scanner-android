@@ -59,6 +59,12 @@
         />
 
         <activity
+            android:name="com.matt.guidebeacons.activities.EditBeaconActivity"
+            android:exported="false"
+            android:label="Edit"
+            />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="portrait" >
