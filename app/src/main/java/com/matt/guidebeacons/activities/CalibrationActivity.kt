@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
 import com.matt.guidebeacons.beacons.Beacon
+import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.beacons.BeaconsAdapter
 import com.punchthrough.blestarterappandroid.databinding.ActivityCalibrationBinding
 
@@ -38,7 +39,8 @@ class CalibrationActivity : AppCompatActivity() {
 
         view.adapter = BeaconsAdapter { beacon: Beacon ->
             val editIntent = Intent(this, EditBeaconActivity::class.java)
-            // editIntent.putExtra("SELECTED_BEACON", beacon)
+            val selectedBeaconMacAddress = BeaconData.getBeaconMacAddress(beacon) // TODO: handle if null; show warning toast and don't start activity
+            editIntent.putExtra("SELECTED_BEACON_MAC", selectedBeaconMacAddress)
             startActivity(editIntent)
         }
 

@@ -16,6 +16,12 @@ class BeaconData {
         return beaconProjects
     }
 
+    fun getBeaconMacAddress(beacon: Beacon): String? {
+        val filtered = beaconProjects.filterValues { it == beacon }
+
+        return if (filtered.keys.isEmpty()) null else filtered.keys.first()
+    }
+
 
     companion object {
         @Volatile
@@ -29,6 +35,10 @@ class BeaconData {
 
         fun getBeaconProjects(): Map<String, Beacon> {
             return getInstance().getBeaconProjects()
+        }
+
+        fun getBeaconMacAddress(beacon: Beacon): String? {
+            return getInstance().getBeaconMacAddress(beacon)
         }
     }
 }
