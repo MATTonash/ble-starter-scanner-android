@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <floorplan>
-    <!-- <beacon x="1.0" y="1.5" /> -->
+
+    <!-- adding the beacons on the map , just on the floorplan-->
+    <beacon x="1.0" y="1.5" />
+    <beacon x="3.5" y="2.0" />
 
     <!-- Top left screen coordinate is 0, 0 | Bottom right screen coordinate is maxX, maxY-->
     <coordinateSystem maxX="5.0" maxY="5.0" />
