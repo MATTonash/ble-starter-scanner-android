@@ -7,32 +7,69 @@
     android:layout_height="wrap_content">
 
     <TextView
-        android:id="@+id/device_name"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:textSize="18sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
         android:id="@+id/mac_address"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/device_name" />
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="XX:XX:XX:XX:XX" />
 
     <TextView
+        android:id="@+id/device_name_label"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:layout_marginStart="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/mac_address"
+        android:text="Beacon Name:" />
+
+    <EditText
+        android:id="@+id/device_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:textSize="18sp"
+        android:hint="Device Name"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/device_name_label" />
+
+    <TextView
+        android:id="@+id/rssi_label"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:layout_marginStart="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/device_name"
+        android:text="Calibration RSSI (dBm):" />
+
+    <EditText
         android:id="@+id/signal_strength"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
+        android:textSize="16sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/mac_address" />
+        app:layout_constraintTop_toBottomOf="@id/rssi_label"
+        tools:text="-100 dBm" />
+
+    <TextView
+        android:id="@+id/coordinates_label"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:layout_marginStart="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/signal_strength"
+        android:text="Coordinates:" />
 
     <EditText
         android:id="@+id/x_coordinate"
@@ -40,11 +77,11 @@
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
         android:layout_marginEnd="174dp"
-        android:hint="X Coordinate"
+        android:hint="X coordinate"
         android:inputType="numberDecimal"
         app:layout_constraintEnd_toStartOf="@+id/y_coordinate"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/signal_strength"
+        app:layout_constraintTop_toBottomOf="@id/coordinates_label"
         />
 
     <EditText
@@ -53,11 +90,22 @@
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
         android:layout_marginStart="8dp"
-        android:hint="Y Coordinate"
+        android:hint="Y coordinate"
         android:inputType="numberDecimal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/x_coordinate"
-        app:layout_constraintTop_toBottomOf="@+id/signal_strength"
+        app:layout_constraintTop_toBottomOf="@+id/coordinates_label"
+        />
+
+    <Button
+        android:id="@+id/save_edits"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Save"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/y_coordinate"
         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
