@@ -11,9 +11,9 @@ class Beacon(beaconName: String,
              calibrationRSSI: Int,
              x: Double,
              y: Double) {
-    private val beaconName = beaconName;
-    private val calibrationRSSI = calibrationRSSI
-    private val coordinates = doubleArrayOf(x, y)
+    private var beaconName = beaconName;
+    private var calibrationRSSI = calibrationRSSI
+    private var coordinates = doubleArrayOf(x, y)
     private var buzzerSensitivity = 0;
 
     public fun calculateDistance(rssi: Int, txPower: Int): Double{
@@ -43,5 +43,11 @@ class Beacon(beaconName: String,
 
     public override fun toString(): String {
         return beaconName;
+    }
+
+    public fun updateData(beaconName: String, calibrationRSSI: Int, x: Double, y: Double) {
+        this.beaconName = beaconName
+        this.calibrationRSSI = calibrationRSSI
+        this.coordinates = doubleArrayOf(x, y)
     }
 }

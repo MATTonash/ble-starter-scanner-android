@@ -20,6 +20,8 @@ import com.punchthrough.blestarterappandroid.databinding.ActivityCalibrationBind
  *  * calibration (1m) RSSI value
  *  * display name
  *  * type (buzzer/start/destination)
+ *     * buzzer sensitivity
+ *  * also store z-coordinate (maybe introduce coordinate data structure?)
  */
 class CalibrationActivity : AppCompatActivity() {
 
@@ -33,6 +35,14 @@ class CalibrationActivity : AppCompatActivity() {
         setupRecyclerView()
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode != RESULT_OK) return
+
+        binding.beaconsList.adapter!!.notifyDataSetChanged()
+        timber.log.Timber.i("aaaaa")
+    }
+
     @UiThread
     private fun setupRecyclerView() {
         val view = binding.beaconsList
@@ -41,7 +51,7 @@ class CalibrationActivity : AppCompatActivity() {
             val editIntent = Intent(this, EditBeaconActivity::class.java)
             val selectedBeaconMacAddress = BeaconData.getBeaconMacAddress(beacon) // TODO: handle if null; show warning toast and don't start activity
             editIntent.putExtra("SELECTED_BEACON_MAC", selectedBeaconMacAddress)
-            startActivity(editIntent)
+            startActivityForResult(editIntent, 0)
         }
 
         view.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)

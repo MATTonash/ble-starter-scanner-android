@@ -1,6 +1,7 @@
 package com.matt.guidebeacons.activities
 
 import android.os.Bundle
+import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -8,6 +9,7 @@ import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
 import com.punchthrough.blestarterappandroid.R
 import com.punchthrough.blestarterappandroid.databinding.RowSelectedBeaconBinding
+import timber.log.Timber
 
 class EditBeaconActivity : AppCompatActivity() {
 
@@ -29,17 +31,30 @@ class EditBeaconActivity : AppCompatActivity() {
     }
 
     private fun populate() {
-        val deviceNameTextView: TextView = findViewById(R.id.device_name)
         val macAddressTextView: TextView = findViewById(R.id.mac_address)
-        val signalStrengthTextView: TextView = findViewById(R.id.signal_strength)
 
+        val deviceNameEditText: EditText = findViewById(R.id.device_name)
+        val signalStrengthEditText: EditText = findViewById(R.id.signal_strength)
         val xCoordinateEditText: EditText = findViewById(R.id.x_coordinate)
         val yCoordinateEditText: EditText = findViewById(R.id.y_coordinate)
 
-        deviceNameTextView.text = beacon.toString()
+        val saveButton: Button = findViewById(R.id.save_edits)
+
         macAddressTextView.text = macAddress
-        signalStrengthTextView.text = beacon.getCalibrationRSSI().toString()
+        deviceNameEditText.setText(beacon.toString())
+        signalStrengthEditText.setText(beacon.getCalibrationRSSI().toString())
         xCoordinateEditText.setText(beacon.getCoordinates()[0].toString())
         yCoordinateEditText.setText(beacon.getCoordinates()[1].toString())
+
+        saveButton.setOnClickListener {
+            val newName: String = if (deviceNameEditText.text.isNullOrBlank()) beacon.toString() else deviceNameEditText.text.toString()
+            val newRSSI: Int = signalStrengthEditText.text.toString().toIntOrNull() ?: beacon.getCalibrationRSSI()
+            val newX: Double = xCoordinateEditText.text.toString().toDoubleOrNull() ?: beacon.getCoordinates()[0]
+            val newY: Double = yCoordinateEditText.text.toString().toDoubleOrNull() ?: beacon.getCoordinates()[1]
+
+            beacon.updateData(newName, newRSSI, newX, newY)
+            setResult(RESULT_OK)
+            finish()
+        }
     }
 }
