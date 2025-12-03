@@ -78,6 +78,8 @@ class MainActivity : AppCompatActivity() {
         setupRecyclerView()
 
         setupScanButton()
+
+        setupRssiMappingButton()
         //initializeVibrator()
 
         // only setup viewmap button when 3 beacons collected
@@ -228,6 +230,17 @@ class MainActivity : AppCompatActivity() {
     private fun launchPointGraphActivity() {
         val pointGraphIntent = Intent(this, PointGraphActivity::class.java)
         startActivity(pointGraphIntent)
+    }
+
+    private fun setupRssiMappingButton() {
+        binding.recordRssiButton.setOnClickListener {
+            launchRssiMappingActivity()
+        }
+    }
+
+    private fun launchRssiMappingActivity(){
+        val rssiMappingIntent = Intent(this, RssiMappingActivity::class.java)
+        startActivity(rssiMappingIntent)
     }
 
     override fun onRequestPermissionsResult(
