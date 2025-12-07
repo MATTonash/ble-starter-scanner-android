@@ -72,6 +72,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     private val beacons = mutableListOf<ConfigPoint>()
     private val polygons = mutableListOf<List<ConfigPoint>>()
     private val paths = mutableListOf<List<ConfigPoint>>()
+    private val userDrawnPath = mutableListOf<ConfigPoint>()
     private val startRectangles = mutableListOf<List<ConfigPoint>>()
     private val endRectangles = mutableListOf<List<ConfigPoint>>()
 
@@ -238,7 +239,9 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
      * Checks if the user is on the current path within a certain tolerance
      */
     fun isUserOnPath(tolerance: Float = LINE_WIDTH / scale) : Boolean {
-        for (path in paths) {
+        val allPaths = paths + listOf(userDrawnPath)
+
+        for (path in allPaths) {
             for (i in 0 until path.size - 1) {
                 val a = path[i]
                 val b = path[i + 1]
@@ -289,6 +292,16 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
                     sqrt(dy * dy + dx * dx)
             }
         }
+    }
+
+    fun screenToMap(screenX: Float, screenY: Float): ConfigPoint {
+        val mapX = (screenX - offsetX) / scale
+        val mapY = (screenY - offsetY) / scale
+
+        return ConfigPoint(
+            mapX.coerceIn(0f, maxX),
+            mapY.coerceIn(0f, maxY)
+        )
     }
 
     /**
@@ -356,5 +369,26 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         path.close()
         canvas.drawPath(path, paint)
     }
+
+    fun beginUserPath() {
+        userDrawnPath.clear()
+    }
+
+    fun addUserPathPoint(point: ConfigPoint) {
+        userDrawnPath.add(point)
+
+        // Replace last temporary drawn path
+        paths.removeAll { it === userDrawnPath }
+        paths.add(userDrawnPath)
+
+        invalidate()
+    }
+
+    fun clearUserPath() {
+        paths.remove(userDrawnPath)
+        userDrawnPath.clear()
+        invalidate()
+    }
+
 }
 

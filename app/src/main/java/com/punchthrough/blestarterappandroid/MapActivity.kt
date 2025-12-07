@@ -17,11 +17,16 @@
 package com.punchthrough.blestarterappandroid
 
 import android.bluetooth.le.ScanResult
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.view.GestureDetector
+import android.view.MotionEvent
+
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import com.github.mikephil.charting.data.Entry
 
 
 class MapActivity : AppCompatActivity() {
@@ -29,9 +34,12 @@ class MapActivity : AppCompatActivity() {
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
     private val beaconProjects = bluetoothWorker.getBeaconProjects()
 
-    private var userPoints = ArrayList<Entry>()
+    private lateinit var gestureDetector: GestureDetector
+
     private lateinit var userMapView: UserMapView
     private lateinit var trilaterationFunction : TrilaterationFunction
+
+    private lateinit var vibrator: Vibrator
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,9 +49,44 @@ class MapActivity : AppCompatActivity() {
         userMapView = findViewById(R.id.user_map_view)
         userMapView.loadConfigFromRawXml(R.raw.user_map_config)
 
+        vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
         bluetoothWorker.initialize(this)
-
         startRssiTracking()
+
+        userMapView.setUserPosition(0.5f, 4.5f)
+
+        gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+
+            override fun onDown(e: MotionEvent): Boolean {
+                return true // REQUIRED for long press to work
+            }
+
+            override fun onLongPress(e: MotionEvent) {
+                userMapView.clearUserPath()
+            }
+        })
+
+        userMapView.setOnTouchListener { view, event ->
+
+            gestureDetector.onTouchEvent(event)
+
+            // ✅ event.x and event.y are NOW view-relative
+            val mapPoint = userMapView.screenToMap(event.x, event.y)
+            view.performClick()
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    userMapView.beginUserPath()
+                    userMapView.addUserPathPoint(mapPoint)
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    userMapView.addUserPathPoint(mapPoint)
+                }
+            }
+
+            true
+        }
+
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -90,6 +133,20 @@ class MapActivity : AppCompatActivity() {
 
         // add here to show the angle that the user is facing
         userMapView.setUserAngle(null)
+
+        if (!userMapView.isUserOnPath()) {
+           alertUser()
+        }
+    }
+
+    private fun alertUser() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(200)
+        }
+
     }
 
     /**
@@ -102,9 +159,6 @@ class MapActivity : AppCompatActivity() {
         trilaterationFunction.setBeaconDistances(distances)
 
         val userCoordinates = trilaterationFunction.solve()
-
-        userPoints.clear()
-        userPoints.add(Entry(userCoordinates[0].toFloat(), userCoordinates[1].toFloat()))
 
         userMapView.setUserPosition(userCoordinates[0].toFloat(), userCoordinates[1].toFloat())
     }
