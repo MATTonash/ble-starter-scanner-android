@@ -250,7 +250,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
             onStart = { speak("Hello!, You are at Starting Position") },
             onEnd = { speak("You have Reached Your Destination")},
             onPath = { /* Action when on path */ },
-            onNone = { /* Action when at none */ }
+            onNone = { speak("You are currently not on Path") } // need to check this part
         )
     }
 
