@@ -27,7 +27,11 @@ import kotlin.math.hypot
 import kotlin.math.min
 import android.speech.tts.TextToSpeech
 import android.view.MotionEvent
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 
+enum class POIState { START, END, PATH, NONE }
 
 data class ConfigPoint(val x: Float, val y: Float)
 
@@ -71,6 +75,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     private val startRectangles = mutableListOf<List<ConfigPoint>>()
     private val endRectangles = mutableListOf<List<ConfigPoint>>()
 
+    private var lastPoiState: POIState = POIState.NONE
 
     // variable for the text to speech
     private var tts: TextToSpeech? = null
@@ -92,6 +97,21 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
+    // Vibrate briefly and speak a warning
+    private fun triggerWarning() {
+        // Vibrate
+        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        vibrator?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                it.vibrate(VibrationEffect.createOneShot(300, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                it.vibrate(300)
+            }
+        }
+        // Speak
+        speak("Warning")
+    }
 
     /** Load XML configuration from res/raw */
     fun loadConfigFromRawXml(@RawRes resId: Int) {
@@ -242,16 +262,31 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         userPosition = ConfigPoint(clampedX, clampedY)
         invalidate()
 
-        PoiHandler.handleUserAtPOI(
-            user = userPosition,
-            startRectangle = startRectangles,
-            endRectangles = endRectangles,
-            paths = paths,
-            onStart = { speak("Hello!, You are at Starting Position") },
-            onEnd = { speak("You have Reached Your Destination")},
-            onPath = { /* Action when on path */ },
-            onNone = { speak("You are currently not on Path") } // need to check this part
-        )
+        // Tolerance in map coordinates: matches the drawn user circle radius (0.25f * scale => 0.25f in map units)
+        val tolerance = 0.25f
+
+        // Determine POI state with tolerance checks
+        val atStart = startRectangles.any { polygonContainsPoint(it, userPosition!!) }
+        val atEnd = endRectangles.any { polygonContainsPoint(it, userPosition!!) }
+        val onAnyPath = paths.any { pathIsNear(userPosition!!, it, tolerance) }
+
+        val newState = when {
+            atStart -> POIState.START
+            atEnd -> POIState.END
+            onAnyPath -> POIState.PATH
+            else -> POIState.NONE
+        }
+
+        // Only act if state changed
+        if (newState != lastPoiState) {
+            when (newState) {
+                POIState.START -> speak("Hello!, You are at Starting Position")
+                POIState.END -> speak("You have Reached Your Destination")
+                POIState.PATH -> { /* Optionally speak or handle being on path */ }
+                POIState.NONE -> triggerWarning()
+            }
+            lastPoiState = newState
+        }
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -309,10 +344,54 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         canvas.drawPath(path, paint)
     }
 
+    // Ray-casting algorithm for point-in-polygon
+    private fun polygonContainsPoint(polygon: List<ConfigPoint>, point: ConfigPoint): Boolean {
+        var inside = false
+        val n = polygon.size
+        var j = n - 1
+        for (i in 0 until n) {
+            val xi = polygon[i].x
+            val yi = polygon[i].y
+            val xj = polygon[j].x
+            val yj = polygon[j].y
+            val intersect = ((yi > point.y) != (yj > point.y)) &&
+                    (point.x < (xj - xi) * (point.y - yi) / (yj - yi + 0.0f) + xi)
+            if (intersect) inside = !inside
+            j = i
+        }
+        return inside
+    }
+
+    // Check whether point is within 'tolerance' distance of any segment in the path
+    private fun pathIsNear(point: ConfigPoint, path: List<ConfigPoint>, tolerance: Float): Boolean {
+        if (path.size < 2) return false
+        for (i in 0 until path.size - 1) {
+            val a = path[i]
+            val b = path[i + 1]
+            if (distancePointToSegment(point.x, point.y, a.x, a.y, b.x, b.y) <= tolerance) {
+                return true
+            }
+        }
+        return false
+    }
+
+    // Distance from point (px,py) to segment (x1,y1)-(x2,y2)
+    private fun distancePointToSegment(px: Float, py: Float, x1: Float, y1: Float, x2: Float, y2: Float): Float {
+        val dx = x2 - x1
+        val dy = y2 - y1
+        if (dx == 0f && dy == 0f) {
+            return distance(px, py, x1, y1)
+        }
+        val t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)
+        val clampedT = t.coerceIn(0f, 1f)
+        val projX = x1 + clampedT * dx
+        val projY = y1 + clampedT * dy
+        return distance(px, py, projX, projY)
+    }
+
     private fun distance(x1: Float, y1: Float, x2: Float, y2: Float): Float =
         hypot((x2 - x1).toDouble(), (y2 - y1).toDouble()).toFloat()
 
     // using this function to check the user position at the POIs
 
 }
-
