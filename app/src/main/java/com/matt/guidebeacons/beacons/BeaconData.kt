@@ -1,5 +1,10 @@
 package com.matt.guidebeacons.beacons
 
+import android.content.Context
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.Json
+
 class BeaconData {
     private val beaconProjects = mapOf(
         "80:EC:CC:CD:33:28" to Beacon("Losing Things", -60, 0.0, 1.0),
@@ -39,6 +44,13 @@ class BeaconData {
 
         fun getBeaconMacAddress(beacon: Beacon): String? {
             return getInstance().getBeaconMacAddress(beacon)
+        }
+
+        fun writeBeaconsToFile(context: Context, fileName: String) {
+            val json = Json.encodeToString(MapSerializer(String.serializer(), Beacon.serializer()), getBeaconProjects())
+            context.openFileOutput(fileName, Context.MODE_PRIVATE).use {
+                 it.write(json.toByteArray())
+            }
         }
     }
 }

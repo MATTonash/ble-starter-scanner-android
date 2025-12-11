@@ -1,5 +1,6 @@
 package com.matt.guidebeacons.beacons
 
+import kotlinx.serialization.Serializable
 import kotlin.math.pow
 
 /**
@@ -7,6 +8,7 @@ import kotlin.math.pow
  * just so that it can be used more simply across the activities
  * Previously we were relying on referencing MainActivity
  */
+@Serializable(with = BeaconSerializer::class)
 class Beacon(beaconName: String,
              calibrationRSSI: Int,
              x: Double,
@@ -24,7 +26,7 @@ class Beacon(beaconName: String,
         return calibrationRSSI
     }
 
-    public fun getCoordinates(): DoubleArray{
+    public fun getCoordinates(): DoubleArray {
         return coordinates
     }
 

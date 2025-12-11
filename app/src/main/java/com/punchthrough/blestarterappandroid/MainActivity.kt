@@ -75,6 +75,9 @@ class MainActivity : AppCompatActivity() {
 
         Timber.plant(Timber.DebugTree()) // show Timber log messages in Logcat
 
+        // Test serialization  (saves to /data/data/com.punchthrough.blestarterappandroid/files/default_beacons.json)
+        BeaconData.writeBeaconsToFile(this, "default_beacons.json")
+
         // Initialize BluetoothWorker
         bluetoothWorker.initialize(this)
 
