@@ -6,6 +6,11 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import java.io.File
+
 class RssiMappingActivity : AppCompatActivity() {
 
     private lateinit var beaconSpinner: Spinner
@@ -37,7 +42,8 @@ class RssiMappingActivity : AppCompatActivity() {
 
     private fun setupBeaconSpinner() {
         val beaconAddresses = beaconProjects.keys.toList()
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, beaconAddresses)
+        val beaconNames = beaconProjects.values.map{ it.toString()}
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, beaconNames)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         beaconSpinner.adapter = adapter
 
@@ -57,7 +63,8 @@ class RssiMappingActivity : AppCompatActivity() {
             val distance = distanceEditText.text.toString().toDoubleOrNull()
             if (selectedBeacon != null && currentRssi != null && distance != null) {
                 val debugInfo = "Beacon: $selectedBeacon, RSSI: $currentRssi, Distance: $distance"
-                debugTextView.text = debugInfo
+                val json = Json.encodeToString(BeaconData(selectedBeacon!!, currentRssi!!, distance))
+                debugTextView.text = json
                 Toast.makeText(this, "Saved: $debugInfo", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Please select a beacon, collect RSSI, and enter a distance", Toast.LENGTH_SHORT).show()
@@ -95,4 +102,7 @@ class RssiMappingActivity : AppCompatActivity() {
         super.onDestroy()
         bluetoothWorker.stopScanning()
     }
+
+    @Serializable
+    data class BeaconData(var beaconAddress: String, var rssi: Int, var distance: Double)
 }
