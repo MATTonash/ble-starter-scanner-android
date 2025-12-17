@@ -24,6 +24,10 @@ import com.punchthrough.blestarterappandroid.databinding.ActivityCalibrationBind
  *     * buzzer sensitivity
  *  * also store z-coordinate (maybe introduce coordinate data structure?)
  */
+
+private const val REQUEST_EDIT = 1
+private const val REQUEST_ADD = 2
+
 class CalibrationActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityCalibrationBinding
@@ -34,14 +38,41 @@ class CalibrationActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupRecyclerView()
+        binding.addBeacon.setOnClickListener {
+            val addIntent = Intent(this, InputMacAddressActivity::class.java)
+            startActivityForResult(addIntent, REQUEST_ADD)
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
+        when (requestCode) {
+            REQUEST_EDIT -> onEditActivityResult(resultCode, data)
+            REQUEST_ADD -> onAddActivityResult(resultCode, data)
+            else -> timber.log.Timber.w("Received invalid result code \"${resultCode}\"")
+        }
+    }
+
+    private fun onEditActivityResult(resultCode: Int, data: Intent?) {
         if (resultCode != RESULT_OK) return
 
         binding.beaconsList.adapter!!.notifyDataSetChanged()
         BeaconData.writeBeaconsToFile(this, FILE_NAME_BEACONS)
+    }
+
+    private fun onAddActivityResult(resultCode: Int, data: Intent?) {
+        if (resultCode != RESULT_OK) return
+
+        val macAddress = data!!.getStringExtra(INTENT_EXTRA_SELECTED_BEACON_MAC)
+        // todo: show toast if editing already existing beacon
+        if (!BeaconData.getBeaconProjects().containsKey(macAddress)) {
+            BeaconData.getBeaconProjects().put(macAddress!!, Beacon("New beacon", 0, 0.0, 0.0))
+        }
+
+        val editIntent = Intent(this, EditBeaconActivity::class.java)
+        editIntent.putExtra(INTENT_EXTRA_SELECTED_BEACON_MAC, macAddress)
+        startActivityForResult(editIntent, REQUEST_EDIT)
     }
 
     @UiThread
@@ -52,7 +83,7 @@ class CalibrationActivity : AppCompatActivity() {
             val editIntent = Intent(this, EditBeaconActivity::class.java)
             val selectedBeaconMacAddress = BeaconData.getBeaconMacAddress(beacon) // TODO: handle if null; show warning toast and don't start activity
             editIntent.putExtra(INTENT_EXTRA_SELECTED_BEACON_MAC, selectedBeaconMacAddress)
-            startActivityForResult(editIntent, 0)
+            startActivityForResult(editIntent, REQUEST_EDIT)
         }
 
         view.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)

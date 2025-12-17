@@ -65,6 +65,12 @@
             />
 
         <activity
+            android:name="com.matt.guidebeacons.activities.InputMacAddressActivity"
+            android:exported="false"
+            android:label="Input MAC Address"
+            />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="portrait" >
