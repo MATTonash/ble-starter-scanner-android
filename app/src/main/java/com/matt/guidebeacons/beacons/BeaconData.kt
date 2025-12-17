@@ -9,7 +9,7 @@ import java.io.File
 import java.io.InputStream
 
 class BeaconData {
-    private var beaconProjects = mapOf(
+    private var beaconProjects = mutableMapOf(
         "80:EC:CC:CD:33:28" to Beacon("Losing Things", -60, 0.0, 1.0),
         "80:EC:CC:CD:33:7C" to Beacon("Happy Mornings", -57, 1.0, 2.0),
         "80:EC:CC:CD:33:7E" to Beacon("STEM", -59, 2.0, 2.0),
@@ -20,11 +20,11 @@ class BeaconData {
         "6C:B2:FD:34:CE:9E" to Beacon("Bee", -75, 0.5, 0.5)
     )
 
-    fun getBeaconProjects(): Map<String, Beacon> {
+    fun getBeaconProjects(): MutableMap<String, Beacon> {
         return beaconProjects
     }
 
-    fun setBeaconProjects(beacons: Map<String, Beacon>) {
+    fun setBeaconProjects(beacons: MutableMap<String, Beacon>) {
         beaconProjects = beacons
     }
 
@@ -45,7 +45,7 @@ class BeaconData {
             }
         }
 
-        fun getBeaconProjects(): Map<String, Beacon> {
+        fun getBeaconProjects(): MutableMap<String, Beacon> {
             return getInstance().getBeaconProjects()
         }
 
@@ -69,7 +69,7 @@ class BeaconData {
 
         private fun readBeaconsFromInputStream(stream: InputStream) {
             stream.bufferedReader().use {
-                val beacons = Json.decodeFromString<Map<String, Beacon>>(it.readText())
+                val beacons = Json.decodeFromString<MutableMap<String, Beacon>>(it.readText())
                 getInstance().setBeaconProjects(beacons)
                 timber.log.Timber.i("Loaded ${beacons.size} beacon(s).")
             }

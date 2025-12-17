@@ -40,6 +40,7 @@ class EditBeaconActivity : AppCompatActivity() {
         val yCoordinateEditText: EditText = findViewById(R.id.y_coordinate)
 
         val saveButton: Button = findViewById(R.id.save_edits)
+        val deleteButton: Button = findViewById(R.id.delete_beacon)
 
         macAddressTextView.text = macAddress
         deviceNameEditText.setText(beacon.toString())
@@ -54,6 +55,12 @@ class EditBeaconActivity : AppCompatActivity() {
             val newY: Double = yCoordinateEditText.text.toString().toDoubleOrNull() ?: beacon.getCoordinates()[1]
 
             beacon.updateData(newName, newRSSI, newX, newY)
+            setResult(RESULT_OK)
+            finish()
+        }
+
+        deleteButton.setOnClickListener {
+            BeaconData.getBeaconProjects().remove(macAddress)
             setResult(RESULT_OK)
             finish()
         }

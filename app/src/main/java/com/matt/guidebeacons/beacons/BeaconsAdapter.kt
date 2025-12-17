@@ -13,11 +13,12 @@ class BeaconsAdapter(
     private val onClickListener: (beacon: Beacon) -> Unit
 ) : RecyclerView.Adapter<BeaconsAdapter.ViewHolder>() {
 
-    private val beacons = BeaconData.getBeaconProjects().values.toList()
-
+    private fun getBeacons(): List<Beacon> {
+        return BeaconData.getBeaconProjects().values.toList()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        Timber.i("Listing ${itemCount} beacons")
+        Timber.i("Listing ${itemCount} beacon(s)")
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.row_scan_result, parent, false)
 
@@ -25,11 +26,11 @@ class BeaconsAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val beacon = beacons[position]
-        holder.bind(beacon)
+        val beacons = getBeacons()[position]
+        holder.bind(beacons)
     }
 
-    override fun getItemCount() = beacons.size
+    override fun getItemCount() = getBeacons().size
 
 
     class ViewHolder(
@@ -44,7 +45,7 @@ class BeaconsAdapter(
             view.findViewById<TextView>(R.id.signal_strength).text = "${beacon.getCalibrationRSSI().toString()} dBm"
 
             view.setOnClickListener {
-                Timber.i("Clicked on beacon ${beacon}")
+                Timber.i("Clicked on beacon \"${beacon}\"")
                 onClickListener.invoke(beacon)
             }
         }
