@@ -23,13 +23,20 @@ import android.util.Xml
 import android.view.View
 import androidx.annotation.RawRes
 import org.xmlpull.v1.XmlPullParser
+import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.math.abs
+import android.speech.tts.TextToSpeech
+import android.view.MotionEvent
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 
 private const val LINE_WIDTH = 20f
 private const val DEFAULT_MAX_X = 5f
 private const val DEFAULT_MAX_Y = 5f
+enum class POIState { START, END, PATH, NONE }
 
 data class ConfigPoint(val x: Float, val y: Float)
 
@@ -45,7 +52,8 @@ data class UserMapConfig(
 
 
 
-class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
+class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context, attrs), TextToSpeech.OnInitListener {
+
     // Logical coordinate system
     private var maxX = DEFAULT_MAX_X
     private var maxY = DEFAULT_MAX_Y
@@ -76,6 +84,43 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     private val startRectangles = mutableListOf<List<ConfigPoint>>()
     private val endRectangles = mutableListOf<List<ConfigPoint>>()
 
+    private var lastPoiState: POIState = POIState.NONE
+
+    // variable for the text to speech
+    private var tts: TextToSpeech? = null
+
+    init{
+        tts = TextToSpeech(context, this)
+    }
+
+
+    override fun onDetachedFromWindow() {
+      tts?.shutdown()
+        super.onDetachedFromWindow()
+    }
+
+
+    override fun onInit(status: Int){}
+
+    private fun speak(text:String){
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+    }
+
+    // Vibrate briefly and speak a warning
+    private fun triggerWarning() {
+        // Vibrate
+        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        vibrator?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                it.vibrate(VibrationEffect.createOneShot(300, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                it.vibrate(300)
+            }
+        }
+        // Speak
+        speak("Warning")
+    }
 
     /**
      * Loads XML configuration from res/raw
@@ -228,85 +273,51 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     /**
      * Updates the current userPosition and redraws the map
      */
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.action == MotionEvent.ACTION_DOWN) {
+            val mapX = ((event.x - offsetX) / scale).coerceIn(0f, maxX)
+            val mapY = ((event.y - offsetY) / scale).coerceIn(0f, maxY)
+            setUserPosition(mapX, mapY)
+            performClick()
+            return true
+        }
+        return super.onTouchEvent(event)
+    }
+
     fun setUserPosition(x: Float, y: Float) {
         val clampedX = x.coerceIn(0f, maxX)
         val clampedY = y.coerceIn(0f, maxY)
         userPosition = ConfigPoint(clampedX, clampedY)
         invalidate()
-    }
 
-    /**
-     * Checks if the user is on the current path within a certain tolerance
-     */
-    fun isUserOnPath(tolerance: Float = LINE_WIDTH / scale) : Boolean {
-        val allPaths = paths + listOf(userDrawnPath)
+        // Tolerance in map coordinates: matches the drawn user circle radius (0.25f * scale => 0.25f in map units)
+        val tolerance = 0.25f
 
-        for (path in allPaths) {
-            for (i in 0 until path.size - 1) {
-                val a = path[i]
-                val b = path[i + 1]
-                val dist = distancePointToSegment(userPosition, a, b)
+        // Determine POI state with tolerance checks
+        val atStart = startRectangles.any { polygonContainsPoint(it, userPosition!!) }
+        val atEnd = endRectangles.any { polygonContainsPoint(it, userPosition!!) }
+        val onAnyPath = paths.any { pathIsNear(userPosition!!, it, tolerance) }
 
-                if (dist == null || dist <= tolerance) {
-                    return true
-                }
-            }
-        }
-        return false
-    }
-
-    /**
-     * Computes the shortest distance from a point p to the line segment ab
-     * Uses the perpendicular distance formula, with clamping to handle endpoints.
-     */
-    private fun distancePointToSegment(p: ConfigPoint?, a: ConfigPoint, b: ConfigPoint): Float? {
-        if (p == null) {
-            return null
-        }
-        val dx = b.x - a.x
-        val dy = b.y - a.y
-
-        if (dx == 0f && dy == 0f) {
-            // segment is just a single point
-            val dxp = p.x - a.x
-            val dyp = p.y - a.y
-            return sqrt(dxp * dxp + dyp * dyp)
+        val newState = when {
+            atStart -> POIState.START
+            atEnd -> POIState.END
+            onAnyPath -> POIState.PATH
+            else -> POIState.NONE
         }
 
-        // projection parameter t onto the infinite line
-        val t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)
-
-        return when {
-            t < 0f -> {
-                val dxp = p.x - a.x
-                val dyp = p.y - a.y
-                sqrt(dxp * dxp + dyp * dyp)
+        // Only act if state changed
+        if (newState != lastPoiState) {
+            when (newState) {
+                POIState.START -> speak("Hello!, You are at Starting Position")
+                POIState.END -> speak("You have Reached Your Destination")
+                POIState.PATH -> { /* Optionally speak or handle being on path */ }
+                POIState.NONE -> triggerWarning()
             }
-            t > 1f -> {
-                val dxp = p.x - b.x
-                val dyp = p.y - b.y
-                sqrt(dxp * dxp + dyp * dyp)
-            }
-            else -> {
-                abs(dy * p.x - dx * p.y + b.x * a.y - b.y * a.x) /
-                    sqrt(dy * dy + dx * dx)
-            }
+            lastPoiState = newState
         }
     }
 
-    fun screenToMap(screenX: Float, screenY: Float): ConfigPoint {
-        val mapX = (screenX - offsetX) / scale
-        val mapY = (screenY - offsetY) / scale
-
-        return ConfigPoint(
-            mapX.coerceIn(0f, maxX),
-            mapY.coerceIn(0f, maxY)
-        )
-    }
-
-    /**
-     * Called every time 'invalidate()' is called, redraws the map
-     */
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
@@ -354,6 +365,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
             val relativeCircleSize = 0.25f
             canvas.drawCircle(px, py, relativeCircleSize * scale, userPaint)
         }
+
     }
 
     /**
@@ -369,6 +381,56 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         path.close()
         canvas.drawPath(path, paint)
     }
+
+    // Ray-casting algorithm for point-in-polygon
+    private fun polygonContainsPoint(polygon: List<ConfigPoint>, point: ConfigPoint): Boolean {
+        var inside = false
+        val n = polygon.size
+        var j = n - 1
+        for (i in 0 until n) {
+            val xi = polygon[i].x
+            val yi = polygon[i].y
+            val xj = polygon[j].x
+            val yj = polygon[j].y
+            val intersect = ((yi > point.y) != (yj > point.y)) &&
+                    (point.x < (xj - xi) * (point.y - yi) / (yj - yi + 0.0f) + xi)
+            if (intersect) inside = !inside
+            j = i
+        }
+        return inside
+    }
+
+    // Check whether point is within 'tolerance' distance of any segment in the path
+    private fun pathIsNear(point: ConfigPoint, path: List<ConfigPoint>, tolerance: Float): Boolean {
+        if (path.size < 2) return false
+        for (i in 0 until path.size - 1) {
+            val a = path[i]
+            val b = path[i + 1]
+            if (distancePointToSegment(point.x, point.y, a.x, a.y, b.x, b.y) <= tolerance) {
+                return true
+            }
+        }
+        return false
+    }
+
+    // Distance from point (px,py) to segment (x1,y1)-(x2,y2)
+    private fun distancePointToSegment(px: Float, py: Float, x1: Float, y1: Float, x2: Float, y2: Float): Float {
+        val dx = x2 - x1
+        val dy = y2 - y1
+        if (dx == 0f && dy == 0f) {
+            return distance(px, py, x1, y1)
+        }
+        val t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)
+        val clampedT = t.coerceIn(0f, 1f)
+        val projX = x1 + clampedT * dx
+        val projY = y1 + clampedT * dy
+        return distance(px, py, projX, projY)
+    }
+
+    private fun distance(x1: Float, y1: Float, x2: Float, y2: Float): Float =
+        hypot((x2 - x1).toDouble(), (y2 - y1).toDouble()).toFloat()
+
+    // using this function to check the user position at the POIs
 
     fun beginUserPath() {
         userDrawnPath.clear()

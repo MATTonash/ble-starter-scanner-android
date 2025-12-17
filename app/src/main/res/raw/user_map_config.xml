@@ -2,8 +2,9 @@
 <floorplan>
 
     <!-- adding the beacons on the map , just on the floorplan-->
+    <!-- need to add stuff from the beacons dictionary -->
     <beacon x="1.0" y="1.5" />
-    <beacon x="3.5" y="2.0" />
+    <beacon x="3.5" y="2.5" />
 
     <!-- Top left screen coordinate is 0, 0 | Bottom right screen coordinate is maxX, maxY-->
     <coordinateSystem maxX="5.0" maxY="5.0" />
