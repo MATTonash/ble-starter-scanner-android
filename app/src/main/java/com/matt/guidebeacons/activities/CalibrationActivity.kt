@@ -40,7 +40,6 @@ class CalibrationActivity : AppCompatActivity() {
         if (resultCode != RESULT_OK) return
 
         binding.beaconsList.adapter!!.notifyDataSetChanged()
-        timber.log.Timber.i("aaaaa")
     }
 
     @UiThread
