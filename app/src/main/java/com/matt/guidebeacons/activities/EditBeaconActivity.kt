@@ -7,6 +7,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
+import com.matt.guidebeacons.constants.*
 import com.punchthrough.blestarterappandroid.R
 import com.punchthrough.blestarterappandroid.databinding.RowSelectedBeaconBinding
 import timber.log.Timber
@@ -24,7 +25,7 @@ class EditBeaconActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // TODO: handle null/missing/invalid MAC address (reuse for adding? but MAC address should still be populated)
-        macAddress = intent.getStringExtra("SELECTED_BEACON_MAC")
+        macAddress = intent.getStringExtra(INTENT_EXTRA_SELECTED_BEACON_MAC)
         beacon = BeaconData.getBeaconProjects()[macAddress] ?: Beacon("New beacon", 0, 0.0, 0.0)
 
         populate()

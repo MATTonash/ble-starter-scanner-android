@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
 import com.matt.guidebeacons.activities.CalibrationActivity
 import com.matt.guidebeacons.beacons.BeaconData
+import com.matt.guidebeacons.constants.*
 import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
 
@@ -75,7 +76,7 @@ class MainActivity : AppCompatActivity() {
 
         Timber.plant(Timber.DebugTree()) // show Timber log messages in Logcat
 
-        BeaconData.initialiseBeaconData(this, "beacons.json")
+        BeaconData.initialiseBeaconData(this, FILE_NAME_BEACONS)
 
         // Initialize BluetoothWorker
         bluetoothWorker.initialize(this)
