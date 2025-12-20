@@ -72,12 +72,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        isScanning = false
 
-        Timber.plant(Timber.DebugTree()) // show Timber log messages in Logcat
+        if (Timber.treeCount() <= 0) Timber.plant(Timber.DebugTree()) // show Timber log messages in Logcat
 
         BeaconData.initialiseBeaconData(this, FILE_NAME_BEACONS)
 
+        isScanning = false
         // Initialize BluetoothWorker
         bluetoothWorker.initialize(this)
 

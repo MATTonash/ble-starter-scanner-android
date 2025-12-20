@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.punchthrough.blestarterappandroid.databinding.RowScanResultBinding
-import timber.log.Timber
 
 class BeaconsAdapter(
     private val onClickListener: (beacon: Beacon) -> Unit
@@ -16,7 +15,6 @@ class BeaconsAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        Timber.i("Listing ${itemCount} beacon(s)")
         val inflater = LayoutInflater.from(parent.context)
         val binding = RowScanResultBinding.inflate(inflater, parent, false)
         return ViewHolder(binding, onClickListener)
@@ -44,7 +42,7 @@ class BeaconsAdapter(
             binding.signalStrength.text = "${beacon.getCalibrationRSSI()} dBm"
 
             view.setOnClickListener {
-                Timber.i("Clicked on beacon \"${beacon}\"")
+                timber.log.Timber.i("Clicked on beacon \"${beacon}\"")
                 onClickListener.invoke(beacon)
             }
         }
