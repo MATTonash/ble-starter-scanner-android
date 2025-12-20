@@ -2,11 +2,9 @@ package com.matt.guidebeacons.beacons
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.punchthrough.blestarterappandroid.R
+import com.punchthrough.blestarterappandroid.databinding.RowScanResultBinding
 import timber.log.Timber
 
 class BeaconsAdapter(
@@ -19,10 +17,9 @@ class BeaconsAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         Timber.i("Listing ${itemCount} beacon(s)")
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.row_scan_result, parent, false)
-
-        return ViewHolder(view, onClickListener)
+        val inflater = LayoutInflater.from(parent.context)
+        val binding = RowScanResultBinding.inflate(inflater, parent, false)
+        return ViewHolder(binding, onClickListener)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -34,15 +31,17 @@ class BeaconsAdapter(
 
 
     class ViewHolder(
-        private val view: View,
+        private val binding: RowScanResultBinding,
         private val onClickListener: (Beacon) -> Unit
-    ) : RecyclerView.ViewHolder(view) {
+    ) : RecyclerView.ViewHolder(binding.root) {
 
         @SuppressLint("SetTextI18n")
         fun bind(beacon: Beacon) {
-            view.findViewById<TextView>(R.id.device_name).text = beacon.toString()
-            view.findViewById<TextView>(R.id.mac_address).text = beacon.getCoordinatesString()
-            view.findViewById<TextView>(R.id.signal_strength).text = "${beacon.getCalibrationRSSI().toString()} dBm"
+            val view = binding.root
+
+            binding.deviceName.text = beacon.toString()
+            binding.macAddress.text = beacon.getCoordinatesString()
+            binding.signalStrength.text = "${beacon.getCalibrationRSSI()} dBm"
 
             view.setOnClickListener {
                 Timber.i("Clicked on beacon \"${beacon}\"")

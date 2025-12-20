@@ -1,16 +1,11 @@
 package com.matt.guidebeacons.activities
 
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.constants.*
-import com.punchthrough.blestarterappandroid.R
 import com.punchthrough.blestarterappandroid.databinding.RowSelectedBeaconBinding
-import timber.log.Timber
 
 class EditBeaconActivity : AppCompatActivity() {
 
@@ -32,15 +27,15 @@ class EditBeaconActivity : AppCompatActivity() {
     }
 
     private fun populate() {
-        val macAddressTextView: TextView = findViewById(R.id.mac_address)
+        val macAddressTextView = binding.macAddress
 
-        val deviceNameEditText: EditText = findViewById(R.id.device_name)
-        val signalStrengthEditText: EditText = findViewById(R.id.signal_strength)
-        val xCoordinateEditText: EditText = findViewById(R.id.x_coordinate)
-        val yCoordinateEditText: EditText = findViewById(R.id.y_coordinate)
+        val deviceNameEditText = binding.deviceName
+        val signalStrengthEditText = binding.signalStrength
+        val xCoordinateEditText = binding.xCoordinate
+        val yCoordinateEditText = binding.yCoordinate
 
-        val saveButton: Button = findViewById(R.id.save_edits)
-        val deleteButton: Button = findViewById(R.id.delete_beacon)
+        val saveButton = binding.saveEdits
+        val deleteButton = binding.deleteBeacon
 
         macAddressTextView.text = macAddress
         deviceNameEditText.setText(beacon.toString())
