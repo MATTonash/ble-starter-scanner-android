@@ -65,6 +65,7 @@ class RssiMappingActivity : AppCompatActivity() {
                 val debugInfo = "Beacon: $selectedBeacon, RSSI: $currentRssi, Distance: $distance"
                 val json = Json.encodeToString(BeaconData(selectedBeacon!!, currentRssi!!, distance))
                 debugTextView.text = json
+                writeJsonToFile("beacon_data.json", json)
                 Toast.makeText(this, "Saved: $debugInfo", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Please select a beacon, collect RSSI, and enter a distance", Toast.LENGTH_SHORT).show()
@@ -90,6 +91,17 @@ class RssiMappingActivity : AppCompatActivity() {
             runOnUiThread {
                 rssiTextView.text = "RSSI: ${currentRssi ?: "N/A"}"
             }
+        }
+    }
+
+    private fun writeJsonToFile(fileName: String, json: String) {
+        try {
+            openFileOutput(fileName, MODE_PRIVATE).use { output ->
+                output.write(json.toByteArray())
+            }
+            Toast.makeText(this, "File saved successfully", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error saving file: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
