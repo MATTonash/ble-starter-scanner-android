@@ -4,3 +4,4 @@ package com.matt.guidebeacons.constants
 const val FILE_NAME_BEACONS = "beacons.json"
 
 const val INTENT_EXTRA_SELECTED_BEACON_MAC = "SELECTED_BEACON_MAC"
+const val INTENT_EXTRA_ADDED_EXISTING_MAC = "ADDED_EXISTING_MAC"

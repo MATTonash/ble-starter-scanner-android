@@ -2,6 +2,7 @@ package com.matt.guidebeacons.activities
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.snackbar.Snackbar
 import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.constants.*
@@ -22,6 +23,10 @@ class EditBeaconActivity : AppCompatActivity() {
         // TODO: handle null/missing/invalid MAC address (reuse for adding? but MAC address should still be populated)
         macAddress = intent.getStringExtra(INTENT_EXTRA_SELECTED_BEACON_MAC)
         beacon = BeaconData.getBeaconProjects()[macAddress] ?: Beacon("New beacon", 0, 0.0, 0.0)
+
+        if (intent.getBooleanExtra(INTENT_EXTRA_ADDED_EXISTING_MAC, false)) {
+            Snackbar.make(binding.root, "Editing existing beacon", Snackbar.LENGTH_SHORT).show()
+        }
 
         populate()
     }
