@@ -13,10 +13,11 @@ class Beacon(beaconName: String,
              calibrationRSSI: Int,
              x: Double,
              y: Double) {
-    private var beaconName = beaconName;
+    private var beaconName = beaconName
     private var calibrationRSSI = calibrationRSSI
     private var coordinates = doubleArrayOf(x, y)
-    private var buzzerSensitivity = 0;
+    private var buzzerSensitivity = 0
+    private var beaconType = BeaconType.DEFAULT
 
     public fun calculateDistance(rssi: Int, txPower: Int): Double{
         return 10.0.pow((calibrationRSSI - rssi).toDouble()/(10*txPower).toDouble())
@@ -35,12 +36,20 @@ class Beacon(beaconName: String,
         return "(${coordinates[0]}, ${coordinates[1]})"
     }
 
-    public fun setBuzzerSensitivity(sensitivity: Int){
+    public fun getBuzzerSensitivity(): Int {
+        return buzzerSensitivity
+    }
+
+    public fun getBeaconType(): BeaconType {
+        return beaconType
+    }
+
+    public fun setBuzzerSensitivity(sensitivity: Int) {
         buzzerSensitivity = sensitivity
     }
 
-    public fun getBuzzerSensitivity(): Int{
-        return buzzerSensitivity
+    public fun setBeaconType(type: BeaconType) {
+        beaconType = type
     }
 
     public override fun toString(): String {
