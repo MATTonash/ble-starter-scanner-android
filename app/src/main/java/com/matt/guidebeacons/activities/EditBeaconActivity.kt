@@ -53,7 +53,7 @@ class EditBeaconActivity : AppCompatActivity() {
         xCoordinateEditText.setText(beacon.getCoordinates()[0].toString())
         yCoordinateEditText.setText(beacon.getCoordinates()[1].toString())
 
-        val spinnerAdapter = ArrayAdapter<BeaconType>(this, android.R.layout.simple_list_item_1, BeaconType.values())
+        val spinnerAdapter = ArrayAdapter<BeaconType>(this, android.R.layout.simple_list_item_1, BeaconType.entries)
         beaconTypeSpinner.adapter = spinnerAdapter
         beaconTypeSpinner.setSelection(beacon.getBeaconType().ordinal)
         buzzerSensitivityEditText.setText(beacon.getBuzzerSensitivity().toString())

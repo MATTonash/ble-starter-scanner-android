@@ -17,6 +17,8 @@ object BeaconSerializer: KSerializer<Beacon> {
         element<Int>("calibrationRSSI")
         element<Double>("x")
         element<Double>("y")
+        element<Int>("buzzerSensitivity")
+        element<String>("beaconType")
     }
 
     override fun serialize(encoder: Encoder, value: Beacon) {
@@ -29,11 +31,16 @@ object BeaconSerializer: KSerializer<Beacon> {
             encodeIntElement(descriptor, 1, value.getCalibrationRSSI())
             encodeDoubleElement(descriptor, 2, x)
             encodeDoubleElement(descriptor, 3, y)
+            encodeIntElement(descriptor, 4, value.getBuzzerSensitivity())
+            encodeStringElement(descriptor, 5, value.getBeaconType().name)
         }
     }
 
-    override fun deserialize(decoder: Decoder): Beacon =
-        decoder.decodeStructure(descriptor) {
+    override fun deserialize(decoder: Decoder): Beacon {
+        var buzzerSensitivity: Int = 0
+        var beaconTypeString: String = BeaconType.DEFAULT.name
+
+        val result = decoder.decodeStructure(descriptor) {
             var name: String = "NAME"
             var calibrationRSSI: Int = -1
             var x: Double = 0.0
@@ -45,10 +52,19 @@ object BeaconSerializer: KSerializer<Beacon> {
                     1 -> calibrationRSSI = decodeIntElement(descriptor, 1)
                     2 -> x = decodeDoubleElement(descriptor, 2)
                     3 -> y = decodeDoubleElement(descriptor, 3)
+                    4 -> buzzerSensitivity = decodeIntElement(descriptor, 4)
+                    5 -> beaconTypeString = decodeStringElement(descriptor, 5)
                     CompositeDecoder.DECODE_DONE -> break
                     else -> error("Unexpected index: $index")
                 }
             }
             Beacon(name, calibrationRSSI, x, y)
         }
+
+        val beaconType = BeaconType.entries.firstOrNull { it.name == beaconTypeString } ?: BeaconType.DEFAULT
+        result.setBeaconType(beaconType)
+        result.setBuzzerSensitivity(buzzerSensitivity)
+
+        return result
+    }
 }
