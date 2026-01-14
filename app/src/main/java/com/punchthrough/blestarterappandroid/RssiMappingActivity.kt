@@ -20,7 +20,7 @@ class RssiMappingActivity : AppCompatActivity() {
     private lateinit var debugTextView: TextView
 
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
-    private val beaconProjects = bluetoothWorker.getBeaconProjects()
+    private val beaconProjects = com.matt.guidebeacons.beacons.BeaconData.getBeaconProjects()
     private var selectedBeacon: String? = null
     private var currentRssi: Int? = null
 
