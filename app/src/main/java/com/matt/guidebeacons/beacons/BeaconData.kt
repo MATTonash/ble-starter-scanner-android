@@ -9,7 +9,7 @@ import java.io.File
 import java.io.InputStream
 
 class BeaconData {
-    private var beaconProjects = mutableMapOf(
+    private val beaconProjects = mutableMapOf(
         "80:EC:CC:CD:33:28" to Beacon("Losing Things", -60, 0.0, 1.0),
         "80:EC:CC:CD:33:7C" to Beacon("Happy Mornings", -57, 1.0, 2.0),
         "80:EC:CC:CD:33:7E" to Beacon("STEM", -59, 2.0, 2.0),
@@ -25,7 +25,11 @@ class BeaconData {
     }
 
     fun setBeaconProjects(beacons: MutableMap<String, Beacon>) {
-        beaconProjects = beacons
+        // clear and replace rather than setting to new reference to prevent breaking
+        // existing usages of `val beaconProjects = BeaconData.getBeaconProjects()`
+        // todo: consider checking/refactoring existing usages?
+        beaconProjects.clear()
+        beaconProjects.putAll(beacons)
     }
 
     fun getBeaconMacAddress(beacon: Beacon): String? {

@@ -24,6 +24,7 @@ class InputMacAddressActivity : AppCompatActivity() {
 
             if (isMacAddress(macAddress)) {
                 val returnIntent = Intent()
+                // todo: mac address as keys means that it is case-sensitive; force to upper?
                 returnIntent.putExtra(INTENT_EXTRA_SELECTED_BEACON_MAC, macAddress)
                 setResult(RESULT_OK, returnIntent)
                 finish()
