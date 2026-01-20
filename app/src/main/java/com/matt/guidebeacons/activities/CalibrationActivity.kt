@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.google.android.material.snackbar.Snackbar
 import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.beacons.BeaconsAdapter
@@ -59,6 +60,11 @@ class CalibrationActivity : AppCompatActivity() {
 
         binding.beaconsList.adapter!!.notifyDataSetChanged()
         BeaconData.writeBeaconsToFile(this, FILE_NAME_BEACONS)
+
+        val beaconName = data?.getStringExtra(INTENT_EXTRA_DELETED_BEACON)
+        if (!beaconName.isNullOrBlank()) {
+            Snackbar.make(binding.root, "Deleted beacon \"${beaconName}\"", Snackbar.LENGTH_LONG).show()
+        }
     }
 
     private fun onAddActivityResult(resultCode: Int, data: Intent?) {

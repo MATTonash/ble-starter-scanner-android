@@ -1,5 +1,6 @@
 package com.matt.guidebeacons.activities
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.Html
 import android.widget.ArrayAdapter
@@ -86,7 +87,9 @@ class EditBeaconActivity : AppCompatActivity() {
                 .setNegativeButton(Html.fromHtml("<font color='#0091EA'>Cancel</font>")) { dialog, id -> }  // com.punchthrough.blestarterappandroid.R.color.colorPrimaryDark
                 .setPositiveButton("Delete") { dialog, id ->
                     BeaconData.getBeaconProjects().remove(macAddress)
-                    setResult(RESULT_OK)
+                    val returnIntent = Intent()
+                    returnIntent.putExtra(INTENT_EXTRA_DELETED_BEACON, beacon.toString())
+                    setResult(RESULT_OK, returnIntent)
                     finish()
                 }
             builder.show()
