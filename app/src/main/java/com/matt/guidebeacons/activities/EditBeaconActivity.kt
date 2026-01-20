@@ -1,6 +1,7 @@
 package com.matt.guidebeacons.activities
 
 import android.os.Bundle
+import android.text.Html
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -76,22 +77,19 @@ class EditBeaconActivity : AppCompatActivity() {
         }
 
         deleteButton.setOnClickListener {
+            // https://developer.android.com/develop/ui/views/components/dialogs
             val builder = AlertDialog.Builder(this)
             builder
                 .setTitle("Are you sure?")
                 .setMessage("You are about to delete beacon \"${beacon}\" (${macAddress})")
-                .setNegativeButton("Cancel") { dialog, id -> }
+                // todo: find better solution to changing text color?
+                .setNegativeButton(Html.fromHtml("<font color='#0091EA'>Cancel</font>")) { dialog, id -> }  // com.punchthrough.blestarterappandroid.R.color.colorPrimaryDark
                 .setPositiveButton("Delete") { dialog, id ->
                     BeaconData.getBeaconProjects().remove(macAddress)
                     setResult(RESULT_OK)
                     finish()
                 }
-
             builder.show()
-            //todo: fix cancel button using same red colour as confirm delete button (inherited from delete button?)
-            // val alert = builder.create()
-            // alert.getButton(DialogInterface.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.colorPrimary))
-            // alert.show()
         }
     }
 }
