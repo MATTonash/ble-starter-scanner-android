@@ -2,6 +2,7 @@ package com.matt.guidebeacons.activities
 
 import android.os.Bundle
 import android.widget.ArrayAdapter
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.snackbar.Snackbar
 import com.matt.guidebeacons.beacons.Beacon
@@ -75,9 +76,22 @@ class EditBeaconActivity : AppCompatActivity() {
         }
 
         deleteButton.setOnClickListener {
-            BeaconData.getBeaconProjects().remove(macAddress)
-            setResult(RESULT_OK)
-            finish()
+            val builder = AlertDialog.Builder(this)
+            builder
+                .setTitle("Are you sure?")
+                .setMessage("You are about to delete beacon \"${beacon}\" (${macAddress})")
+                .setNegativeButton("Cancel") { dialog, id -> }
+                .setPositiveButton("Delete") { dialog, id ->
+                    BeaconData.getBeaconProjects().remove(macAddress)
+                    setResult(RESULT_OK)
+                    finish()
+                }
+
+            builder.show()
+            //todo: fix cancel button using same red colour as confirm delete button (inherited from delete button?)
+            // val alert = builder.create()
+            // alert.getButton(DialogInterface.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.colorPrimary))
+            // alert.show()
         }
     }
 }
