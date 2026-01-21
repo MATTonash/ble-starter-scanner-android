@@ -43,7 +43,6 @@ class BeaconData {
      * existing usages of `val beaconProjects = BeaconData.getBeaconProjects()`
      */
     fun setBeaconProjects(beacons: Map<String, Beacon>) {
-        // todo: consider checking/refactoring existing usages?
         beaconProjects.clear()
         beaconProjects.putAll(beacons)
     }

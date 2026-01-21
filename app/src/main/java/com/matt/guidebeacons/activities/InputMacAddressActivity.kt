@@ -19,13 +19,12 @@ class InputMacAddressActivity : AppCompatActivity() {
         updateSubmitButtonEnabled()
         binding.macAddressInputField.addTextChangedListener { updateSubmitButtonEnabled() }
         binding.macAddressInputSubmit.setOnClickListener {
-            // todo: data validation user feedback
             val macAddress: String = binding.macAddressInputField.text.toString()
 
             if (isMacAddress(macAddress)) {
                 val returnIntent = Intent()
-                // todo: mac address as keys means that it is case-sensitive; force to upper?
-                returnIntent.putExtra(INTENT_EXTRA_SELECTED_BEACON_MAC, macAddress)
+                // Force to upper to match [android.bluetooth.BluetoothDevice.getAddress]
+                returnIntent.putExtra(INTENT_EXTRA_SELECTED_BEACON_MAC, macAddress.uppercase())
                 setResult(RESULT_OK, returnIntent)
                 finish()
             }
