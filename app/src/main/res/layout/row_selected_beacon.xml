@@ -54,7 +54,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/rssi_label"
-        android:inputType="numberDecimal"
+        android:inputType="numberDecimal|numberSigned"
         tools:text="-100 dBm" />
 
     <TextView
@@ -72,7 +72,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
-        android:inputType="numberDecimal"
+        android:inputType="numberDecimal|numberSigned"
         app:layout_constraintEnd_toStartOf="@+id/y_coordinate"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/coordinates_label"
@@ -87,7 +87,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/x_coordinate"
         app:layout_constraintTop_toBottomOf="@+id/coordinates_label"
-        android:inputType="numberDecimal"
+        android:inputType="numberDecimal|numberSigned"
         android:hint="Y coordinate"
         />
 
