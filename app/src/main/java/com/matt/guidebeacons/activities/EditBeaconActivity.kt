@@ -1,7 +1,10 @@
 package com.matt.guidebeacons.activities
 
+import android.content.Intent
 import android.os.Bundle
+import android.text.Html
 import android.widget.ArrayAdapter
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.snackbar.Snackbar
 import com.matt.guidebeacons.beacons.Beacon
@@ -75,9 +78,21 @@ class EditBeaconActivity : AppCompatActivity() {
         }
 
         deleteButton.setOnClickListener {
-            BeaconData.getBeaconProjects().remove(macAddress)
-            setResult(RESULT_OK)
-            finish()
+            // https://developer.android.com/develop/ui/views/components/dialogs
+            val builder = AlertDialog.Builder(this)
+            builder
+                .setTitle("Are you sure?")
+                .setMessage("You are about to delete beacon \"${beacon}\" (${macAddress})")
+                // todo: find better solution to changing text color?
+                .setNegativeButton(Html.fromHtml("<font color='#0091EA'>Cancel</font>")) { dialog, id -> }  // com.punchthrough.blestarterappandroid.R.color.colorPrimaryDark
+                .setPositiveButton("Delete") { dialog, id ->
+                    BeaconData.getBeaconProjects().remove(macAddress)
+                    val returnIntent = Intent()
+                    returnIntent.putExtra(INTENT_EXTRA_DELETED_BEACON, beacon.toString())
+                    setResult(RESULT_OK, returnIntent)
+                    finish()
+                }
+            builder.show()
         }
     }
 }

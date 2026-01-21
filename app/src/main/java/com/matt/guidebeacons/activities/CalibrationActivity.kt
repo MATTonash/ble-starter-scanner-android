@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.google.android.material.snackbar.Snackbar
 import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.beacons.BeaconsAdapter
@@ -59,19 +60,27 @@ class CalibrationActivity : AppCompatActivity() {
 
         binding.beaconsList.adapter!!.notifyDataSetChanged()
         BeaconData.writeBeaconsToFile(this, FILE_NAME_BEACONS)
+
+        val beaconName = data?.getStringExtra(INTENT_EXTRA_DELETED_BEACON)
+        if (!beaconName.isNullOrBlank()) {
+            Snackbar.make(binding.root, "Deleted beacon \"${beaconName}\"", Snackbar.LENGTH_LONG).show()
+        }
     }
 
     private fun onAddActivityResult(resultCode: Int, data: Intent?) {
         if (resultCode != RESULT_OK) return
 
+        val editIntent = Intent(this, EditBeaconActivity::class.java)
         val macAddress = data!!.getStringExtra(INTENT_EXTRA_SELECTED_BEACON_MAC)
+        editIntent.putExtra(INTENT_EXTRA_SELECTED_BEACON_MAC, macAddress)
+
         if (!BeaconData.getBeaconProjects().containsKey(macAddress)) {
             BeaconData.getBeaconProjects().put(macAddress!!, Beacon("New beacon", 0, 0.0, 0.0))
         }
+        else {
+            editIntent.putExtra(INTENT_EXTRA_ADDED_EXISTING_MAC, true)
+        }
 
-        val editIntent = Intent(this, EditBeaconActivity::class.java)
-        editIntent.putExtra(INTENT_EXTRA_SELECTED_BEACON_MAC, macAddress)
-        editIntent.putExtra(INTENT_EXTRA_ADDED_EXISTING_MAC, true)
         startActivityForResult(editIntent, REQUEST_EDIT)
     }
 
