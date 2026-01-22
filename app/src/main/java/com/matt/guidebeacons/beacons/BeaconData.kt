@@ -1,9 +1,10 @@
 package com.matt.guidebeacons.beacons
 
 import android.content.Context
+import com.matt.guidebeacons.utils.UppercaseSerializer
 import com.punchthrough.blestarterappandroid.R
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.InputStream
@@ -39,7 +40,7 @@ class BeaconData {
 
     /**
      * Technically clears existing beacons and copies the passed in beacons into the existing map,
-     * to prevent changing the map reference. This is done to prevent breaking
+     * to avoid replacing the map reference. This is done to prevent breaking
      * existing usages of `val beaconProjects = BeaconData.getBeaconProjects()`
      */
     fun setBeaconProjects(beacons: Map<String, Beacon>) {
@@ -86,7 +87,7 @@ class BeaconData {
         // https://developer.android.com/training/data-storage/shared/documents-files
         fun writeBeaconsToFile(context: Context, fileName: String) {
             timber.log.Timber.i("Saving beacons to ${context.filesDir.path}/${fileName}")
-            val json = Json.encodeToString(MapSerializer(String.serializer(), Beacon.serializer()), getBeaconProjects())
+            val json = Json.encodeToString(getSerializer(), getBeaconProjects())
             context.openFileOutput(fileName, Context.MODE_PRIVATE).use {
                  it.write(json.toByteArray())
             }
@@ -98,10 +99,14 @@ class BeaconData {
 
         private fun readBeaconsFromInputStream(stream: InputStream) {
             stream.bufferedReader().use {
-                val beacons = Json.decodeFromString<MutableMap<String, Beacon>>(it.readText())
+                val beacons = Json.decodeFromString(getSerializer(), it.readText())
                 getInstance().setBeaconProjects(beacons)
                 timber.log.Timber.i("Loaded ${beacons.size} beacon(s).")
             }
+        }
+
+        private fun getSerializer(): KSerializer<Map<String, Beacon>> {
+            return MapSerializer(UppercaseSerializer, Beacon.serializer())
         }
 
         fun initialiseBeaconData(context: Context, fileName: String) {
