@@ -77,7 +77,9 @@ class BluetoothWorkerClass private constructor() {
         appContext = context.applicationContext
         val bluetoothManager = appContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
+        //TODO: fix below (check and warning popup?); will crash the app on launch if bluetooth is disabled
         bleScanner = bluetoothAdapter.bluetoothLeScanner
+        // ^ bleScanner is lateinit and cannot be null, but bluetoothAdapter.bluetoothLeScanner will be null if bluetooth is disabled
 
         initializeVibrator()
     }

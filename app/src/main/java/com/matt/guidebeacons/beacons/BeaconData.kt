@@ -10,7 +10,7 @@ import java.io.File
 import java.io.InputStream
 
 /**
- * Singleton object that contains the collection of [Beacon]s used throughout the app.
+ * Singleton that contains the collection of [Beacon]s used throughout the app.
  */
 class BeaconData {
     /**
