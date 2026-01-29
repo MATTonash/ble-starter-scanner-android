@@ -5,6 +5,8 @@
     >
 
     <uses-permission android:name="android.permission.VIBRATE" /> <!-- Add this line -->
+
+<!-- BLUETOOTH PERMISSIONS ===================================================================== -->
     <!-- Request legacy Bluetooth permissions on versions older than API 31 (Android 12). -->
     <uses-permission
         android:name="android.permission.BLUETOOTH"
@@ -14,25 +16,28 @@
         android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30"
         />
+    <!-- Needed to look for Bluetooth devices -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        tools:targetApi="s"
+        />
+    <!-- Needed to use Bluetooth scan results to derive physical location -->
     <uses-permission
         android:name="android.permission.ACCESS_COARSE_LOCATION"
-        android:maxSdkVersion="30"
         />
     <uses-permission
         android:name="android.permission.ACCESS_FINE_LOCATION"
-        android:maxSdkVersion="30"
         />
-    <uses-permission
-        android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation"
-        tools:targetApi="s"
-        />
+
+    <!-- Needed only if communicating with already-paired Bluetooth devices. -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
     <uses-feature
         android:name="android.hardware.bluetooth_le"
         android:required="true"
         />
+
+<!-- APPLICATION =============================================================================== -->
 
     <application
         android:icon="@mipmap/ic_launcher"
@@ -45,7 +50,9 @@
         <activity
             android:name=".PointGraphActivity"
             android:exported="false"
-            android:label="RSSI Graph" /> <!-- Add this line -->
+            android:label="RSSI Graph"
+            />
+
         <activity
             android:name=".BleOperationsActivity"
             android:exported="false"
@@ -60,8 +67,8 @@
         <activity
             android:name="com.matt.guidebeacons.activities.CalibrationActivity"
             android:exported="false"
-            android:label="Calibration"
-        />
+            android:label="Admin Panel"
+            />
 
         <activity
             android:name="com.matt.guidebeacons.activities.EditBeaconActivity"
@@ -78,7 +85,8 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:screenOrientation="portrait" >
+            android:screenOrientation="portrait"
+            >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

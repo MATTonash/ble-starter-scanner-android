@@ -22,7 +22,7 @@ import com.punchthrough.blestarterappandroid.databinding.ActivityCalibrationBind
  *  * calibration (1m) RSSI value
  *  * display name
  *  * type (buzzer/start/destination)
- *     * buzzer sensitivity
+ *     * buzzer sensitivity (rssi strength proximity? e.g. if rssi is greater than sensitivity, buzz)
  *  * also store z-coordinate (maybe introduce coordinate data structure?)
  */
 
