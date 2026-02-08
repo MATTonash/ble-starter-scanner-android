@@ -32,7 +32,7 @@ class BluetoothWorkerClass private constructor() {
     private var scanResults = mutableListOf<ScanResult>()
     private var isScanning = false
     private lateinit var bluetoothAdapter: BluetoothAdapter
-    private lateinit var bleScanner: android.bluetooth.le.BluetoothLeScanner
+  //  private lateinit var bleScanner: android.bluetooth.le.BluetoothLeScanner
     private var scanCallback: ((List<ScanResult>) -> Unit)? = null
     private lateinit var appContext: Context
     private val connectedDevices = mutableSetOf<String>() // Track connected devices
@@ -69,20 +69,53 @@ class BluetoothWorkerClass private constructor() {
     private var scanInterval: Long = SCAN_INTERVAL
     private var continuousScanning = false
 
-    /**
-     * Initialises the companion object according to the activity
-     * @param context of the environment (typically activity)
-     */
+
+    private var bleScanner: android.bluetooth.le.BluetoothLeScanner? = null
+
     fun initialize(context: Context) {
         appContext = context.applicationContext
         val bluetoothManager = appContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothAdapter = bluetoothManager.adapter
-        //TODO: fix below (check and warning popup?); will crash the app on launch if bluetooth is disabled
-        bleScanner = bluetoothAdapter.bluetoothLeScanner
-        // ^ bleScanner is lateinit and cannot be null, but bluetoothAdapter.bluetoothLeScanner will be null if bluetooth is disabled
+        val adapter = bluetoothManager.adapter
+        if (adapter == null) {
+            Toast.makeText(appContext, "Bluetooth not supported on this device", Toast.LENGTH_LONG).show()
+            return
+        }
+        bluetoothAdapter = adapter
+
+        if (!bluetoothAdapter.isEnabled) {
+            Toast.makeText(appContext, "Bluetooth is disabled. Please enable Bluetooth.", Toast.LENGTH_LONG).show()
+            // Leave bleScanner null and avoid calling it elsewhere until Bluetooth is enabled.
+            bleScanner = null
+            initializeVibrator()
+            return
+        }
+
+        // bluetoothLeScanner exists from API 21 (LOLLIPOP)
+        bleScanner = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            bluetoothAdapter.bluetoothLeScanner
+        } else {
+            null
+        }
 
         initializeVibrator()
     }
+//    /**
+//     * Initialises the companion object according to the activity
+//     * @param context of the environment (typically activity)
+//     */
+//    fun initialize(context: Context) {
+//        appContext = context.applicationContext
+//        val bluetoothManager = appContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+//        bluetoothAdapter = bluetoothManager.adapter
+//        //TODO: fix below (check and warning popup?); will crash the app on launch if bluetooth is disabled
+//        bleScanner = bluetoothAdapter.bluetoothLeScanner
+//        // ^ bleScanner is lateinit and cannot be null, but bluetoothAdapter.bluetoothLeScanner will be null if bluetooth is disabled
+//
+//        initializeVibrator()
+//
+//
+//
+//    }
 
     private val scanSettings = ScanSettings.Builder()
         .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // Changed to LOW_POWER mode
@@ -94,7 +127,7 @@ class BluetoothWorkerClass private constructor() {
             if (isScanning) {
 
                 // Stop scanning
-                bleScanner.stopScan(bleScanCallback)
+                bleScanner?.stopScan(bleScanCallback)
                 isScanning = false
                 Timber.d("Stopped BLE scan")
 
@@ -133,7 +166,7 @@ class BluetoothWorkerClass private constructor() {
         }
 
         if (appContext.hasRequiredBluetoothPermissions()) {
-            bleScanner.startScan(null, scanSettings, bleScanCallback)
+            bleScanner?.startScan(null, scanSettings, bleScanCallback)
             isScanning = true
             Timber.d("Started BLE scan")
 
@@ -237,7 +270,7 @@ class BluetoothWorkerClass private constructor() {
 
         handler.removeCallbacks(scanRunnable)
         connectionCheckHandler.removeCallbacks(connectionCheckRunnable)
-        bleScanner.stopScan(bleScanCallback)
+        bleScanner?.stopScan(bleScanCallback)
         isScanning = false
         continuousScanning = false
         connectedDevices.forEach { address ->
