@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
 import com.matt.guidebeacons.activities.CalibrationActivity
+import com.matt.guidebeacons.activities.PermissionsCheckActivity
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.constants.*
 import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
@@ -90,10 +91,9 @@ class MainActivity : AppCompatActivity() {
         //initializeVibrator()
 
         // only setup viewmap button when 3 beacons collected
-
         setupViewMapButton()
 
-        setupCalibrationButton()
+        setUpActivityButtons()
     }
 
     private fun setupScanButton() {
@@ -116,9 +116,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupCalibrationButton() {
-        binding.calibrationButton.setOnClickListener {
-            launchCalibrationActivity()
+    private fun setUpActivityButtons() {
+        setUpActivityButton(binding.calibrationButton, CalibrationActivity::class.java)
+        setUpActivityButton(binding.permissionsDebugButton, PermissionsCheckActivity::class.java)
+    }
+
+    private fun setUpActivityButton(button: android.widget.Button, activity: Class<*>) {
+        button.setOnClickListener {
+            val intent = Intent(this, activity)
+            startActivity(intent)
         }
     }
 
@@ -254,11 +260,6 @@ class MainActivity : AppCompatActivity() {
     private fun launchRssiMappingActivity() {
         val rssiMappingIntent = Intent(this, RssiMappingActivity::class.java)
         startActivity(rssiMappingIntent)
-    }
-
-    private fun launchCalibrationActivity() {
-        val calibrationIntent = Intent(this, CalibrationActivity::class.java)
-        startActivity(calibrationIntent)
     }
 
     override fun onRequestPermissionsResult(
