@@ -75,7 +75,7 @@ class CalibrationActivity : AppCompatActivity() {
         editIntent.putExtra(INTENT_EXTRA_SELECTED_BEACON_MAC, macAddress)
 
         if (!BeaconData.getBeaconProjects().containsKey(macAddress)) {
-            BeaconData.getBeaconProjects().put(macAddress!!, Beacon("New beacon", 0, 0.0, 0.0))
+            BeaconData.getBeaconProjects().put(macAddress!!, Beacon("New beacon", 0, 0.0, 0.0, 0.0))
         }
         else {
             editIntent.putExtra(INTENT_EXTRA_ADDED_EXISTING_MAC, true)

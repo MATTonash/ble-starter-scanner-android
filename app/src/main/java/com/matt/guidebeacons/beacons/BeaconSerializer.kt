@@ -17,6 +17,7 @@ object BeaconSerializer: KSerializer<Beacon> {
         element<Int>("calibrationRSSI")
         element<Double>("x")
         element<Double>("y")
+        element<Double>("z")
         element<Int>("buzzerSensitivity")
         element<String>("beaconType")
     }
@@ -25,14 +26,16 @@ object BeaconSerializer: KSerializer<Beacon> {
         val coords = value.getCoordinates()
         val x = coords[0]
         val y = coords[1]
-        
+        val z = coords[2]
+
         encoder.encodeStructure(descriptor) {
             encodeStringElement(descriptor, 0, value.toString())
             encodeIntElement(descriptor, 1, value.getCalibrationRSSI())
             encodeDoubleElement(descriptor, 2, x)
             encodeDoubleElement(descriptor, 3, y)
-            encodeIntElement(descriptor, 4, value.getBuzzerSensitivity())
-            encodeStringElement(descriptor, 5, value.getBeaconType().name)
+            encodeDoubleElement(descriptor, 4, z)
+            encodeIntElement(descriptor, 5, value.getBuzzerSensitivity())
+            encodeStringElement(descriptor, 6, value.getBeaconType().name)
         }
     }
 
@@ -45,6 +48,7 @@ object BeaconSerializer: KSerializer<Beacon> {
             var calibrationRSSI: Int = -1
             var x: Double = 0.0
             var y: Double = 0.0
+            var z: Double = 0.0
 
             while (true) {
                 when (val index = decodeElementIndex(descriptor)) {
@@ -52,13 +56,14 @@ object BeaconSerializer: KSerializer<Beacon> {
                     1 -> calibrationRSSI = decodeIntElement(descriptor, 1)
                     2 -> x = decodeDoubleElement(descriptor, 2)
                     3 -> y = decodeDoubleElement(descriptor, 3)
-                    4 -> buzzerSensitivity = decodeIntElement(descriptor, 4)
-                    5 -> beaconTypeString = decodeStringElement(descriptor, 5)
+                    4 -> z = decodeDoubleElement(descriptor, 4)
+                    5 -> buzzerSensitivity = decodeIntElement(descriptor, 5)
+                    6 -> beaconTypeString = decodeStringElement(descriptor, 6)
                     CompositeDecoder.DECODE_DONE -> break
                     else -> error("Unexpected index: $index")
                 }
             }
-            Beacon(name, calibrationRSSI, x, y)
+            Beacon(name, calibrationRSSI, x, y, z)
         }
 
         val beaconType = BeaconType.entries.firstOrNull { it.name == beaconTypeString } ?: BeaconType.DEFAULT

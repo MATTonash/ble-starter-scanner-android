@@ -27,7 +27,7 @@ class EditBeaconActivity : AppCompatActivity() {
 
         // TODO: handle null/missing/invalid MAC address (reuse for adding? but MAC address should still be populated)
         macAddress = intent.getStringExtra(INTENT_EXTRA_SELECTED_BEACON_MAC)
-        beacon = BeaconData.getBeaconProjects()[macAddress] ?: Beacon("New beacon", 0, 0.0, 0.0)
+        beacon = BeaconData.getBeaconProjects()[macAddress] ?: Beacon("New beacon", 0, 0.0, 0.0, 0.0)
 
         if (intent.getBooleanExtra(INTENT_EXTRA_ADDED_EXISTING_MAC, false)) {
             Snackbar.make(binding.root, "Editing existing beacon", Snackbar.LENGTH_SHORT).show()
@@ -43,6 +43,7 @@ class EditBeaconActivity : AppCompatActivity() {
         val signalStrengthEditText = binding.signalStrength
         val xCoordinateEditText = binding.xCoordinate
         val yCoordinateEditText = binding.yCoordinate
+        val zCoordinateEditText = binding.zCoordinate
 
         val beaconTypeSpinner = binding.beaconType
         val buzzerSensitivityEditText = binding.buzzerSensitivity
@@ -55,6 +56,7 @@ class EditBeaconActivity : AppCompatActivity() {
         signalStrengthEditText.setText(beacon.getCalibrationRSSI().toString())
         xCoordinateEditText.setText(beacon.getCoordinates()[0].toString())
         yCoordinateEditText.setText(beacon.getCoordinates()[1].toString())
+        zCoordinateEditText.setText(beacon.getCoordinates()[2].toString())
 
         val spinnerAdapter = ArrayAdapter<BeaconType>(this, android.R.layout.simple_list_item_1, BeaconType.entries)
         beaconTypeSpinner.adapter = spinnerAdapter
@@ -66,11 +68,12 @@ class EditBeaconActivity : AppCompatActivity() {
             val newRSSI: Int = signalStrengthEditText.text.toString().toIntOrNull() ?: beacon.getCalibrationRSSI()
             val newX: Double = xCoordinateEditText.text.toString().toDoubleOrNull() ?: beacon.getCoordinates()[0]
             val newY: Double = yCoordinateEditText.text.toString().toDoubleOrNull() ?: beacon.getCoordinates()[1]
+            val newZ: Double = zCoordinateEditText.text.toString().toDoubleOrNull() ?: beacon.getCoordinates()[2]
 
             val newBeaconType: BeaconType = beaconTypeSpinner.selectedItem as BeaconType
             val newBuzzerSensitivity: Int = buzzerSensitivityEditText.text.toString().toIntOrNull() ?: beacon.getBuzzerSensitivity()
 
-            beacon.updateData(newName, newRSSI, newX, newY)
+            beacon.updateData(newName, newRSSI, newX, newY, newZ)
             beacon.setBeaconType(newBeaconType)
             beacon.setBuzzerSensitivity(newBuzzerSensitivity)
             setResult(RESULT_OK)
