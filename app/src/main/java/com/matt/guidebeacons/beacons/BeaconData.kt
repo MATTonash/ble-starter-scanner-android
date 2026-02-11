@@ -85,9 +85,10 @@ class BeaconData {
 
         // https://developer.android.com/training/data-storage/app-specific#kotlin
         // https://developer.android.com/training/data-storage/shared/documents-files
-        fun writeBeaconsToFile(context: Context, fileName: String) {
+        fun writeBeaconsToFile(context: Context, fileName: String, prettyPrint: Boolean = false) {
             timber.log.Timber.i("Saving beacons to ${context.filesDir.path}/${fileName}")
-            val json = Json.encodeToString(getSerializer(), getBeaconProjects())
+            val writer = Json { this.prettyPrint = prettyPrint }
+            val json = writer.encodeToString(getSerializer(), getBeaconProjects())
             context.openFileOutput(fileName, Context.MODE_PRIVATE).use {
                  it.write(json.toByteArray())
             }
@@ -99,7 +100,8 @@ class BeaconData {
 
         private fun readBeaconsFromInputStream(stream: InputStream) {
             stream.bufferedReader().use {
-                val beacons = Json.decodeFromString(getSerializer(), it.readText())
+                val reader = Json { ignoreUnknownKeys = true }
+                val beacons = reader.decodeFromString(getSerializer(), it.readText())
                 getInstance().setBeaconProjects(beacons)
                 timber.log.Timber.i("Loaded ${beacons.size} beacon(s).")
             }
@@ -111,7 +113,7 @@ class BeaconData {
 
         fun initialiseBeaconData(context: Context, fileName: String) {
             // Test serialization (saves to /data/data/com.punchthrough.blestarterappandroid/files/default_beacons.json); use this to update /res/raw/default_beacons.json ?
-            writeBeaconsToFile(context, "default_beacons.json")
+            writeBeaconsToFile(context, "default_beacons.json", true)
 
             if (File(context.filesDir.path, fileName).exists()) {
                 timber.log.Timber.i("Loading beacons from ${context.filesDir.path}/${fileName}")
