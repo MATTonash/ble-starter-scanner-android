@@ -12,6 +12,7 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.ScatterData
 import com.github.mikephil.charting.data.ScatterDataSet
 import com.github.mikephil.charting.interfaces.datasets.IScatterDataSet
+import com.matt.guidebeacons.beacons.BeaconData
 import kotlin.math.pow
 
 
@@ -30,7 +31,7 @@ class PointGraphActivity : AppCompatActivity() {
     private var userPoints = ArrayList<Entry>()
     private var locationDataSet = ScatterDataSet(userPoints,"User position")
 
-    private val beaconProjects = bluetoothWorker.getBeaconProjects()
+    private val beaconProjects = BeaconData.getBeaconProjects()
     private lateinit var trilaterationFunction : TrilaterationFunction
 
 

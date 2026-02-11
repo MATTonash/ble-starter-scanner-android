@@ -23,6 +23,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.matt.guidebeacons.beacons.BeaconData
 
 /**
 * The adapter for recycler view of all the beacons/scan results in mainActivity
@@ -65,7 +66,7 @@ class ScanResultAdapter(
 
     ) : RecyclerView.ViewHolder(view) {
 
-        private val beaconProjects = BluetoothWorkerClass.getInstance().getBeaconProjects()
+        private val beaconProjects = BeaconData.getBeaconProjects()
 
         @SuppressLint("MissingPermission", "SetTextI18n")
         fun bind(result: ScanResult) {

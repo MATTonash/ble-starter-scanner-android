@@ -18,6 +18,10 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.matt.guidebeacons.activities.CalibrationActivity
+import com.matt.guidebeacons.activities.PermissionsCheckActivity
+import com.matt.guidebeacons.beacons.BeaconData
+import com.matt.guidebeacons.constants.*
 import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
 
@@ -28,7 +32,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
 
-    private val beaconProjects = bluetoothWorker.getBeaconProjects()
+    private val beaconProjects = BeaconData.getBeaconProjects()
     private var isScanning = false
         set(value) {
             field = value
@@ -68,8 +72,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        isScanning = false
 
+        if (Timber.treeCount() <= 0) Timber.plant(Timber.DebugTree()) // show Timber log messages in Logcat
+
+        BeaconData.initialiseBeaconData(this, FILE_NAME_BEACONS)
+
+        isScanning = false
         // Initialize BluetoothWorker
         bluetoothWorker.initialize(this)
 
@@ -77,12 +85,14 @@ class MainActivity : AppCompatActivity() {
         setupRecyclerView()
 
         setupScanButton()
+
+        setupRssiMappingButton()
         //initializeVibrator()
 
         // only setup viewmap button when 3 beacons collected
-
         setupViewMapButton()
 
+        setUpActivityButtons()
     }
 
     private fun setupScanButton() {
@@ -91,7 +101,6 @@ class MainActivity : AppCompatActivity() {
                 stopBleScan()
             } else {
                 startBleScan()
-
             }
         }
     }
@@ -103,6 +112,18 @@ class MainActivity : AppCompatActivity() {
         binding.viewMapButton.isEnabled = allowClickViewMapButton()
         binding.viewMapButton.setOnClickListener {
             startActivity(Intent(this, MapActivity::class.java))
+        }
+    }
+
+    private fun setUpActivityButtons() {
+        setUpActivityButton(binding.calibrationButton, CalibrationActivity::class.java)
+        setUpActivityButton(binding.permissionsDebugButton, PermissionsCheckActivity::class.java)
+    }
+
+    private fun setUpActivityButton(button: android.widget.Button, activity: Class<*>) {
+        button.setOnClickListener {
+            val intent = Intent(this, activity)
+            startActivity(intent)
         }
     }
 
@@ -224,6 +245,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun launchPointGraphActivity() {
+        val pointGraphIntent = Intent(this, PointGraphActivity::class.java)
+        startActivity(pointGraphIntent)
+    }
+
+    private fun setupRssiMappingButton() {
+        binding.recordRssiButton.setOnClickListener {
+            launchRssiMappingActivity()
+        }
+    }
+
+    private fun launchRssiMappingActivity() {
+        val rssiMappingIntent = Intent(this, RssiMappingActivity::class.java)
+        startActivity(rssiMappingIntent)
+    }
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -248,10 +285,10 @@ class MainActivity : AppCompatActivity() {
         }
         Timber.w("Permissions: ${permissions.toList()}, grant results: $resultsDescriptions")
 
-//        val containsPermanentDenial = permissions.zip(grantResults.toTypedArray()).any {
-//            it.second == PackageManager.PERMISSION_DENIED &&
-//                !ActivityCompat.shouldShowRequestPermissionRationale(this, it.first)
-//        }
+        val containsPermanentDenial = permissions.zip(grantResults.toTypedArray()).any {
+            it.second == PackageManager.PERMISSION_DENIED &&
+                !ActivityCompat.shouldShowRequestPermissionRationale(this, it.first)
+        }
         val containsDenial = grantResults.any { it == PackageManager.PERMISSION_DENIED }
         val allGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
 
