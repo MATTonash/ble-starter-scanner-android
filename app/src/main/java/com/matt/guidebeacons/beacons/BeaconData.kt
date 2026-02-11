@@ -20,14 +20,14 @@ class BeaconData {
      * @see[getBeaconProjects]
      */
     private val beaconProjects = mutableMapOf(
-        "80:EC:CC:CD:33:28" to Beacon("Losing Things", -60, 0.0, 1.0),
-        "80:EC:CC:CD:33:7C" to Beacon("Happy Mornings", -57, 1.0, 2.0),
-        "80:EC:CC:CD:33:7E" to Beacon("STEM", -59, 2.0, 2.0),
-        "80:EC:CC:CD:33:58" to Beacon("Visual Clutter", -60, 2.0, 1.0),
-        "00:3C:84:28:87:01" to Beacon("MAP", -58, 1.0, 0.0),
-        "00:3C:84:28:77:AB" to Beacon("Dance", -60, 1.00, 1.0),
-        "D8:F2:C8:9B:33:34" to Beacon("Origin", -62, 0.0, 0.0),
-        "6C:B2:FD:34:CE:9E" to Beacon("Bee", -75, 0.5, 0.5)
+        "80:EC:CC:CD:33:28" to Beacon("Losing Things", -60, 0.0, 1.0, 0.0),
+        "80:EC:CC:CD:33:7C" to Beacon("Happy Mornings", -57, 1.0, 2.0, 0.0),
+        "80:EC:CC:CD:33:7E" to Beacon("STEM", -59, 2.0, 2.0, 0.0),
+        "80:EC:CC:CD:33:58" to Beacon("Visual Clutter", -60, 2.0, 1.0, 0.0),
+        "00:3C:84:28:87:01" to Beacon("MAP", -58, 1.0, 0.0, 0.0),
+        "00:3C:84:28:77:AB" to Beacon("Dance", -60, 1.00, 1.0, 0.0),
+        "D8:F2:C8:9B:33:34" to Beacon("Origin", -62, 0.0, 0.0, 0.0),
+        "6C:B2:FD:34:CE:9E" to Beacon("Bee", -75, 0.5, 0.5, 0.0)
     )
 
     /**
@@ -85,9 +85,10 @@ class BeaconData {
 
         // https://developer.android.com/training/data-storage/app-specific#kotlin
         // https://developer.android.com/training/data-storage/shared/documents-files
-        fun writeBeaconsToFile(context: Context, fileName: String) {
+        fun writeBeaconsToFile(context: Context, fileName: String, prettyPrint: Boolean = false) {
             timber.log.Timber.i("Saving beacons to ${context.filesDir.path}/${fileName}")
-            val json = Json.encodeToString(getSerializer(), getBeaconProjects())
+            val writer = Json { this.prettyPrint = prettyPrint }
+            val json = writer.encodeToString(getSerializer(), getBeaconProjects())
             context.openFileOutput(fileName, Context.MODE_PRIVATE).use {
                  it.write(json.toByteArray())
             }
@@ -99,7 +100,8 @@ class BeaconData {
 
         private fun readBeaconsFromInputStream(stream: InputStream) {
             stream.bufferedReader().use {
-                val beacons = Json.decodeFromString(getSerializer(), it.readText())
+                val reader = Json { ignoreUnknownKeys = true }
+                val beacons = reader.decodeFromString(getSerializer(), it.readText())
                 getInstance().setBeaconProjects(beacons)
                 timber.log.Timber.i("Loaded ${beacons.size} beacon(s).")
             }
@@ -111,7 +113,7 @@ class BeaconData {
 
         fun initialiseBeaconData(context: Context, fileName: String) {
             // Test serialization (saves to /data/data/com.punchthrough.blestarterappandroid/files/default_beacons.json); use this to update /res/raw/default_beacons.json ?
-            writeBeaconsToFile(context, "default_beacons.json")
+            writeBeaconsToFile(context, "default_beacons.json", true)
 
             if (File(context.filesDir.path, fileName).exists()) {
                 timber.log.Timber.i("Loading beacons from ${context.filesDir.path}/${fileName}")

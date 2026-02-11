@@ -12,10 +12,12 @@ import kotlin.math.pow
 class Beacon(beaconName: String,
              calibrationRSSI: Int,
              x: Double,
-             y: Double) {
+             y: Double,
+             z: Double
+) {
     private var beaconName = beaconName
     private var calibrationRSSI = calibrationRSSI
-    private var coordinates = doubleArrayOf(x, y)
+    private var coordinates = doubleArrayOf(x, y, z)
     private var buzzerSensitivity = 0
     private var beaconType = BeaconType.DEFAULT
 
@@ -33,7 +35,7 @@ class Beacon(beaconName: String,
 
     public fun getCoordinatesString(): String {
         // bit gross to hard-code indices, is there a better way?
-        return "(${coordinates[0]}, ${coordinates[1]})"
+        return "(${coordinates[0]}, ${coordinates[1]}, ${coordinates[2]})"
     }
 
     public fun getBuzzerSensitivity(): Int {
@@ -56,9 +58,9 @@ class Beacon(beaconName: String,
         return beaconName;
     }
 
-    public fun updateData(beaconName: String, calibrationRSSI: Int, x: Double, y: Double) {
+    public fun updateData(beaconName: String, calibrationRSSI: Int, x: Double, y: Double, z: Double) {
         this.beaconName = beaconName
         this.calibrationRSSI = calibrationRSSI
-        this.coordinates = doubleArrayOf(x, y)
+        this.coordinates = doubleArrayOf(x, y, z)
     }
 }

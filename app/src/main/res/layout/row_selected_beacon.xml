@@ -76,7 +76,7 @@
         app:layout_constraintEnd_toStartOf="@+id/y_coordinate"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/coordinates_label"
-        android:hint="X coordinate"
+        android:hint="X"
         />
 
     <EditText
@@ -84,11 +84,23 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/z_coordinate"
         app:layout_constraintStart_toEndOf="@+id/x_coordinate"
         app:layout_constraintTop_toBottomOf="@+id/coordinates_label"
         android:inputType="numberDecimal|numberSigned"
-        android:hint="Y coordinate"
+        android:hint="Y"
+        />
+
+    <EditText
+        android:id="@+id/z_coordinate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/y_coordinate"
+        app:layout_constraintTop_toBottomOf="@+id/coordinates_label"
+        android:inputType="numberDecimal|numberSigned"
+        android:hint="Z"
         />
 
     <TextView
