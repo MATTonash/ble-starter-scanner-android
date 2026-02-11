@@ -14,16 +14,16 @@ class PermissionsCheckActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPermissionsBinding
 
-    class Permission(val name: String, val minSdk: Int)
+    class Permission(val name: String, val minSdk: Int = Build.VERSION_CODES.BASE, val maxSdk: Int = Build.VERSION_CODES.CUR_DEVELOPMENT)
 
     private val permissions = listOf(
-        Permission(Manifest.permission.BLUETOOTH, Build.VERSION_CODES.BASE),
-        Permission(Manifest.permission.BLUETOOTH_ADMIN, Build.VERSION_CODES.BASE),
-        Permission(Manifest.permission.BLUETOOTH_SCAN, Build.VERSION_CODES.S),
-        Permission(Manifest.permission.ACCESS_COARSE_LOCATION, Build.VERSION_CODES.BASE),
-        Permission(Manifest.permission.ACCESS_FINE_LOCATION, Build.VERSION_CODES.BASE),
-        Permission(Manifest.permission.VIBRATE, Build.VERSION_CODES.BASE),
-        Permission(Manifest.permission.BLUETOOTH_CONNECT, Build.VERSION_CODES.S)
+        Permission(Manifest.permission.BLUETOOTH, maxSdk = Build.VERSION_CODES.R),
+        Permission(Manifest.permission.BLUETOOTH_ADMIN, maxSdk = Build.VERSION_CODES.R),
+        Permission(Manifest.permission.BLUETOOTH_SCAN, minSdk = Build.VERSION_CODES.S),
+        Permission(Manifest.permission.ACCESS_COARSE_LOCATION),
+        Permission(Manifest.permission.ACCESS_FINE_LOCATION),
+        Permission(Manifest.permission.VIBRATE),
+        Permission(Manifest.permission.BLUETOOTH_CONNECT, minSdk = Build.VERSION_CODES.S)
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +38,7 @@ class PermissionsCheckActivity : AppCompatActivity() {
         var out: String = ""
 
         for (p in permissions) {
-            val status = when(Build.VERSION.SDK_INT >= p.minSdk) {
+            val status = when(Build.VERSION.SDK_INT >= p.minSdk && Build.VERSION.SDK_INT <= p.maxSdk) {
                 false -> "n/a"
                 else -> when(this.hasPermission(p.name)) {
                     true -> Html.fromHtml("<font color='#16E049'>O</font>")
