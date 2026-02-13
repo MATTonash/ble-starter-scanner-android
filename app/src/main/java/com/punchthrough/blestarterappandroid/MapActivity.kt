@@ -16,8 +16,8 @@
 
 package com.punchthrough.blestarterappandroid
 
+import android.annotation.SuppressLint
 import android.bluetooth.le.ScanResult
-import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -27,12 +27,13 @@ import android.view.MotionEvent
 
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import com.matt.guidebeacons.beacons.BeaconData
 
 
 class MapActivity : AppCompatActivity() {
 
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
-    private val beaconProjects = bluetoothWorker.getBeaconProjects()
+    private val beaconProjects = BeaconData.getBeaconProjects()
 
     private lateinit var gestureDetector: GestureDetector
 
@@ -41,6 +42,7 @@ class MapActivity : AppCompatActivity() {
 
     private lateinit var vibrator: Vibrator
 
+    @SuppressLint("ClickableViewAccessibility")
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,11 +68,9 @@ class MapActivity : AppCompatActivity() {
             }
         })
 
+        // Drawing path
         userMapView.setOnTouchListener { view, event ->
-
             gestureDetector.onTouchEvent(event)
-
-            // ✅ event.x and event.y are NOW view-relative
             val mapPoint = userMapView.screenToMap(event.x, event.y)
             view.performClick()
             when (event.actionMasked) {
@@ -78,15 +78,12 @@ class MapActivity : AppCompatActivity() {
                     userMapView.beginUserPath()
                     userMapView.addUserPathPoint(mapPoint)
                 }
-
                 MotionEvent.ACTION_MOVE -> {
                     userMapView.addUserPathPoint(mapPoint)
                 }
             }
-
             true
         }
-
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -129,14 +126,12 @@ class MapActivity : AppCompatActivity() {
             distances[index] = beacon.calculateDistance(res.rssi, res.txPower)
         }
 
+        userMapView.clearBeacons()
+        userMapView.addBeacons(coords)
         solveForUser(coords, distances)
 
         // add here to show the angle that the user is facing
         userMapView.setUserAngle(null)
-
-        if (!userMapView.isUserOnPath()) {
-           alertUser()
-        }
     }
 
     private fun alertUser() {

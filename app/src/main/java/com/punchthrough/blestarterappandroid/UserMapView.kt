@@ -318,6 +318,26 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         }
     }
 
+    fun screenToMap(screenX: Float, screenY: Float): ConfigPoint {
+        val mapX = (screenX - offsetX) / scale
+        val mapY = (screenY - offsetY) / scale
+
+        return ConfigPoint(
+            mapX.coerceIn(0f, maxX),
+            mapY.coerceIn(0f, maxY)
+        )
+    }
+
+    fun clearBeacons() {
+        beacons.clear()
+    }
+
+    fun addBeacons(newBeacons: Array<DoubleArray>) {
+        for (beaconLoc: DoubleArray in newBeacons) {
+            beacons.add(ConfigPoint(beaconLoc[0].toFloat(), beaconLoc[1].toFloat()))
+        }
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
