@@ -13,18 +13,18 @@ import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.beacons.BeaconType
 import com.matt.guidebeacons.constants.*
 import com.punchthrough.blestarterappandroid.R
-import com.punchthrough.blestarterappandroid.databinding.RowSelectedBeaconBinding
+import com.punchthrough.blestarterappandroid.databinding.ActivityEditBeaconBinding
 
 class EditBeaconActivity : AppCompatActivity() {
 
-    private lateinit var binding: RowSelectedBeaconBinding
+    private lateinit var binding: ActivityEditBeaconBinding
 
     private var macAddress: String? = null
     private lateinit var beacon: Beacon
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = RowSelectedBeaconBinding.inflate(layoutInflater)
+        binding = ActivityEditBeaconBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         // TODO: handle null/missing/invalid MAC address (reuse for adding? but MAC address should still be populated)
@@ -42,7 +42,7 @@ class EditBeaconActivity : AppCompatActivity() {
         val macAddressTextView = binding.macAddress
 
         val deviceNameEditText = binding.deviceName
-        val signalStrengthEditText = binding.signalStrength
+        val rssiEditText = binding.rssi
         val xCoordinateEditText = binding.xCoordinate
         val yCoordinateEditText = binding.yCoordinate
         val zCoordinateEditText = binding.zCoordinate
@@ -55,7 +55,7 @@ class EditBeaconActivity : AppCompatActivity() {
 
         macAddressTextView.text = macAddress
         deviceNameEditText.setText(beacon.toString())
-        signalStrengthEditText.setText(beacon.getCalibrationRSSI().toString())
+        rssiEditText.setText(beacon.getCalibrationRSSI().toString())
         xCoordinateEditText.setText(beacon.getCoordinates()[0].toString())
         yCoordinateEditText.setText(beacon.getCoordinates()[1].toString())
         zCoordinateEditText.setText(beacon.getCoordinates()[2].toString())
@@ -67,7 +67,7 @@ class EditBeaconActivity : AppCompatActivity() {
 
         saveButton.setOnClickListener {
             val newName: String = if (deviceNameEditText.text.isNullOrBlank()) beacon.toString() else deviceNameEditText.text.toString()
-            val newRSSI: Int = signalStrengthEditText.text.toString().toIntOrNull() ?: beacon.getCalibrationRSSI()
+            val newRSSI: Int = rssiEditText.text.toString().toIntOrNull() ?: beacon.getCalibrationRSSI()
             val newX: Double = xCoordinateEditText.text.toString().toDoubleOrNull() ?: beacon.getCoordinates()[0]
             val newY: Double = yCoordinateEditText.text.toString().toDoubleOrNull() ?: beacon.getCoordinates()[1]
             val newZ: Double = zCoordinateEditText.text.toString().toDoubleOrNull() ?: beacon.getCoordinates()[2]
