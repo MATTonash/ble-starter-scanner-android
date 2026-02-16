@@ -40,12 +40,15 @@ fun Context.hasPermission(permissionType: String): Boolean {
  * Bluetooth operations depending on the mobile device's Android version.
  */
 fun Context.hasRequiredBluetoothPermissions(): Boolean {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        hasPermission(Manifest.permission.BLUETOOTH_SCAN) &&
+    var result = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        result = result &&
+            hasPermission(Manifest.permission.BLUETOOTH_SCAN) &&
             hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    } else {
-        hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     }
+
+    return result
 }
 
 /**
@@ -56,21 +59,19 @@ fun Activity.requestRelevantBluetoothPermissions(requestCode: Int) {
         Timber.w("Required permission(s) for Bluetooth already granted")
         return
     }
-    when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (bluetoothPermissionRationaleRequired()) {
-                displayNearbyDevicesPermissionRationale(requestCode)
-            } else {
-                requestNearbyDevicesPermissions(requestCode)
-            }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (bluetoothPermissionRationaleRequired()) {
+            displayNearbyDevicesPermissionRationale(requestCode)
+        } else {
+            requestNearbyDevicesPermissions(requestCode)
         }
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.S -> {
-            if (locationPermissionRationaleRequired()) {
-                displayLocationPermissionRationale(requestCode)
-            } else {
-                requestLocationPermission(requestCode)
-            }
-        }
+    }
+
+    if (locationPermissionRationaleRequired()) {
+        displayLocationPermissionRationale(requestCode)
+    } else {
+        requestLocationPermission(requestCode)
     }
 }
 
