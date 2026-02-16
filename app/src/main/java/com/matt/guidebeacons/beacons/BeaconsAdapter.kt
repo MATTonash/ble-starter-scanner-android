@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.punchthrough.blestarterappandroid.databinding.RowScanResultBinding
+import com.punchthrough.blestarterappandroid.databinding.RowBeaconDetailedBinding
 
 class BeaconsAdapter(
     private val onClickListener: (beacon: Beacon) -> Unit
@@ -16,7 +16,7 @@ class BeaconsAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-        val binding = RowScanResultBinding.inflate(inflater, parent, false)
+        val binding = RowBeaconDetailedBinding.inflate(inflater, parent, false)
         return ViewHolder(binding, onClickListener)
     }
 
@@ -29,19 +29,19 @@ class BeaconsAdapter(
 
 
     class ViewHolder(
-        private val binding: RowScanResultBinding,
+        private val binding: RowBeaconDetailedBinding,
         private val onClickListener: (Beacon) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
 
         @SuppressLint("SetTextI18n")
         fun bind(beacon: Beacon) {
-            val view = binding.root
-
             binding.deviceName.text = beacon.toString()
-            binding.macAddress.text = beacon.getCoordinatesString()
-            binding.signalStrength.text = "${beacon.getCalibrationRSSI()} dBm"
+            binding.macAddress.text = BeaconData.getBeaconMacAddress(beacon)
+            binding.beaconType.text = beacon.getBeaconType().toString()
+            binding.coordinates.text = beacon.getCoordinatesString()
+            binding.calibrationRssi.text = "${beacon.getCalibrationRSSI()} dBm"
 
-            view.setOnClickListener {
+            binding.root.setOnClickListener {
                 timber.log.Timber.i("Clicked on beacon \"${beacon}\"")
                 onClickListener.invoke(beacon)
             }

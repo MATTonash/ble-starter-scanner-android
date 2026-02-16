@@ -21,9 +21,9 @@ import android.bluetooth.le.ScanResult
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.matt.guidebeacons.beacons.BeaconData
+import com.punchthrough.blestarterappandroid.databinding.RowScanResultBinding
 
 /**
 * The adapter for recycler view of all the beacons/scan results in mainActivity
@@ -43,12 +43,10 @@ class ScanResultAdapter(
 
     // create new views
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        // inflates the card_view_design view
-        // that is used to hold list item
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.row_scan_result, parent, false)
+        val inflater = LayoutInflater.from(parent.context)
+        val binding = RowScanResultBinding.inflate(inflater, parent, false)
 
-        return ViewHolder(view, onClickListener)
+        return ViewHolder(binding, onClickListener)
     }
 
     override fun getItemCount() = scanResults.size
@@ -61,23 +59,23 @@ class ScanResultAdapter(
 
 
     class ViewHolder(
-        private val view: View,
+        private val binding: RowScanResultBinding,
         private val onClickListener: (device : ScanResult) -> Unit
 
-    ) : RecyclerView.ViewHolder(view) {
+    ) : RecyclerView.ViewHolder(binding.root) {
 
         private val beaconProjects = BeaconData.getBeaconProjects()
 
         @SuppressLint("MissingPermission", "SetTextI18n")
         fun bind(result: ScanResult) {
-            view.findViewById<TextView>(R.id.device_name).text =
-                if (view.context.hasRequiredBluetoothPermissions()) {
+            binding.deviceName.text =
+                if (binding.root.context.hasRequiredBluetoothPermissions()) {
                     beaconProjects[result.device.address].toString() ?: "Unknown Beacon"
                 } else {
                     error("Missing required Bluetooth permissions")
                 }
-            view.findViewById<TextView>(R.id.mac_address).text = result.device.address
-            view.findViewById<TextView>(R.id.signal_strength).text =
+            binding.macAddress.text = result.device.address
+            binding.signalStrength.text =
                 if (result.rssi < -65 && result.rssi > -80) {
                     "Far (" +  result.rssi.toString() + " dBm)"
                 } else if(result.rssi < -80){
@@ -86,7 +84,7 @@ class ScanResultAdapter(
                     "Near (" +  result.rssi.toString() + " dBm)"
                 }
 
-            view.setOnClickListener {
+            binding.root.setOnClickListener {
                 onClickListener.invoke(result) //Temporary removal of Item Click
                 } //Use the onItemClick lambda
         }

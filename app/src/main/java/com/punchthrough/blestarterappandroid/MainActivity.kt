@@ -19,7 +19,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
-import com.matt.guidebeacons.activities.CalibrationActivity
+import com.matt.guidebeacons.activities.AdminPanelActivity
 import com.matt.guidebeacons.activities.PermissionsCheckActivity
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.constants.*
@@ -83,16 +83,10 @@ class MainActivity : AppCompatActivity() {
         bluetoothWorker.initialize(this)
 
         // Setup UI
-        setupRecyclerView()
-
         setupScanButton()
-
-        setupRssiMappingButton()
+        setupRecyclerView()
         //initializeVibrator()
-
-        // only setup viewmap button when 3 beacons collected
         setupViewMapButton()
-
         setUpActivityButtons()
     }
 
@@ -110,6 +104,7 @@ class MainActivity : AppCompatActivity() {
         return scanResults.size >= MIN_BEACONS_FOR_LOCATION
     }
     private fun setupViewMapButton() {
+        // only setup viewmap button when 3 beacons collected
         binding.viewMapButton.isEnabled = allowClickViewMapButton()
         binding.viewMapButton.setOnClickListener {
             startActivity(Intent(this, MapActivity::class.java))
@@ -117,8 +112,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setUpActivityButtons() {
-        setUpActivityButton(binding.calibrationButton, CalibrationActivity::class.java)
+        setUpActivityButton(binding.adminPanelButton, AdminPanelActivity::class.java)
         setUpActivityButton(binding.permissionsDebugButton, PermissionsCheckActivity::class.java)
+        setUpActivityButton(binding.recordRssiButton, RssiMappingActivity::class.java)
     }
 
     private fun setUpActivityButton(button: android.widget.Button, activity: Class<*>) {
@@ -249,17 +245,6 @@ class MainActivity : AppCompatActivity() {
     private fun launchPointGraphActivity() {
         val pointGraphIntent = Intent(this, PointGraphActivity::class.java)
         startActivity(pointGraphIntent)
-    }
-
-    private fun setupRssiMappingButton() {
-        binding.recordRssiButton.setOnClickListener {
-            launchRssiMappingActivity()
-        }
-    }
-
-    private fun launchRssiMappingActivity() {
-        val rssiMappingIntent = Intent(this, RssiMappingActivity::class.java)
-        startActivity(rssiMappingIntent)
     }
 
     override fun onRequestPermissionsResult(

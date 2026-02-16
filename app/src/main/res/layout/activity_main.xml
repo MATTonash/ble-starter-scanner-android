@@ -67,7 +67,7 @@
         />
 
     <Button
-        android:id="@+id/calibration_button"
+        android:id="@+id/admin_panel_button"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Admin Panel"
@@ -85,7 +85,7 @@
         android:textSize="16sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/calibration_button"
+        app:layout_constraintTop_toBottomOf="@+id/admin_panel_button"
         />
 
     <androidx.recyclerview.widget.RecyclerView

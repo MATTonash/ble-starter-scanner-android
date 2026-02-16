@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.punchthrough.blestarterappandroid.databinding.ActivityRssiMappingBinding
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -26,14 +27,15 @@ class RssiMappingActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_rssi_mapping)
+        val binding = ActivityRssiMappingBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         // Initialize UI components
-        beaconSpinner = findViewById(R.id.beacon_spinner)
-        rssiTextView = findViewById(R.id.rssi_text_view)
-        distanceEditText = findViewById(R.id.distance_edit_text)
-        saveButton = findViewById(R.id.save_button)
-        debugTextView = findViewById(R.id.debug_text_view)
+        beaconSpinner = binding.beaconSpinner
+        rssiTextView = binding.rssiTextView
+        distanceEditText = binding.distanceEditText
+        saveButton = binding.saveButton
+        debugTextView = binding.debugTextView
 
         setupBeaconSpinner()
         setupSaveButton()

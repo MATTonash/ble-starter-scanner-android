@@ -47,6 +47,7 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning"
         >
+
         <activity
             android:name=".PointGraphActivity"
             android:exported="false"
@@ -67,7 +68,7 @@
             />
 
         <activity
-            android:name="com.matt.guidebeacons.activities.CalibrationActivity"
+            android:name="com.matt.guidebeacons.activities.AdminPanelActivity"
             android:exported="false"
             android:label="Admin Panel"
             />
