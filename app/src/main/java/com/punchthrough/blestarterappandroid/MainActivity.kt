@@ -20,7 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
-import com.matt.guidebeacons.activities.CalibrationActivity
+import com.matt.guidebeacons.activities.AdminPanelActivity
 import com.matt.guidebeacons.activities.PermissionsCheckActivity
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.constants.*
@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setUpActivityButtons() {
-        setUpActivityButton(binding.calibrationButton, CalibrationActivity::class.java)
+        setUpActivityButton(binding.adminPanelButton, AdminPanelActivity::class.java)
         setUpActivityButton(binding.permissionsDebugButton, PermissionsCheckActivity::class.java)
     }
 

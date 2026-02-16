@@ -12,7 +12,7 @@ import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.beacons.BeaconsAdapter
 import com.matt.guidebeacons.constants.*
-import com.punchthrough.blestarterappandroid.databinding.ActivityCalibrationBinding
+import com.punchthrough.blestarterappandroid.databinding.ActivityAdminPanelBinding
 
 /* TODO
  * move hard-coded data into a stored local file?
@@ -29,13 +29,13 @@ import com.punchthrough.blestarterappandroid.databinding.ActivityCalibrationBind
 private const val REQUEST_EDIT = 1
 private const val REQUEST_ADD = 2
 
-class CalibrationActivity : AppCompatActivity() {
+class AdminPanelActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityCalibrationBinding
+    private lateinit var binding: ActivityAdminPanelBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityCalibrationBinding.inflate(layoutInflater)
+        binding = ActivityAdminPanelBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         setupRecyclerView()
