@@ -35,15 +35,13 @@ class BeaconsAdapter(
 
         @SuppressLint("SetTextI18n")
         fun bind(beacon: Beacon) {
-            val view = binding.root
-
             binding.deviceName.text = beacon.toString()
             binding.macAddress.text = BeaconData.getBeaconMacAddress(beacon)
             binding.beaconType.text = beacon.getBeaconType().toString()
             binding.coordinates.text = beacon.getCoordinatesString()
             binding.calibrationRssi.text = "${beacon.getCalibrationRSSI()} dBm"
 
-            view.setOnClickListener {
+            binding.root.setOnClickListener {
                 timber.log.Timber.i("Clicked on beacon \"${beacon}\"")
                 onClickListener.invoke(beacon)
             }
