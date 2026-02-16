@@ -2,7 +2,6 @@ package com.punchthrough.blestarterappandroid
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.le.ScanResult
 import android.content.Intent
@@ -28,6 +27,7 @@ import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
 
 private const val PERMISSION_REQUEST_CODE = 1
+private const val MIN_BEACONS_FOR_LOCATION = 0
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity() {
     private val bluetoothEnablingResult = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
+        if (result.resultCode == RESULT_OK) {
             Timber.i("Bluetooth is enabled, good to go")
         } else {
             Timber.e("User dismissed or denied Bluetooth prompt")
@@ -107,12 +107,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun allowClickViewMapButton() : Boolean {
-        return scanResults.size >= 3
+        return scanResults.size >= MIN_BEACONS_FOR_LOCATION
     }
     private fun setupViewMapButton() {
-        binding.viewMapButton.setEnabled(allowClickViewMapButton())
+        binding.viewMapButton.isEnabled = allowClickViewMapButton()
         binding.viewMapButton.setOnClickListener {
-            launchPointGraphActivity()
+            startActivity(Intent(this, MapActivity::class.java))
         }
     }
 
@@ -213,7 +213,7 @@ class MainActivity : AppCompatActivity() {
             if (allowClickViewMapButton()){
                 setupViewMapButton()
             } else {
-                binding.viewMapButton.setEnabled(false)
+                binding.viewMapButton.isEnabled = false
             }
 
             // Sort and update the display
