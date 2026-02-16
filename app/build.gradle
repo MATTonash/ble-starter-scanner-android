@@ -42,6 +42,10 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
     namespace 'com.punchthrough.blestarterappandroid'
 }
 
@@ -61,6 +65,7 @@ dependencies {
     implementation 'androidx.activity:activity:1.8.0'
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0"
+
 
     ktlint "com.pinterest.ktlint:ktlint-cli:1.0.1"
 
