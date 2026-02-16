@@ -83,16 +83,10 @@ class MainActivity : AppCompatActivity() {
         bluetoothWorker.initialize(this)
 
         // Setup UI
-        setupRecyclerView()
-
         setupScanButton()
-
-        setupRssiMappingButton()
+        setupRecyclerView()
         //initializeVibrator()
-
-        // only setup viewmap button when 3 beacons collected
         setupViewMapButton()
-
         setUpActivityButtons()
     }
 
@@ -110,6 +104,7 @@ class MainActivity : AppCompatActivity() {
         return scanResults.size >= 3
     }
     private fun setupViewMapButton() {
+        // only setup viewmap button when 3 beacons collected
         binding.viewMapButton.setEnabled(allowClickViewMapButton())
         binding.viewMapButton.setOnClickListener {
             launchPointGraphActivity()
@@ -119,6 +114,7 @@ class MainActivity : AppCompatActivity() {
     private fun setUpActivityButtons() {
         setUpActivityButton(binding.adminPanelButton, AdminPanelActivity::class.java)
         setUpActivityButton(binding.permissionsDebugButton, PermissionsCheckActivity::class.java)
+        setUpActivityButton(binding.recordRssiButton, RssiMappingActivity::class.java)
     }
 
     private fun setUpActivityButton(button: android.widget.Button, activity: Class<*>) {
@@ -249,17 +245,6 @@ class MainActivity : AppCompatActivity() {
     private fun launchPointGraphActivity() {
         val pointGraphIntent = Intent(this, PointGraphActivity::class.java)
         startActivity(pointGraphIntent)
-    }
-
-    private fun setupRssiMappingButton() {
-        binding.recordRssiButton.setOnClickListener {
-            launchRssiMappingActivity()
-        }
-    }
-
-    private fun launchRssiMappingActivity() {
-        val rssiMappingIntent = Intent(this, RssiMappingActivity::class.java)
-        startActivity(rssiMappingIntent)
     }
 
     override fun onRequestPermissionsResult(
