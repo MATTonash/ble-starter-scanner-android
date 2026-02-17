@@ -82,6 +82,12 @@ class MainActivity : AppCompatActivity() {
         // Initialize BluetoothWorker
         bluetoothWorker.initialize(this)
 
+        // Use the toolbar from the layout as the Activity's app bar so we control logo/title
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
+        // logo is provided via app:logo in the toolbar; set the toolbar title to the navigation page title
+       supportActionBar?.title =""
+
         // Setup UI
         setupRecyclerView()
 
