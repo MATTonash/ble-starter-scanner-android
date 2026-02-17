@@ -178,9 +178,10 @@ class BluetoothWorkerClass private constructor() {
         }
     }
 
+
     private val connectionCheckRunnable = object : Runnable {
         override fun run() {
-            //checkAndMaintainConnections()
+            checkAndMaintainConnections()
             connectionCheckHandler.postDelayed(this, connectionCheckInterval)
         }
     }
@@ -260,7 +261,7 @@ class BluetoothWorkerClass private constructor() {
         scanInterval = interval
 
         // Start connection maintenance
-        //connectionCheckHandler.post(connectionCheckRunnable)
+        connectionCheckHandler.post(connectionCheckRunnable)
         
         startScanCycle()
     }
@@ -309,7 +310,7 @@ class BluetoothWorkerClass private constructor() {
             }
 
             // Check and maintain connections
-            //checkAndMaintainConnections()
+            checkAndMaintainConnections()
 
             // Notify callback on main thread
             handler.post {

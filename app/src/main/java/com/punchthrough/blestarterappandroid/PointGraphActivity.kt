@@ -184,8 +184,7 @@ class PointGraphActivity : AppCompatActivity() {
         }
 
         // Create solver with current beacons and set distances
-        trilaterationFunction = TrilaterationFunction(coords)
-        trilaterationFunction.setBeaconDistances(distances)
+        trilaterationFunction = TrilaterationFunction(coords, distances)
 
         val coordinates = trilaterationFunction.solve()
 

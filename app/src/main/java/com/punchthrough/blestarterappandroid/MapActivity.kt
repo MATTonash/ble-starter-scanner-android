@@ -113,12 +113,12 @@ class MapActivity : AppCompatActivity() {
             .take(3) // Limit to top 3 beacons for performance
 
         // Need at least 3 beacons for trilateration
-        if (knownResults.size < 3) {
+        if (knownResults.isEmpty()) {
             return
         }
 
         // Build coordinates and distances arrays aligned by index
-        val coords = Array(knownResults.size) { DoubleArray(0) }
+        val coords = Array(knownResults.size) { DoubleArray(3) }
         val distances = DoubleArray(knownResults.size)
         knownResults.forEachIndexed { index, res ->
             val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed
@@ -150,8 +150,7 @@ class MapActivity : AppCompatActivity() {
      */
     private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray) {
         // Create solver with current beacons and set distances
-        trilaterationFunction = TrilaterationFunction(coords)
-        trilaterationFunction.setBeaconDistances(distances)
+        trilaterationFunction = TrilaterationFunction(coords, distances)
 
         val userCoordinates = trilaterationFunction.solve()
 
