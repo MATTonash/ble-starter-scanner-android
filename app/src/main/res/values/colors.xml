@@ -16,7 +16,63 @@
   -->
 
 <resources>
-    <color name="colorPrimary">#00B0FF</color>
-    <color name="colorPrimaryDark">#0091EA</color>
-    <color name="colorAccent">#D81B60</color>
+    <color name="colorPrimary">#5752C4</color>
+    <color name="colorPrimaryDark">#5752C4</color>
+    <color name="colorAccent">#5A9F7F</color>
+
+    <color name="colorOnPrimary">#000000</color>
+
+     <color name="colorBackground">#D1D0F5</color>
+     <color name="colorOnBackground">#000000</color>
+
+
 </resources>
+
+
+
+<!--Attributes for different Colours throughout App-->
+
+    <!-- Primary app bar / toolbar color -->
+    <!-- <color name="colorPrimary">#6200EE</color> -->
+
+    <!-- Darker status-bar primary (legacy / AppCompat) -->
+    <!-- <color name="colorPrimaryDark">#3700B3</color> -->
+
+    <!-- Primary variant (Material) -->
+    <!-- <color name="colorPrimaryVariant">#5E35B1</color> -->
+
+    <!-- Legacy accent color (tints controls) -->
+    <!-- <color name="colorAccent">#E91E63</color> -->
+
+    <!-- Material secondary color -->
+    <!-- <color name="colorSecondary">#03DAC6</color> -->
+
+    <!-- Secondary variant -->
+    <!-- <color name="colorSecondaryVariant">#018786</color> -->
+
+    <!-- Text/icon color used on primary surfaces -->
+    <!-- <color name="colorOnPrimary">#FFFFFF</color> -->
+
+    <!-- Text/icon color used on secondary surfaces -->
+    <!-- <color name="colorOnSecondary">#000000</color> -->
+
+    <!-- App background and its text color -->
+    <!-- <color name="colorBackground">#FFFFFF</color> -->
+    <!-- <color name="colorOnBackground">#000000</color> -->
+
+    <!-- Surface colors (cards, sheets) -->
+    <!-- <color name="colorSurface">#FFFFFF</color> -->
+    <!-- <color name="colorOnSurface">#000000</color> -->
+
+    <!-- Error and on-error colors -->
+    <!-- <color name="colorError">#B00020</color> -->
+    <!-- <color name="colorOnError">#FFFFFF</color> -->
+
+    <!-- Older AppCompat control tints -->
+    <!-- <color name="colorControlNormal">#757575</color> -->
+    <!-- <color name="colorControlActivated">#6200EE</color> -->
+    <!-- <color name="colorControlHighlight">#FFCCCCCC</color> -->
+
+    <!-- System bar colors (referenced in theme as android:statusBarColor / android:navigationBarColor) -->
+    <!-- <color name="statusBarColor">#3700B3</color> -->
+    <!-- <color name="navigationBarColor">#FFFFFF</color> -->
