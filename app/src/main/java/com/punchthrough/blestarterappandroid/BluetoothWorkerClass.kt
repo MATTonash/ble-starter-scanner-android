@@ -16,7 +16,6 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
 import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import timber.log.Timber
@@ -166,7 +165,7 @@ class BluetoothWorkerClass private constructor() {
             return
         }
 
-        if (appContext.hasRequiredBluetoothPermissions()) {
+        if (appContext.hasRequiredRuntimePermissions()) {
             bleScanner?.startScan(null, scanSettings, bleScanCallback)
             isScanning = true
             Timber.d("Started BLE scan")
@@ -261,7 +260,7 @@ class BluetoothWorkerClass private constructor() {
 
         // Start connection maintenance
         //connectionCheckHandler.post(connectionCheckRunnable)
-        
+
         startScanCycle()
     }
 
