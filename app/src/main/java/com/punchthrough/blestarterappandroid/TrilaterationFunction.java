@@ -1,15 +1,14 @@
 package com.punchthrough.blestarterappandroid;
 
-import com.punchthrough.blestarterappandroid.AugmentedMatrix;
 
 public class TrilaterationFunction {
     // 2D trilateration just uses 2 functions
 
-    int numEquations = 2;
-    int numColumns = 3;
+    int numEquations;
+    int numColumns;
     double precision = 1E-5;
-    double[][] fMatrix = new double[numEquations][1];
-    double[][] jacobianMatrix = new double[numEquations][numColumns];
+    double[][] fMatrix;
+    double[][] jacobianMatrix;
 //    double[] beacon1;
 //    double[] beacon2;
 //    double[] beacon3;
@@ -20,10 +19,10 @@ public class TrilaterationFunction {
     double[][] beaconCoordinates;
     double[] beaconDistances;
 
-    double[] initial = {1,1,1};
+    double[] initial;
 
     // 3D with variable number of beacons (Z assumed 0 for 2D inputs)
-    TrilaterationFunction(double[][] beaconCoordinates) {
+    TrilaterationFunction(double[][] beaconCoordinates, double[] previousPosition) {
         this.beaconCoordinates = beaconCoordinates;
         // Equations count is the number of beacons provided
         this.numEquations = beaconCoordinates != null ? beaconCoordinates.length : 0;
@@ -31,7 +30,7 @@ public class TrilaterationFunction {
         this.numColumns = 4;
         this.fMatrix = new double[numEquations][1];
         this.jacobianMatrix = new double[numEquations][numColumns];
-        this.initial = new double[]{1, 1, 1};
+        this.initial = previousPosition != null && previousPosition.length == 3 ? previousPosition : new double[]{1, 1, 1};
     }
 
     public void setBeaconDistances(double[] beaconDistances) {
@@ -112,15 +111,13 @@ public class TrilaterationFunction {
 
 
     public boolean calcError(double[] initial, double[] next) {
-        boolean sufficientError = false;
         for (int i = 0; i <= this.numEquations-1; i++) {
             double error = Math.abs((initial[i] - next[i])/initial[i]);
             if (error < precision) {
-                return sufficientError = true;
+                return true;
             }
-            sufficientError = false;
         }
-        return sufficientError;
+        return false;
     }
 
     private void buildJacobian() {

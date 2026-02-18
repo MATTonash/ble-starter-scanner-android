@@ -25,8 +25,6 @@ import androidx.annotation.RawRes
 import org.xmlpull.v1.XmlPullParser
 import kotlin.math.hypot
 import kotlin.math.min
-import kotlin.math.sqrt
-import kotlin.math.abs
 import android.speech.tts.TextToSpeech
 import android.view.MotionEvent
 import android.os.Build
@@ -283,6 +281,11 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
             return true
         }
         return super.onTouchEvent(event)
+    }
+
+    fun getUserPosition(): DoubleArray {
+        userPosition?.let { return doubleArrayOf(it.x.toDouble(), it.y.toDouble(), 0.0) }
+        return doubleArrayOf(1.0,1.0,1.0)
     }
 
     fun setUserPosition(x: Float, y: Float) {

@@ -134,23 +134,13 @@ class MapActivity : AppCompatActivity() {
         userMapView.setUserAngle(null)
     }
 
-    private fun alertUser() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(200)
-        }
-
-    }
-
     /**
      * Updates user position based on given distances and coordinates:
      * each element in distances denotes how far the user is from the corresponding element in coords
      */
     private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray) {
         // Create solver with current beacons and set distances
-        trilaterationFunction = TrilaterationFunction(coords)
+        trilaterationFunction = TrilaterationFunction(coords, userMapView.getUserPosition())
         trilaterationFunction.setBeaconDistances(distances)
 
         val userCoordinates = trilaterationFunction.solve()
