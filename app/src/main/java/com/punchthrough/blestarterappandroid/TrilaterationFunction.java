@@ -15,7 +15,8 @@ public class TrilaterationFunction {
     double[] initial = {1,1,1,1};
 
     // 3D!!! but w variable number of beacons
-    TrilaterationFunction(double[][] beaconCoordinates, double[] beaconDistances) {
+    TrilaterationFunction(double[] initial, double[][] beaconCoordinates, double[] beaconDistances) {
+        this.initial = initial;
         this.beaconCoordinates = beaconCoordinates;
         this.beaconDistances = beaconDistances;
         numEquations = beaconDistances.length;

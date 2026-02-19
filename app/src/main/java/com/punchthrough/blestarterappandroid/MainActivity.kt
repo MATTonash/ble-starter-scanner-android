@@ -140,6 +140,7 @@ class MainActivity : AppCompatActivity() {
         if (!hasRequiredBluetoothPermissions()) {
             requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)
         }
+        startBleScan()
     }
 
     override fun onPause() {

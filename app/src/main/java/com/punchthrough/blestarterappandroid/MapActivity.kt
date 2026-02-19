@@ -93,8 +93,8 @@ class MapActivity : AppCompatActivity() {
                 handleScanResults(results)
             },
             continuous = true,
-            period = 1000L,    // Scan every second
-            interval = 200L    // Small interval between scans
+            period = 3000L,    // Scan every second
+            interval = 500L    // Small interval between scans
         )
     }
 
@@ -110,9 +110,9 @@ class MapActivity : AppCompatActivity() {
         val knownResults = rawResults
             .filter { beaconProjects.containsKey(it.device.address) }
             .sortedByDescending { it.rssi }
-            .take(3) // Limit to top 3 beacons for performance
+            // .take(6) // Limit to top 3 beacons for performance
 
-        // Need at least 3 beacons for trilateration
+        // Need at least 1 beacon for trilateration
         if (knownResults.isEmpty()) {
             return
         }
@@ -150,7 +150,8 @@ class MapActivity : AppCompatActivity() {
      */
     private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray) {
         // Create solver with current beacons and set distances
-        trilaterationFunction = TrilaterationFunction(coords, distances)
+        val initial: DoubleArray? = userMapView.getUserPosition()
+        trilaterationFunction = TrilaterationFunction(initial, coords, distances)
 
         val userCoordinates = trilaterationFunction.solve()
 
@@ -162,12 +163,12 @@ class MapActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onResume() {
         super.onResume()
-        // startRssiTracking()
+        startRssiTracking()
     }
 
     override fun onPause() {
         super.onPause()
-        bluetoothWorker.stopScanning()
+        // bluetoothWorker.stopScanning()
     }
 
     override fun onStop() { super.onStop() }

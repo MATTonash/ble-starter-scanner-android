@@ -17,21 +17,22 @@
 package com.punchthrough.blestarterappandroid
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Path
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.speech.tts.TextToSpeech
 import android.util.AttributeSet
 import android.util.Xml
+import android.view.MotionEvent
 import android.view.View
 import androidx.annotation.RawRes
 import org.xmlpull.v1.XmlPullParser
 import kotlin.math.hypot
 import kotlin.math.min
-import kotlin.math.sqrt
-import kotlin.math.abs
-import android.speech.tts.TextToSpeech
-import android.view.MotionEvent
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 
 private const val LINE_WIDTH = 20f
 private const val DEFAULT_MAX_X = 5f
@@ -283,6 +284,15 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
             return true
         }
         return super.onTouchEvent(event)
+    }
+
+    fun getUserPosition(): DoubleArray {
+        val x = userPosition?.x?.toDouble()
+        val y = userPosition?.y?.toDouble()
+        if (x != null && y != null) {
+            return doubleArrayOf(x, y, 1.0, 1.0)
+        }
+        return doubleArrayOf(1.0, 1.0, 1.0, 1.0)
     }
 
     fun setUserPosition(x: Float, y: Float) {
