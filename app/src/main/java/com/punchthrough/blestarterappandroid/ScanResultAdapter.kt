@@ -35,6 +35,7 @@ class ScanResultAdapter(
 
     private var onClickListener: (device : ScanResult) -> Unit // Correctly reference the lambda here
 ) : RecyclerView.Adapter<ScanResultAdapter.ViewHolder>() {
+    private val beaconProjects = BeaconData.getBeaconProjects()
 
     // New method to get RSSI for a specific device address
     fun getRssiForDevice(address: String): Int? {
@@ -83,6 +84,10 @@ class ScanResultAdapter(
                 } else {
                     "Near (" +  result.rssi.toString() + " dBm)"
                 }
+
+            val filteredRssi = beaconProjects[result.device.address]?.getFilteredRSSI()
+
+            binding.filteredStrength.text = filteredRssi.toString()
 
             binding.root.setOnClickListener {
                 onClickListener.invoke(result) //Temporary removal of Item Click

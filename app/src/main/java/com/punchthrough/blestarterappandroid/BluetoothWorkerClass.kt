@@ -278,6 +278,11 @@ class BluetoothWorkerClass private constructor() {
             ConnectionManager.teardownConnection(device)
         }
         connectedDevices.clear()
+
+        for (beacon in beaconProjects.values){
+            beacon.resetKalmanFilter()
+        }
+
         Timber.d("Stopped BLE scan and connection maintenance")
     }
 
@@ -291,6 +296,7 @@ class BluetoothWorkerClass private constructor() {
             if (result.device.address in beaconProjects) {
                 val indexQuery =
                     scanResults.indexOfFirst { it.device.address == result.device.address }
+                beaconProjects[result.device.address]?.updateFilteredRSSI(result.rssi)
                 if (indexQuery != -1) {
                     scanResults[indexQuery] = result
                 } else {
