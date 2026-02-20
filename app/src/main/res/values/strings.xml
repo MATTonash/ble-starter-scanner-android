@@ -29,5 +29,22 @@
     <string name="disconnected">Disconnected</string>
     <string name="disconnected_or_unable_to_connect_to_device">Disconnected or unable to connect to %1$s.</string>
     <string name="ok">OK</string>
+
+    <!-- Added for activity_main.xml -->
+    <string name="navigation_title">GUIDE Beacons</string>
+    <string name="toolbar_logo_desc">Team logo</string>
+    <string name="subtitle_choose_action">Choose an action below</string>
+    <string name="start_scan">Start Scan</string>
+    <string name="start_scan_cd">Start scanning for nearby beacons</string>
+    <string name="view_map">View Map</string>
+    <string name="view_map_cd">Open the indoor navigation map</string>
+    <string name="record_signal">Record RSSI</string>
+    <string name="record_signal_cd">Record beacon RSSI values</string>
+    <string name="admin_panel">Admin Panel</string>
+    <string name="admin_panel_cd">Open admin settings panel</string>
+    <string name="scan_results">Scan Results</string>
+    <string name="permissions_debug">Permissions Debug</string>
+    <string name="permissions_debug_cd">Open debug permissions checker</string>
+
     <string name="bluetooth_permission_denied_permanently">You must enable bluetooth manually\n</string>
 </resources>

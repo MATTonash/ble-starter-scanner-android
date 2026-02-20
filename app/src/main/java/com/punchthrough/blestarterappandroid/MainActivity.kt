@@ -83,6 +83,12 @@ class MainActivity : AppCompatActivity() {
         // Initialize BluetoothWorker
         bluetoothWorker.initialize(this)
 
+        // Use the toolbar from the layout as the Activity's app bar so we control logo/title
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
+        // logo is provided via app:logo in the toolbar; set the toolbar title to the navigation page title
+       supportActionBar?.title =""
+
         // Setup UI
         setupScanButton()
         setupRecyclerView()
@@ -135,14 +141,6 @@ class MainActivity : AppCompatActivity() {
     //    }
     //}
 
-    override fun onResume() {
-        super.onResume()
-        if (!hasRequiredBluetoothPermissions()) {
-            requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)
-        }
-        startBleScan()
-    }
-
     override fun onPause() {
         super.onPause()
         isScanning = false
@@ -170,8 +168,8 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun startBleScan() {
-        if (!hasRequiredBluetoothPermissions()) {
-            requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)
+        if (!hasRequiredRuntimePermissions()) {
+            requestRequiredRuntimePermissions(PERMISSION_REQUEST_CODE)
             return
         }
 
@@ -245,18 +243,14 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode != PERMISSION_REQUEST_CODE) {
-            return
-        }
+
+        if (requestCode != PERMISSION_REQUEST_CODE) return
+
         if (permissions.isEmpty() && grantResults.isEmpty()) {
-            Timber.e("Empty permissions and grantResults array in onRequestPermissionsResult")
-            Timber.w("This is likely a cancellation due to user interaction interrupted")
+            Timber.w("Empty permissions and grantResults array in onRequestPermissionsResult" +
+                "\nThis is likely a cancellation due to user interaction interrupted")
             return
         }
 
@@ -273,18 +267,17 @@ class MainActivity : AppCompatActivity() {
             it.second == PackageManager.PERMISSION_DENIED &&
                 !ActivityCompat.shouldShowRequestPermissionRationale(this, it.first)
         }
-        val containsDenial = grantResults.any { it == PackageManager.PERMISSION_DENIED }
-        val allGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
 
         when {
             containsPermanentDenial -> {
+                Timber.e("A required permission has been permanently denied and needs to be manually granted")
                 promptManualPermissionGranting()
             }
-            containsDenial -> {
-                requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)
+            !hasRequiredRuntimePermissions() -> {
+                requestRequiredRuntimePermissions(PERMISSION_REQUEST_CODE)
             }
-            allGranted && hasRequiredBluetoothPermissions() -> {
-                startBleScan()
+            hasRequiredRuntimePermissions() -> {
+                Timber.d("All required permissions granted")
             }
             else -> {
                 Timber.e("Unexpected scenario encountered when handling permissions")
@@ -294,7 +287,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun promptEnableBluetooth() {
-        if (hasRequiredBluetoothPermissions()) {
+        if (hasRequiredRuntimePermissions()) {
             Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE).apply {
                 bluetoothEnablingResult.launch(this)
             }

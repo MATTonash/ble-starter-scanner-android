@@ -69,7 +69,7 @@ class ScanResultAdapter(
         @SuppressLint("MissingPermission", "SetTextI18n")
         fun bind(result: ScanResult) {
             binding.deviceName.text =
-                if (binding.root.context.hasRequiredBluetoothPermissions()) {
+                if (binding.root.context.hasRequiredRuntimePermissions()) {
                     beaconProjects[result.device.address].toString() ?: "Unknown Beacon"
                 } else {
                     error("Missing required Bluetooth permissions")
