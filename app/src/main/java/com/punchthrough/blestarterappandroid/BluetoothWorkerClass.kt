@@ -296,7 +296,6 @@ class BluetoothWorkerClass private constructor() {
             if (result.device.address in beaconProjects) {
                 val indexQuery =
                     scanResults.indexOfFirst { it.device.address == result.device.address }
-                beaconProjects[result.device.address]?.updateFilteredRSSI(result.rssi)
                 if (indexQuery != -1) {
                     scanResults[indexQuery] = result
                 } else {
