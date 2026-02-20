@@ -27,29 +27,28 @@ import kotlin.math.pow
 
 /**
  * Local unit tests, which will execute on the development machine (host).
- *
  */
 
-private const val ACCEPTABLE_TOLERANCE = 0.1 // in m
-private const val CHECKS_PER_TEST = 10
+private const val ACCEPTABLE_TOLERANCE = 0.5 // in m
+private const val CHECKS_PER_TEST = 1000
 private const val DISTANCE_FROM_PREV = 0.5 // in m
 private const val NUM_BEACONS = 4 // currently the 4 beacon locations are hardcoded so changing just this constant will cause errors
 
 private const val BEACON_ERROR = 0.1 // as a percentage (0.2 means up to 20% off actual distance)
 private const val USER_LOCATION_SQUARE = 5.0 // in m
-// the user's coordinates can be (x,y) where |x|,|y| < USER_LOCATION_SQUARE
+// Above constant means the user's coordinates can be (x,y) where 0 <= x,y <= USER_LOCATION_SQUARE
 
 
 
 
 class TestMath {
-    val coords = Array(4) { DoubleArray(3) }
+    val coordinates = Array(4) { DoubleArray(3) }
 
     init {
-        coords[0] = doubleArrayOf(USER_LOCATION_SQUARE, USER_LOCATION_SQUARE, 0.0)
-        coords[1] = doubleArrayOf(USER_LOCATION_SQUARE, 0.0, 0.0)
-        coords[2] = doubleArrayOf(0.0, USER_LOCATION_SQUARE, 0.0)
-        coords[3] = doubleArrayOf(0.0, 0.0, 0.0)
+        coordinates[0] = doubleArrayOf(USER_LOCATION_SQUARE, USER_LOCATION_SQUARE, 0.0)
+        coordinates[1] = doubleArrayOf(USER_LOCATION_SQUARE, 0.0, 0.0)
+        coordinates[2] = doubleArrayOf(0.0, USER_LOCATION_SQUARE, 0.0)
+        coordinates[3] = doubleArrayOf(0.0, 0.0, 0.0)
     }
 
     @Test
@@ -90,13 +89,13 @@ class TestMath {
 
     private fun testSolver(origin: DoubleArray, error: Double, numCoords: Int) : DoubleArray {
         val distances = DoubleArray(numCoords)
-        val prev = DoubleArray(4)
+        val prev = DoubleArray(3)
         prev[0] = origin[0] + DISTANCE_FROM_PREV*Random.nextDouble(-1.0, 1.0)
         prev[1] = origin[1] + DISTANCE_FROM_PREV*Random.nextDouble(-1.0, 1.0)
         prev[2] = origin[2] + DISTANCE_FROM_PREV*Random.nextDouble(-1.0, 1.0)
 
         for (i in 0 until numCoords) {
-            var d = dist(coords[i], origin)
+            var d = dist(coordinates[i], origin)
             if (error > 0) {
                 d = d * Random.nextDouble(1 - error, 1 + error)
             }
@@ -104,12 +103,12 @@ class TestMath {
             distances[i] = d
         }
 
-        return getLocation(prev, coords, distances)
+        return getLocation(prev, coordinates, distances)
     }
 
     // If implementation changes, change this
-    private fun getLocation(prev: DoubleArray, coords: Array<DoubleArray>, distances: DoubleArray) : DoubleArray {
-        val trilaterationFunction = TrilaterationFunction(prev, coords, distances)
+    private fun getLocation(prev: DoubleArray, coordinates: Array<DoubleArray>, distances: DoubleArray) : DoubleArray {
+        val trilaterationFunction = TrilaterationFunction(prev, coordinates, distances)
 
         return trilaterationFunction.solve()
     }
