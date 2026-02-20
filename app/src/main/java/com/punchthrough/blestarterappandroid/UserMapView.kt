@@ -37,6 +37,10 @@ import kotlin.math.min
 private const val LINE_WIDTH = 20f
 private const val DEFAULT_MAX_X = 5f
 private const val DEFAULT_MAX_Y = 5f
+private const val PREV_POSITION_WEIGHT = 2
+// For simple moving average
+// e.g. if n, then new position is n/(n+1) * old position + 1/(n+1) * new position
+
 enum class POIState { START, END, PATH, NONE }
 
 data class ConfigPoint(val x: Float, val y: Float)
@@ -298,7 +302,13 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     fun setUserPosition(x: Float, y: Float) {
         val clampedX = x.coerceIn(0f, maxX)
         val clampedY = y.coerceIn(0f, maxY)
-        userPosition = ConfigPoint(clampedX, clampedY)
+        val prev = userPosition
+        if (prev == null) {
+            userPosition = ConfigPoint(clampedX, clampedY)
+        } else {
+            // Moving average
+            userPosition = ConfigPoint((PREV_POSITION_WEIGHT/(PREV_POSITION_WEIGHT+1))*prev.x + (1/(PREV_POSITION_WEIGHT+1))*clampedX, (PREV_POSITION_WEIGHT/(PREV_POSITION_WEIGHT+1))*prev.y + (1/(PREV_POSITION_WEIGHT+1))*clampedY)
+        }
         invalidate()
 
         // Tolerance in map coordinates: matches the drawn user circle radius (0.25f * scale => 0.25f in map units)
