@@ -241,11 +241,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun launchPointGraphActivity() {
-        val pointGraphIntent = Intent(this, PointGraphActivity::class.java)
-        startActivity(pointGraphIntent)
-    }
-
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 

@@ -109,7 +109,10 @@ class MapActivity : AppCompatActivity() {
         // Keep only known project beacons and sort by RSSI
         val knownResults = rawResults
             .filter { beaconProjects.containsKey(it.device.address) }
-            .sortedByDescending { it.rssi }
+            .sortedByDescending {
+                beaconProjects[it.device.address]?.updateFilteredRSSI(it.rssi)
+                beaconProjects[it.device.address]?.getFilteredRSSI()
+            }
             .take(3) // Limit to top 3 beacons for performance
 
         // Need at least 3 beacons for trilateration
@@ -123,7 +126,7 @@ class MapActivity : AppCompatActivity() {
         knownResults.forEachIndexed { index, res ->
             val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed
             coords[index] = beacon.getCoordinates()
-            distances[index] = beacon.calculateDistance(res.rssi, res.txPower)
+            distances[index] = beacon.calculateDistance(res.rssi, 4)
         }
 
         userMapView.clearBeacons()

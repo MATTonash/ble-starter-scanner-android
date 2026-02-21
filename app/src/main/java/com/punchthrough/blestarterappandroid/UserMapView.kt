@@ -318,6 +318,15 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         }
     }
 
+    fun getUserPosition(): DoubleArray {
+        val x = userPosition?.x?.toDouble()
+        val y = userPosition?.y?.toDouble()
+        if (x != null && y != null) {
+            return doubleArrayOf(x, y, 1.0, 1.0)
+        }
+        return doubleArrayOf(1.0, 1.0, 1.0, 1.0)
+    }
+
     fun screenToMap(screenX: Float, screenY: Float): ConfigPoint {
         val mapX = (screenX - offsetX) / scale
         val mapY = (screenY - offsetY) / scale
