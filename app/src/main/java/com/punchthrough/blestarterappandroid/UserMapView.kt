@@ -17,28 +17,34 @@
 package com.punchthrough.blestarterappandroid
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Path
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.speech.tts.TextToSpeech
 import android.util.AttributeSet
 import android.util.Xml
+import android.view.MotionEvent
 import android.view.View
 import androidx.annotation.RawRes
 import org.xmlpull.v1.XmlPullParser
 import kotlin.math.hypot
 import kotlin.math.min
-import kotlin.math.sqrt
-import kotlin.math.abs
-import android.speech.tts.TextToSpeech
-import android.view.MotionEvent
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 
 private const val LINE_WIDTH = 20f
 private const val DEFAULT_MAX_X = 5f
 private const val DEFAULT_MAX_Y = 5f
+private const val DEFAULT_MAX_Z = 3f
+private const val PREV_POSITION_WEIGHT = 0.9f
+// For simple moving average
+// e.g. if n, then new position is n/(n+1) * old position + 1/(n+1) * new position
+
 enum class POIState { START, END, PATH, NONE }
 
-data class ConfigPoint(val x: Float, val y: Float)
+data class ConfigPoint(val x: Float, val y: Float, val z: Float = 1f)
 
 data class UserMapConfig(
     val beacons: List<ConfigPoint> = emptyList(),
@@ -57,6 +63,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     // Logical coordinate system
     private var maxX = DEFAULT_MAX_X
     private var maxY = DEFAULT_MAX_Y
+    private var maxZ = DEFAULT_MAX_Z
 
     // Screen mapping
     private var scale = 1f
@@ -95,7 +102,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
 
 
     override fun onDetachedFromWindow() {
-      tts?.shutdown()
+        tts?.shutdown()
         super.onDetachedFromWindow()
     }
 
@@ -156,7 +163,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         maxX = config.maxX
         maxY = config.maxY
 
-        setUserPosition((startRectangles[0][0].x + startRectangles[0][2].x) / 2, (startRectangles[0][0].y + startRectangles[0][2].y) / 2)
+        setUserPosition((startRectangles[0][0].x + startRectangles[0][2].x) / 2, (startRectangles[0][0].y + startRectangles[0][2].y) / 2, 1f)
     }
 
     /**
@@ -272,23 +279,44 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
 
     /**
      * Updates the current userPosition and redraws the map
+     * TODO: REMOVE this function - Not sure what this function is for currently?
      */
-
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
             val mapX = ((event.x - offsetX) / scale).coerceIn(0f, maxX)
             val mapY = ((event.y - offsetY) / scale).coerceIn(0f, maxY)
-            setUserPosition(mapX, mapY)
+            setUserPosition(mapX, mapY, 1f)
             performClick()
             return true
         }
         return super.onTouchEvent(event)
     }
 
-    fun setUserPosition(x: Float, y: Float) {
+    fun getUserPosition(): DoubleArray {
+        val x = userPosition?.x?.toDouble()
+        val y = userPosition?.y?.toDouble()
+        val z = userPosition?.z?.toDouble()
+        if (x != null && y != null && z != null) {
+            return doubleArrayOf(x, y, z)
+        }
+        return doubleArrayOf(1.0, 1.0, 1.0)
+    }
+
+    fun setUserPosition(x: Float, y: Float, z: Float) {
         val clampedX = x.coerceIn(0f, maxX)
         val clampedY = y.coerceIn(0f, maxY)
-        userPosition = ConfigPoint(clampedX, clampedY)
+        val clampedZ = z.coerceIn(0f, maxZ)
+        val prev = userPosition
+        if (prev == null) {
+            userPosition = ConfigPoint(clampedX, clampedY, clampedZ)
+        } else {
+            // Moving average
+            userPosition = ConfigPoint(
+                (PREV_POSITION_WEIGHT/(PREV_POSITION_WEIGHT+1))*prev.x + (1/(PREV_POSITION_WEIGHT+1))*clampedX,
+                (PREV_POSITION_WEIGHT/(PREV_POSITION_WEIGHT+1))*prev.y + (1/(PREV_POSITION_WEIGHT+1))*clampedY,
+                (PREV_POSITION_WEIGHT/(PREV_POSITION_WEIGHT+1))*prev.z + (1/(PREV_POSITION_WEIGHT+1))*clampedZ
+            )
+        }
         invalidate()
 
         // Tolerance in map coordinates: matches the drawn user circle radius (0.25f * scale => 0.25f in map units)
@@ -316,15 +344,6 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
             }
             lastPoiState = newState
         }
-    }
-
-    fun getUserPosition(): DoubleArray {
-        val x = userPosition?.x?.toDouble()
-        val y = userPosition?.y?.toDouble()
-        if (x != null && y != null) {
-            return doubleArrayOf(x, y, 1.0, 1.0)
-        }
-        return doubleArrayOf(1.0, 1.0, 1.0, 1.0)
     }
 
     fun screenToMap(screenX: Float, screenY: Float): ConfigPoint {
@@ -422,7 +441,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
             val xj = polygon[j].x
             val yj = polygon[j].y
             val intersect = ((yi > point.y) != (yj > point.y)) &&
-                    (point.x < (xj - xi) * (point.y - yi) / (yj - yi + 0.0f) + xi)
+                (point.x < (xj - xi) * (point.y - yi) / (yj - yi + 0.0f) + xi)
             if (intersect) inside = !inside
             j = i
         }

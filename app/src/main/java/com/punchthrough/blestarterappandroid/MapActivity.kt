@@ -55,8 +55,6 @@ class MapActivity : AppCompatActivity() {
         bluetoothWorker.initialize(this)
         startRssiTracking()
 
-        userMapView.setUserPosition(0.5f, 4.5f)
-
         gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
 
             override fun onDown(e: MotionEvent): Boolean {
@@ -113,7 +111,7 @@ class MapActivity : AppCompatActivity() {
                 beaconProjects[it.device.address]?.updateFilteredRSSI(it.rssi)
                 beaconProjects[it.device.address]?.getFilteredRSSI()
             }
-            .take(3) // Limit to top 3 beacons for performance
+            //.take(3) // Limit to top 3 beacons for performance
 
         // Need at least 3 beacons for trilateration
         if (knownResults.size < 3) {
@@ -153,12 +151,12 @@ class MapActivity : AppCompatActivity() {
      */
     private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray) {
         // Create solver with current beacons and set distances
-        trilaterationFunction = TrilaterationFunction(coords)
-        trilaterationFunction.setBeaconDistances(distances)
+        val initial: DoubleArray? = userMapView.getUserPosition()
+        trilaterationFunction = TrilaterationFunction(initial, coords, distances)
 
         val userCoordinates = trilaterationFunction.solve()
 
-        userMapView.setUserPosition(userCoordinates[0].toFloat(), userCoordinates[1].toFloat())
+        userMapView.setUserPosition(userCoordinates[0].toFloat(), userCoordinates[1].toFloat(), userCoordinates[2].toFloat())
     }
 
     override fun onStart() { super.onStart() }
