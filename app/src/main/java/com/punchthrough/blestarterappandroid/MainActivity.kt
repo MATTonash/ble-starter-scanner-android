@@ -271,7 +271,7 @@ class MainActivity : AppCompatActivity() {
         when {
             containsPermanentDenial -> {
                 Timber.e("A required permission has been permanently denied and needs to be manually granted")
-//                promptManualPermissionGranting()
+                promptManualPermissionGranting()
             }
             !hasRequiredRuntimePermissions() -> {
                 requestRequiredRuntimePermissions(PERMISSION_REQUEST_CODE)
