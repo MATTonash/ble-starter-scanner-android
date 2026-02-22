@@ -35,12 +35,17 @@ import kotlin.math.hypot
 import kotlin.math.min
 
 private const val LINE_WIDTH = 20f
-private const val DEFAULT_MAX_X = 5f
-private const val DEFAULT_MAX_Y = 5f
+//private const val DEFAULT_MAX_X = 5f
+//private const val DEFAULT_MAX_Y = 5f
+//private const val DEFAULT_MAX_Z = 3f
+private const val DEFAULT_MAX_X = 4f
+private const val DEFAULT_MAX_Y = 4f
 private const val DEFAULT_MAX_Z = 3f
 private const val PREV_POSITION_WEIGHT = 0.9f
 // For simple moving average
 // e.g. if n, then new position is n/(n+1) * old position + 1/(n+1) * new position
+
+private var TIME_TO_REFRESH_MOVING_AVERAGE = 0
 
 enum class POIState { START, END, PATH, NONE }
 
@@ -309,13 +314,17 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         val prev = userPosition
         if (prev == null) {
             userPosition = ConfigPoint(clampedX, clampedY, clampedZ)
-        } else {
+        } else if (TIME_TO_REFRESH_MOVING_AVERAGE < 10){
             // Moving average
             userPosition = ConfigPoint(
                 (PREV_POSITION_WEIGHT/(PREV_POSITION_WEIGHT+1))*prev.x + (1/(PREV_POSITION_WEIGHT+1))*clampedX,
                 (PREV_POSITION_WEIGHT/(PREV_POSITION_WEIGHT+1))*prev.y + (1/(PREV_POSITION_WEIGHT+1))*clampedY,
                 (PREV_POSITION_WEIGHT/(PREV_POSITION_WEIGHT+1))*prev.z + (1/(PREV_POSITION_WEIGHT+1))*clampedZ
             )
+            TIME_TO_REFRESH_MOVING_AVERAGE ++
+        } else {
+            userPosition = ConfigPoint(clampedX, clampedY, clampedZ)
+            TIME_TO_REFRESH_MOVING_AVERAGE = 0
         }
         invalidate()
 
@@ -362,7 +371,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
 
     fun addBeacons(newBeacons: Array<DoubleArray>) {
         for (beaconLoc: DoubleArray in newBeacons) {
-            beacons.add(ConfigPoint(beaconLoc[0].toFloat(), beaconLoc[1].toFloat()))
+            beacons.add(ConfigPoint(beaconLoc[0].toFloat()*2, beaconLoc[1].toFloat()*2))
         }
     }
 

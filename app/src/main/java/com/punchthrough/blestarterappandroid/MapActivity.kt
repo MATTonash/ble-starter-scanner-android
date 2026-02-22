@@ -28,6 +28,7 @@ import android.view.MotionEvent
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import com.matt.guidebeacons.beacons.BeaconData
+import com.matt.guidebeacons.beacons.BeaconType
 
 
 class MapActivity : AppCompatActivity() {
@@ -125,6 +126,9 @@ class MapActivity : AppCompatActivity() {
             val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed
             coords[index] = beacon.getCoordinates()
             distances[index] = beacon.calculateDistance(res.rssi, 4)
+            if (beacon.getBeaconType() == BeaconType.BUZZER) {
+                alertUser()
+            }
         }
 
         userMapView.clearBeacons()
@@ -156,7 +160,8 @@ class MapActivity : AppCompatActivity() {
 
         val userCoordinates = trilaterationFunction.solve()
 
-        userMapView.setUserPosition(userCoordinates[0].toFloat(), userCoordinates[1].toFloat(), userCoordinates[2].toFloat())
+        // scale the position to fit mapView of 4x4
+        userMapView.setUserPosition(userCoordinates[0].toFloat()*2, userCoordinates[1].toFloat()*2, userCoordinates[2].toFloat()*2)
     }
 
     override fun onStart() { super.onStart() }
@@ -164,7 +169,7 @@ class MapActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onResume() {
         super.onResume()
-        // startRssiTracking()
+        startRssiTracking()
     }
 
     override fun onPause() {

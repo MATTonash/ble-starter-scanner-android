@@ -17,6 +17,7 @@ import android.os.VibratorManager
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.matt.guidebeacons.beacons.BeaconData
+import com.matt.guidebeacons.beacons.BeaconType
 import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import timber.log.Timber
 
@@ -179,7 +180,7 @@ class BluetoothWorkerClass private constructor() {
 
     private val connectionCheckRunnable = object : Runnable {
         override fun run() {
-            //checkAndMaintainConnections()
+            checkAndMaintainConnections()
             connectionCheckHandler.postDelayed(this, connectionCheckInterval)
         }
     }
@@ -259,7 +260,7 @@ class BluetoothWorkerClass private constructor() {
         scanInterval = interval
 
         // Start connection maintenance
-        //connectionCheckHandler.post(connectionCheckRunnable)
+        // connectionCheckHandler.post(connectionCheckRunnable)
 
         startScanCycle()
     }
@@ -307,7 +308,7 @@ class BluetoothWorkerClass private constructor() {
             scanResults.sortByDescending { it.rssi }
 
             scanResults.forEach { result ->
-                if (result.rssi > -55) {
+                if ((result.rssi > -55) && (beaconProjects[result.device.address])?.getBeaconType() == BeaconType.BUZZER) {
                     handleNearbyDevice(result)
                 }
             }
@@ -355,6 +356,7 @@ class BluetoothWorkerClass private constructor() {
                     Manifest.permission.VIBRATE
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
+
                 vibrator.vibrate(500)
             }
         }

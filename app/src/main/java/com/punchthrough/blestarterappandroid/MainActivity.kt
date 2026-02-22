@@ -22,7 +22,7 @@ import androidx.recyclerview.widget.SimpleItemAnimator
 import com.matt.guidebeacons.activities.AdminPanelActivity
 import com.matt.guidebeacons.activities.PermissionsCheckActivity
 import com.matt.guidebeacons.beacons.BeaconData
-import com.matt.guidebeacons.constants.*
+import com.matt.guidebeacons.constants.FILE_NAME_BEACONS
 import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
 
@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         // Setup UI
         setupScanButton()
         setupRecyclerView()
-        //initializeVibrator()
+        // initializeVibrator()
         setupViewMapButton()
         setUpActivityButtons()
     }
@@ -143,7 +143,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         isScanning = false
-        // stopBleScan()
+        stopBleScan()
     }
 
     @UiThread
