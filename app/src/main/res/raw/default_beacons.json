@@ -3,13 +3,13 @@
     "name": "Losing Things",
     "calibrationRSSI": -60,
     "x": 0.0,
-    "y": 1.0
+    "y": 2.0
   },
   "80:EC:CC:CD:33:7C": {
     "name": "Happy Mornings",
     "calibrationRSSI": -57,
-    "x": 1.0,
-    "y": 2.0
+    "x": 0.0,
+    "y": 0.0
   },
   "80:EC:CC:CD:33:7E": {
     "name": "STEM",
@@ -39,12 +39,56 @@
     "name": "Origin",
     "calibrationRSSI": -62,
     "x": 0.0,
-    "y": 0.0
+    "y": 2.0
   },
-  "6C:B2:FD:34:CE:9E": {
+
+  "80:EC:CC:CD:33:28": {
     "name": "Bee",
     "calibrationRSSI": -75,
     "x": 0.5,
     "y": 0.5
+  },
+
+  "6C:B2:FD:34:B8:C4": {
+    "name": "05",
+    "calibrationRSSI": -75,
+    "x": 2.0,
+    "y": 0.0
+  },
+  "F4:65:0B:40:77:86": {
+    "name": "ESP32_0",
+    "calibrationRSSI": -60,
+    "x": 1.0,
+    "y": 2.0
+  },
+  "08:A6:F7:B0:71:CA": {
+    "name": "ESP32_1",
+    "calibrationRSSI": -60,
+    "x": 0.0,
+    "y": 1.0
+  },
+  "2C:BC:BB:4D:7D:92": {
+    "name": "ESP32_2",
+    "calibrationRSSI": -60,
+    "x": 1.0,
+    "y": 0.0
+  },
+  "08:A6:F7:B0:79:0A": {
+    "name": "ESP32_3",
+    "calibrationRSSI": -60,
+    "x": 1.0,
+    "y": 1.0
+  },
+  "78:42:1C:66:0B:B6": {
+    "name": "buzzer 1",
+    "calibrationRSSI": -60,
+    "x": 1.5,
+    "y": 2.0
+  },
+  "6C:B2:FD:34:CE:9E": {
+    "name": "BBL",
+    "calibrationRSSI": -75,
+    "x": 2.0,
+    "y": 2.0
   }
 }
