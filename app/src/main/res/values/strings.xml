@@ -45,4 +45,6 @@
     <string name="scan_results">Scan Results</string>
     <string name="permissions_debug">Permissions Debug</string>
     <string name="permissions_debug_cd">Open debug permissions checker</string>
+
+    <string name="bluetooth_permission_denied_permanently">You must enable bluetooth manually\n</string>
 </resources>

@@ -13,6 +13,7 @@ import android.os.Vibrator
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.UiThread
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -241,6 +242,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
@@ -269,7 +271,7 @@ class MainActivity : AppCompatActivity() {
         when {
             containsPermanentDenial -> {
                 Timber.e("A required permission has been permanently denied and needs to be manually granted")
-//                promptManualPermissionGranting()
+                promptManualPermissionGranting()
             }
             !hasRequiredRuntimePermissions() -> {
                 requestRequiredRuntimePermissions(PERMISSION_REQUEST_CODE)
@@ -292,22 +294,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-//    private fun promptManualPermissionGranting() {
-//        AlertDialog.Builder(this)
-//            .setTitle(R.string.bluetooth_permission_required)
-//            //.setMessage(R.string.bluetooth_permission_denied_permanently)
-//            .setPositiveButton(R.string.open_settings) { _, _ ->
-//                try {
-//                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-//                        data = Uri.fromParts("package", packageName, null)
-//                        startActivity(this)
-//                    }
-//                } catch (e: ActivityNotFoundException) {
-//                    Timber.e("Could not open Settings: $e")
-//                }
-//            }
-//            .setNegativeButton(R.string.quit) { _, _ -> finishAndRemoveTask() }
-//            .setCancelable(false)
-//            .show()
-//    }
+    private fun promptManualPermissionGranting() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.bluetooth_permission_required)
+            .setMessage(R.string.bluetooth_permission_denied_permanently)
+    }
 }
