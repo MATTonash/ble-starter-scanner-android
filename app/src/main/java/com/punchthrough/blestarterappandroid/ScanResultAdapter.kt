@@ -24,6 +24,8 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.matt.guidebeacons.beacons.BeaconData
 import com.punchthrough.blestarterappandroid.databinding.RowScanResultBinding
+import kotlin.text.get
+import kotlin.text.toDouble
 
 /**
 * The adapter for recycler view of all the beacons/scan results in mainActivity
@@ -68,6 +70,8 @@ class ScanResultAdapter(
 
         @SuppressLint("MissingPermission", "SetTextI18n")
         fun bind(result: ScanResult) {
+            val beaconProject = beaconProjects[result.device.address]
+
             binding.deviceName.text =
                 if (binding.root.context.hasRequiredRuntimePermissions()) {
                     beaconProjects[result.device.address].toString() ?: "Unknown Beacon"
@@ -83,6 +87,13 @@ class ScanResultAdapter(
                 } else {
                     "Near (" +  result.rssi.toString() + " dBm)"
                 }
+
+            val filteredRssi = beaconProject?.let {
+                it.updateFilteredRSSI(result.rssi)
+                it.getFilteredRSSI()
+            } ?: result.rssi.toDouble()
+
+            binding.filteredStrength.text = "Filtered: ${"%.1f".format(filteredRssi)} dBm"
 
             binding.root.setOnClickListener {
                 onClickListener.invoke(result) //Temporary removal of Item Click

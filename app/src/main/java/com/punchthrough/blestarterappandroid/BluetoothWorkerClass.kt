@@ -177,6 +177,7 @@ class BluetoothWorkerClass private constructor() {
         }
     }
 
+
     private val connectionCheckRunnable = object : Runnable {
         override fun run() {
             //checkAndMaintainConnections()
@@ -259,8 +260,7 @@ class BluetoothWorkerClass private constructor() {
         scanInterval = interval
 
         // Start connection maintenance
-        //connectionCheckHandler.post(connectionCheckRunnable)
-
+        connectionCheckHandler.post(connectionCheckRunnable)
         startScanCycle()
     }
 
@@ -278,6 +278,11 @@ class BluetoothWorkerClass private constructor() {
             ConnectionManager.teardownConnection(device)
         }
         connectedDevices.clear()
+
+        for (beacon in beaconProjects.values){
+            beacon.resetKalmanFilter()
+        }
+
         Timber.d("Stopped BLE scan and connection maintenance")
     }
 
