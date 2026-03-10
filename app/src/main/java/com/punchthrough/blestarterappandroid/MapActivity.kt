@@ -55,8 +55,6 @@ class MapActivity : AppCompatActivity() {
         bluetoothWorker.initialize(this)
         startRssiTracking()
 
-        userMapView.setUserPosition(0.5f, 4.5f)
-
         gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
 
             override fun onDown(e: MotionEvent): Boolean {
@@ -109,21 +107,24 @@ class MapActivity : AppCompatActivity() {
         // Keep only known project beacons and sort by RSSI
         val knownResults = rawResults
             .filter { beaconProjects.containsKey(it.device.address) }
-            .sortedByDescending { it.rssi }
-            .take(3) // Limit to top 3 beacons for performance
+            .sortedByDescending {
+                beaconProjects[it.device.address]?.updateFilteredRSSI(it.rssi)
+                beaconProjects[it.device.address]?.getFilteredRSSI()
+            }
+            //.take(3) // Limit to top 3 beacons for performance
 
-        // Need at least 3 beacons for trilateration
-        if (knownResults.size < 3) {
+        // Need at least 1 beacon for trilateration
+        if (knownResults.isEmpty()) {
             return
         }
 
         // Build coordinates and distances arrays aligned by index
-        val coords = Array(knownResults.size) { DoubleArray(0) }
+        val coords = Array(knownResults.size) { DoubleArray(3) }
         val distances = DoubleArray(knownResults.size)
         knownResults.forEachIndexed { index, res ->
             val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed
             coords[index] = beacon.getCoordinates()
-            distances[index] = beacon.calculateDistance(res.rssi, res.txPower)
+            distances[index] = beacon.calculateDistance(res.rssi, 4)
         }
 
         userMapView.clearBeacons()
@@ -150,12 +151,12 @@ class MapActivity : AppCompatActivity() {
      */
     private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray) {
         // Create solver with current beacons and set distances
-        trilaterationFunction = TrilaterationFunction(coords)
-        trilaterationFunction.setBeaconDistances(distances)
+        val initial: DoubleArray? = userMapView.getUserPosition()
+        trilaterationFunction = TrilaterationFunction(initial, coords, distances)
 
         val userCoordinates = trilaterationFunction.solve()
 
-        userMapView.setUserPosition(userCoordinates[0].toFloat(), userCoordinates[1].toFloat())
+        userMapView.setUserPosition(userCoordinates[0].toFloat(), userCoordinates[1].toFloat(), userCoordinates[2].toFloat())
     }
 
     override fun onStart() { super.onStart() }

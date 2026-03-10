@@ -16,7 +16,6 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
 import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import timber.log.Timber
@@ -166,7 +165,7 @@ class BluetoothWorkerClass private constructor() {
             return
         }
 
-        if (appContext.hasRequiredBluetoothPermissions()) {
+        if (appContext.hasRequiredRuntimePermissions()) {
             bleScanner?.startScan(null, scanSettings, bleScanCallback)
             isScanning = true
             Timber.d("Started BLE scan")
@@ -177,6 +176,7 @@ class BluetoothWorkerClass private constructor() {
             Timber.e("Missing required Bluetooth permissions")
         }
     }
+
 
     private val connectionCheckRunnable = object : Runnable {
         override fun run() {
@@ -260,8 +260,7 @@ class BluetoothWorkerClass private constructor() {
         scanInterval = interval
 
         // Start connection maintenance
-        //connectionCheckHandler.post(connectionCheckRunnable)
-        
+        connectionCheckHandler.post(connectionCheckRunnable)
         startScanCycle()
     }
 
@@ -279,6 +278,11 @@ class BluetoothWorkerClass private constructor() {
             ConnectionManager.teardownConnection(device)
         }
         connectedDevices.clear()
+
+        for (beacon in beaconProjects.values){
+            beacon.resetKalmanFilter()
+        }
+
         Timber.d("Stopped BLE scan and connection maintenance")
     }
 

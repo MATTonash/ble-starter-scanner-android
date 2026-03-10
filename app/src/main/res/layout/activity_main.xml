@@ -131,7 +131,7 @@
 
             <!-- Admin Panel Button -->
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/calibration_button"
+                android:id="@+id/admin_panel_button"
                 style="@style/MenuButton"
                 android:text="@string/admin_panel"
                 android:contentDescription="@string/admin_panel_cd"/>

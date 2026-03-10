@@ -83,15 +83,15 @@ class EditBeaconActivity : AppCompatActivity() {
         }
 
         deleteButton.setOnClickListener {
-            val colorHex = Integer.toHexString(ContextCompat.getColor(this, R.color.colorPrimaryDark)).drop(2)
+            val colorHex = Integer.toHexString(ContextCompat.getColor(this, R.color.design_default_color_error)).drop(2)
             // https://developer.android.com/develop/ui/views/components/dialogs
             val builder = AlertDialog.Builder(this)
             builder
                 .setTitle("Are you sure?")
                 .setMessage("You are about to delete beacon \"${beacon}\" (${macAddress})")
                 // todo: find better solution to changing text color?
-                .setNegativeButton(Html.fromHtml("<font color='#${colorHex}'>Cancel</font>")) { dialog, id -> }
-                .setPositiveButton("Delete") { dialog, id ->
+                .setNegativeButton("Cancel") { dialog, id -> }
+                .setPositiveButton(Html.fromHtml("<font color='#${colorHex}'>Delete</font>")) { dialog, id ->
                     BeaconData.getBeaconProjects().remove(macAddress)
                     val returnIntent = Intent()
                     returnIntent.putExtra(INTENT_EXTRA_DELETED_BEACON, beacon.toString())

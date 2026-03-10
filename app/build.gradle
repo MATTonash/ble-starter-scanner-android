@@ -46,6 +46,9 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    kotlinOptions{
+        jvmTarget="17"
+    }
     namespace 'com.punchthrough.blestarterappandroid'
 }
 
@@ -88,3 +91,5 @@ task ktlintFormat(type: JavaExec, group: "formatting") {
     main = "com.pinterest.ktlint.Main"
     args "-F", "src/**/*.kt"
 }
+
+
