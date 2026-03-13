@@ -1,11 +1,7 @@
 package com.matt.guidebeacons.beacons
 
 import kotlinx.serialization.Serializable
-import java.time.Clock
 import java.util.Calendar
-import java.util.Date
-import kotlin.time.TimeMark
-import kotlin.time.TimeSource
 
 @OptIn(kotlinx.serialization.InternalSerializationApi::class)
 @Serializable
@@ -16,4 +12,19 @@ class RssiValue(
 
     constructor(measuredRssi: Double, measuredDistance: Double)
         : this(measuredRssi, measuredDistance, Calendar.getInstance().time.toString())
+
+    fun getMeasuredRssi() : Double {
+        return measuredRssi
+    }
+
+    fun getMeasuredDistance() : Double {
+        return measuredDistance
+    }
+
+    /**
+     * String representation of the time the RSSI value was captured, for potential sorting/tracking
+     */
+    fun getTimestamp() : String {
+        return timestamp
+    }
 }

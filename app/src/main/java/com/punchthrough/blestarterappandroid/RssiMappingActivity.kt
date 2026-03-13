@@ -5,12 +5,9 @@ import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.matt.guidebeacons.beacons.RssiCollection
+import com.matt.guidebeacons.beacons.RssiValue
 import com.punchthrough.blestarterappandroid.databinding.ActivityRssiMappingBinding
-
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
-import java.io.File
 
 class RssiMappingActivity : AppCompatActivity() {
 
@@ -22,7 +19,9 @@ class RssiMappingActivity : AppCompatActivity() {
 
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
     private val beaconProjects = com.matt.guidebeacons.beacons.BeaconData.getBeaconProjects()
+
     private var selectedBeacon: String? = null
+    private var rssiCollection: RssiCollection? = null
     private var currentRssi: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,10 +51,16 @@ class RssiMappingActivity : AppCompatActivity() {
         beaconSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 selectedBeacon = beaconAddresses[position]
+                rssiCollection = RssiCollection.readFromFile(
+                    this@RssiMappingActivity,
+                    selectedBeacon!!,
+                    beaconProjects[selectedBeacon].toString()
+                )
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {
                 selectedBeacon = null
+                rssiCollection = null
             }
         }
     }
@@ -65,9 +70,9 @@ class RssiMappingActivity : AppCompatActivity() {
             val distance = distanceEditText.text.toString().toDoubleOrNull()
             if (selectedBeacon != null && currentRssi != null && distance != null) {
                 val debugInfo = "Beacon: $selectedBeacon, RSSI: $currentRssi, Distance: $distance"
-                val json = Json.encodeToString(BeaconData(selectedBeacon!!, currentRssi!!, distance))
-                debugTextView.text = json
-                writeJsonToFile("beacon_data.json", json)
+                rssiCollection!!.getMeasurements().add(RssiValue(currentRssi!!.toDouble(), distance))
+                val result = rssiCollection!!.writeToFile(this, true)
+                debugTextView.text = result
                 Toast.makeText(this, "Saved: $debugInfo", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Please select a beacon, collect RSSI, and enter a distance", Toast.LENGTH_SHORT).show()
@@ -96,17 +101,6 @@ class RssiMappingActivity : AppCompatActivity() {
         }
     }
 
-    private fun writeJsonToFile(fileName: String, json: String) {
-        try {
-            openFileOutput(fileName, MODE_PRIVATE).use { output ->
-                output.write(json.toByteArray())
-            }
-            Toast.makeText(this, "File saved successfully", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "Error saving file: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     override fun onPause() {
         super.onPause()
         bluetoothWorker.stopScanning()
@@ -116,7 +110,4 @@ class RssiMappingActivity : AppCompatActivity() {
         super.onDestroy()
         bluetoothWorker.stopScanning()
     }
-
-    @Serializable
-    data class BeaconData(var beaconAddress: String, var rssi: Int, var distance: Double)
 }
