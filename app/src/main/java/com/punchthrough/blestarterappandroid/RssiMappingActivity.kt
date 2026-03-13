@@ -56,11 +56,15 @@ class RssiMappingActivity : AppCompatActivity() {
                     selectedBeacon!!,
                     beaconProjects[selectedBeacon].toString()
                 )
+                // Clear currentRssi to prevent saving scan results from a different beacon
+                setCurrentRssi(null)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {
                 selectedBeacon = null
                 rssiCollection = null
+                // Clear currentRssi to prevent saving scan results from a different beacon
+                setCurrentRssi(null)
             }
         }
     }
@@ -73,6 +77,8 @@ class RssiMappingActivity : AppCompatActivity() {
                 rssiCollection!!.getMeasurements().add(RssiValue(currentRssi!!.toDouble(), distance))
                 val result = rssiCollection!!.writeToFile(this, true)
                 debugTextView.text = result
+                // Clear currentRssi to prevent saving an old scan result
+                setCurrentRssi(null)
                 Toast.makeText(this, "Saved: $debugInfo", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Please select a beacon, collect RSSI, and enter a distance", Toast.LENGTH_SHORT).show()
@@ -91,13 +97,17 @@ class RssiMappingActivity : AppCompatActivity() {
         )
     }
 
+    private fun setCurrentRssi(rssi: Int?) {
+        currentRssi = rssi
+        runOnUiThread {
+            rssiTextView.text = "RSSI: ${currentRssi ?: "N/A"}"
+        }
+    }
+
     private fun handleScanResults(results: List<ScanResult>) {
         val selectedResult = results.find { it.device.address == selectedBeacon }
         if (selectedResult != null) {
-            currentRssi = selectedResult.rssi
-            runOnUiThread {
-                rssiTextView.text = "RSSI: ${currentRssi ?: "N/A"}"
-            }
+            setCurrentRssi(selectedResult.rssi)
         }
     }
 
