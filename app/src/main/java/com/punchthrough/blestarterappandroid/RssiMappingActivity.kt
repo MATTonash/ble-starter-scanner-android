@@ -92,8 +92,8 @@ class RssiMappingActivity : AppCompatActivity() {
                 handleScanResults(results)
             },
             continuous = true,
-            period = 1000L,
-            interval = 200L
+            period = 5000L,
+            interval = 2000L
         )
     }
 
