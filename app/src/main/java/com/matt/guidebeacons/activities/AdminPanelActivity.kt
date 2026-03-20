@@ -12,6 +12,7 @@ import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.beacons.BeaconsAdapter
 import com.matt.guidebeacons.constants.*
+import com.punchthrough.blestarterappandroid.RssiMappingActivity
 import com.punchthrough.blestarterappandroid.databinding.ActivityAdminPanelBinding
 
 /* TODO
@@ -39,9 +40,15 @@ class AdminPanelActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupRecyclerView()
+
         binding.addBeacon.setOnClickListener {
             val addIntent = Intent(this, InputMacAddressActivity::class.java)
             startActivityForResult(addIntent, REQUEST_ADD)
+        }
+
+        binding.recordRssi.setOnClickListener {
+            val intent = Intent(this, RssiMappingActivity::class.java)
+            startActivity(intent)
         }
     }
 

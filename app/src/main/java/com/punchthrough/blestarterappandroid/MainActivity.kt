@@ -121,7 +121,6 @@ class MainActivity : AppCompatActivity() {
     private fun setUpActivityButtons() {
         setUpActivityButton(binding.adminPanelButton, AdminPanelActivity::class.java)
         setUpActivityButton(binding.permissionsDebugButton, PermissionsCheckActivity::class.java)
-        setUpActivityButton(binding.recordRssiButton, RssiMappingActivity::class.java)
     }
 
     private fun setUpActivityButton(button: android.widget.Button, activity: Class<*>) {
