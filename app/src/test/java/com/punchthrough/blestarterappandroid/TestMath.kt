@@ -30,7 +30,7 @@ import kotlin.math.pow
  */
 
 private const val ACCEPTABLE_TOLERANCE = 0.5 // in m
-private const val CHECKS_PER_TEST = 1000
+private const val CHECKS_PER_TEST = 10000
 private const val DISTANCE_FROM_PREV = 0.5 // in m
 private const val NUM_BEACONS = 4 // currently the 4 beacon locations are hardcoded so changing just this constant will cause errors
 
@@ -44,6 +44,15 @@ private const val USER_LOCATION_SQUARE = 5.0 // in m
 class TestMath {
     val coordinates = Array(4) { DoubleArray(3) }
 
+    var sum_error_squares_success = 0.0
+    var sum_error_squares_failure = 0.0
+    var sum_error_squares_threshold = 0.3
+
+    var sesst = 0.0
+    var sesft = 0.0
+    var nst = 0
+    var nt = 0
+
     init {
         coordinates[0] = doubleArrayOf(USER_LOCATION_SQUARE, USER_LOCATION_SQUARE, 0.0)
         coordinates[1] = doubleArrayOf(USER_LOCATION_SQUARE, 0.0, 0.0)
@@ -54,6 +63,12 @@ class TestMath {
     @Test
     fun test3DMultilaterationWithNoErrors() {
         var successes = 0
+        sum_error_squares_success = 0.0
+        sum_error_squares_failure = 0.0
+        sesst = 0.0
+        sesft = 0.0
+        nst = 0
+        nt = 0
         repeat(CHECKS_PER_TEST) {
             if (testScenario(0.0)) {
                 successes++
@@ -65,12 +80,27 @@ class TestMath {
     @Test
     fun test3DMultilaterationWithErrors() {
         var successes = 0
+        sum_error_squares_success = 0.0
+        sum_error_squares_failure = 0.0
+        sesst = 0.0
+        sesft = 0.0
+        nst = 0
+        nt = 0
         repeat(CHECKS_PER_TEST) {
             if (testScenario(BEACON_ERROR)) {
                 successes++
             }
         }
-        assertTrue("Found location (within tolerance of ${ACCEPTABLE_TOLERANCE}) ${successes} out of ${CHECKS_PER_TEST} times", successes == CHECKS_PER_TEST)
+        println("Average sum squares of errors: ${(sum_error_squares_failure)/((CHECKS_PER_TEST - successes))}")
+        println("Average sum squares of successes: ${(sum_error_squares_success)/successes}")
+        println("Average sum squares of errors to Average sum squares of successes: ${(sum_error_squares_failure * successes)/(sum_error_squares_success * (CHECKS_PER_TEST - successes))}")
+        println("Found location (within tolerance of ${ACCEPTABLE_TOLERANCE}) ${successes.toDouble()/CHECKS_PER_TEST.toDouble()}% of the time")
+
+        println("Average sum squares of errors: ${(sesft)/((nt - nst))}")
+        println("Average sum squares of successes: ${(sesst)/nst}")
+        println("Average sum squares of errors to Average sum squares of successes: ${(sesft * nst)/(sesst * (nt - nst))}")
+        assertTrue("Rejected ${(CHECKS_PER_TEST - nt).toDouble()/CHECKS_PER_TEST.toDouble()}% of scenarios but Found location (within tolerance of ${ACCEPTABLE_TOLERANCE}) ${nst.toDouble()/nt.toDouble()}% of the time", nst == nt)
+        // Decrease percentage of locations incorrectly found by 4 times (from 20% to 5%) by rejecting 96% of scenarios (by 25 times)
     }
 
     fun dist(p1: DoubleArray, p2: DoubleArray): Double {
@@ -80,9 +110,24 @@ class TestMath {
 
     private fun testScenario(error: Double): Boolean {
         val userTrue = doubleArrayOf(Random.nextDouble(0.0, USER_LOCATION_SQUARE), Random.nextDouble(0.0, USER_LOCATION_SQUARE), 1.0)
-        val userFound = testSolver(userTrue, error, NUM_BEACONS).copyOfRange(0, 3)
-        val d = dist(userTrue, userFound)
+        val userFound = testSolver(userTrue, error, NUM_BEACONS)
+        val d = dist(userTrue, userFound.copyOfRange(0, 3))
 
+        if (d <= ACCEPTABLE_TOLERANCE) {
+            sum_error_squares_success += userFound[3]
+        } else {
+            sum_error_squares_failure += userFound[3]
+        }
+
+        if (userFound[3] > sum_error_squares_threshold) {
+            if (d <= ACCEPTABLE_TOLERANCE) {
+                sesst += userFound[3]
+                nst ++
+            } else {
+                sesft += userFound[3]
+            }
+            nt ++
+        }
         // assertTrue("Found location (${userFound.joinToString(separator = ", ")}) is too far (distance = ${d}, tolerance = ${ACCEPTABLE_TOLERANCE}) from actual location (${userTrue.joinToString(separator = ", ")})", d <= ACCEPTABLE_TOLERANCE)
         return d <= ACCEPTABLE_TOLERANCE
     }

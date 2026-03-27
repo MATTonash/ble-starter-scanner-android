@@ -59,6 +59,7 @@ public class TrilaterationFunction {
         this.numBeacons = coordinates.length;
     }
 
+
     /**
      * Solves for the position using Levenberg-Marquardt with IRLS (Huber loss).
      *
@@ -118,7 +119,18 @@ public class TrilaterationFunction {
             }
         }
 
-        return pos;
+        double[] result = new double[pos.length + 1];
+        for (int i = 0; i < pos.length; i++) result[i] = pos[i];
+        var sumSquareErrors = 0.0;
+        for (int i = 0; i < numBeacons; i++) {
+            var curr = 0.0;
+            for (int j = 0; j < 3; j++) {
+                curr += Math.pow(pos[j] - beaconCoords[i][j],2);
+            }
+            sumSquareErrors += Math.pow(Math.pow(curr, 0.5) - distances[i],2);
+        }
+        result[pos.length] = sumSquareErrors;
+        return result;
     }
 
     /**
