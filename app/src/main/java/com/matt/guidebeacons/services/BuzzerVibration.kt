@@ -47,7 +47,6 @@ class BuzzerVibration {
     fun getVibrator(): Vibrator = vibrator
 
     fun buzzForNearbyDevice(result: ScanResult) {
-        return
         if (!isToastShowing) {
             Toast.makeText(
                 appContext,
