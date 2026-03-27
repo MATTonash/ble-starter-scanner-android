@@ -35,16 +35,11 @@ class MainActivity : AppCompatActivity() {
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
 
     private val beaconProjects = BeaconData.getBeaconProjects()
-    private var isScanning = false
-        set(value) {
-            field = value
-            runOnUiThread { binding.scanButton.text = if (value) "Stop Scan" else "Start Scan" }
-        }
 
     private val scanResults = mutableListOf<ScanResult>()
     private val scanResultAdapter: ScanResultAdapter by lazy {
         ScanResultAdapter(scanResults) { result ->
-            if (isScanning) {
+            if (bluetoothWorker.isScanning()) {
                 stopBleScan()
             }
             with(result.device) {
@@ -79,7 +74,6 @@ class MainActivity : AppCompatActivity() {
 
         BeaconData.initialiseBeaconData(this, FILE_NAME_BEACONS)
 
-        isScanning = false
         // Initialize BluetoothWorker
         bluetoothWorker.initialize(this)
 
@@ -99,11 +93,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupScanButton() {
         binding.scanButton.setOnClickListener {
-            if (isScanning) {
+            if (bluetoothWorker.isScanning()) {
                 stopBleScan()
             } else {
                 startBleScan()
             }
+            updateScanButton()
+        }
+    }
+
+    private fun updateScanButton() {
+        runOnUiThread {
+            binding.scanButton.text = if (bluetoothWorker.isScanning()) "Stop Scan" else "Start Scan"
         }
     }
 
@@ -142,8 +143,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        isScanning = false
         // stopBleScan()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateScanButton()
     }
 
     @UiThread
@@ -183,13 +188,11 @@ class MainActivity : AppCompatActivity() {
             period = 5000L,    // Scan for 5 seconds
             interval = 2000L   // Wait 2 seconds between scans
         )
-        isScanning = true
-
     }
 
     private fun stopBleScan() {
         bluetoothWorker.stopScanning()
-        isScanning = false
+        updateScanButton()
     }
 
     @SuppressLint("LogNotTimber")
