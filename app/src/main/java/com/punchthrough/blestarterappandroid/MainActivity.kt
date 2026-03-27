@@ -1,22 +1,16 @@
 package com.punchthrough.blestarterappandroid
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.le.ScanResult
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.Vibrator
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.UiThread
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
@@ -24,6 +18,8 @@ import com.matt.guidebeacons.activities.AdminPanelActivity
 import com.matt.guidebeacons.activities.PermissionsCheckActivity
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.constants.FILE_NAME_BEACONS
+import com.matt.guidebeacons.services.BuzzerVibration
+import com.matt.guidebeacons.services.NEARBY_BUZZER_RSSI
 import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
 import timber.log.Timber
 
@@ -51,8 +47,7 @@ class MainActivity : AppCompatActivity() {
 
     private var topThreeDevices = mutableListOf<String>()
 
-    private lateinit var vibrator: Vibrator
-    private var isToastShowing = false
+    private lateinit var buzzer: BuzzerVibration
 
     private val bluetoothEnablingResult = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -76,6 +71,7 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize BluetoothWorker
         bluetoothWorker.initialize(this)
+        buzzer = BuzzerVibration(this)
 
         // Use the toolbar from the layout as the Activity's app bar so we control logo/title
         setSupportActionBar(binding.toolbar)
@@ -86,7 +82,6 @@ class MainActivity : AppCompatActivity() {
         // Setup UI
         setupScanButton()
         setupRecyclerView()
-        //initializeVibrator()
         setupViewMapButton()
         setUpActivityButtons()
     }
@@ -130,16 +125,6 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
     }
-
-    //private fun initializeVibrator() {
-    //    vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-    //        val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-    //        vibratorManager.defaultVibrator
-    //    } else {
-    //        @Suppress("DEPRECATION")
-     //       getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-    //    }
-    //}
 
     override fun onPause() {
         super.onPause()
@@ -202,11 +187,11 @@ class MainActivity : AppCompatActivity() {
             scanResults.addAll(results)
 
             // Process each result for notifications
-            //results.forEach { result ->
-            //    if (result.rssi > -55) {
-            //        handleNearbyDevice(result)
-            //    }
-            //}
+            results.forEach { result ->
+                if (result.rssi > NEARBY_BUZZER_RSSI) {
+                    buzzer.buzzForNearbyDevice(result)
+                }
+            }
 
             if (allowClickViewMapButton()){
                 setupViewMapButton()
@@ -220,30 +205,6 @@ class MainActivity : AppCompatActivity() {
             scanResultAdapter.updateList(scanResults)
         }
     }
-
-    private fun handleNearbyDevice(result: ScanResult) {
-        if (!isToastShowing) {
-            Toast.makeText(
-                this,
-                "Close to ${beaconProjects[result.device.address] ?: "Unknown Beacon"}",
-                Toast.LENGTH_SHORT
-            ).show()
-            isToastShowing = true
-
-            Handler(Looper.getMainLooper()).postDelayed({
-                isToastShowing = false
-            }, Toast.LENGTH_SHORT.toLong())
-
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.VIBRATE
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                vibrator.vibrate(500)
-            }
-        }
-    }
-
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
