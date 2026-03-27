@@ -17,6 +17,7 @@ import android.os.VibratorManager
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.matt.guidebeacons.beacons.BeaconData
+import com.matt.guidebeacons.utils.readableBleScanFailedErrorCode
 import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import timber.log.Timber
 
@@ -25,7 +26,6 @@ import timber.log.Timber
  * This is a worker class that continually scans across activities, previously we relied on data
  * from scanning in MainActivity so this might look a bit rough
  *
- * It also stores the MAC addresses of the beacons we are using in this project
  * More on bluetooth in the doc
  */
 class BluetoothWorkerClass private constructor() {
@@ -322,7 +322,7 @@ class BluetoothWorkerClass private constructor() {
         }
 
         override fun onScanFailed(errorCode: Int) {
-            Timber.e("BLE Scan Failed with code $errorCode")
+            Timber.e("BLE scan failed with code: ${readableBleScanFailedErrorCode(errorCode)}")
             isScanning = false
         }
     }
