@@ -91,6 +91,7 @@ class MapActivity : AppCompatActivity() {
                 handleScanResults(results)
             },
             continuous = true,
+            //TODO: this is too frequent and will trigger the OS 30s timeout
             period = 1000L,    // Scan every second
             interval = 200L    // Small interval between scans
         )

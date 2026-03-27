@@ -143,7 +143,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        // stopBleScan()
+        stopBleScan()
     }
 
     override fun onResume() {
