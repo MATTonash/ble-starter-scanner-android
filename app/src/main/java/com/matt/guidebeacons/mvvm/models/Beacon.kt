@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.matt.guidebeacons.mvvm.dataclass
+package com.matt.guidebeacons.mvvm.models
 
+import androidx.room.Entity
 import com.matt.guidebeacons.beacons.BeaconType
 
 
-
+@Entity(tableName = "beacon", primaryKeys = ["name"])
 data class Beacon(
     val name : String,
     val RSSI : Int,
