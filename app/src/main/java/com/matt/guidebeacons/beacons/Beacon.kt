@@ -1,10 +1,9 @@
 package com.matt.guidebeacons.beacons
 
+import android.content.Context
+import com.punchthrough.blestarterappandroid.DistanceRegression
 import kotlinx.serialization.Serializable
-import kotlin.collections.plusAssign
-import kotlin.div
 import kotlin.math.pow
-import kotlin.times
 
 /**
  * We decided to implement a Beacon class that will store and manage all the relevant mapping data and methods
@@ -24,6 +23,10 @@ class Beacon(beaconName: String,
     private var buzzerSensitivity = 0
     private var beaconType = BeaconType.DEFAULT
 
+    private lateinit var regressionFunction: DistanceRegression
+    private lateinit var yVal: DoubleArray
+    private lateinit var xVal: DoubleArray
+
     // Kalman filter variables
     private var filteredRSSI: Double = calibrationRSSI.toDouble() // Arbitrary value
     private var estimateError: Double = 1.0  // P - estimate uncertainty
@@ -31,7 +34,34 @@ class Beacon(beaconName: String,
     private val measurementNoise: Double = 4.0  // R - sensor noise (tune based on RSSI variance)
     private var isInitialized: Boolean = false
 
-    public fun calculateDistance(rssi: Int, txPower: Int): Double{
+    public fun calculateDistance(rssi: Int, txPower: Int, context: Context): Double{
+        val rssiCollection = RssiCollection.readFromFile(
+            context,
+            BeaconData.getBeaconMacAddress(this).toString(),
+            this.beaconName
+        )
+        val measurements = rssiCollection.getMeasurements().filter { it.getType() == RssiValue.CollectionType.AVERAGE }
+
+        val n = measurements.size
+        yVal = DoubleArray(n)
+        xVal = DoubleArray(n)
+        var i = 0
+        var oneMetreRssi = measurements.find { it.getMeasuredDistance() == 1.0}
+        if (oneMetreRssi != null) {
+            calibrationRSSI = oneMetreRssi.getMeasuredRssi().toInt()
+        }
+        if (n > 4) {
+            for (rssiVal in measurements) {
+                yVal[i] = rssiVal.getMeasuredRssi() // it sooooo has to do with my indexing fuckkk
+                xVal[i] = rssiVal.getMeasuredDistance()
+                i ++
+            }
+            regressionFunction = DistanceRegression(yVal, xVal)
+            val coeff = regressionFunction.coefficients
+            val nonNegRssi = -rssi.toDouble()
+            val distance = coeff[0] * (nonNegRssi.pow(coeff[1]))
+            return distance
+        }
         return 10.0.pow((calibrationRSSI - rssi).toDouble()/(10*txPower).toDouble())
     }
 

@@ -52,7 +52,7 @@ public class DistanceRegression {
     // returns a double array of coefficients
     public void PowerModelCurveFit() {
         for (int i = 0; i < n; i++) {
-            lin_y[i] = Math.log10(y_vals[i]);
+            lin_y[i] = Math.log10(-y_vals[i]);
             sum_y += lin_y[i];
         }
         for (int i = 0; i < n; i++) {

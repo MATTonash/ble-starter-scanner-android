@@ -124,7 +124,7 @@ class MapActivity : AppCompatActivity() {
         knownResults.forEachIndexed { index, res ->
             val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed
             coords[index] = beacon.getCoordinates()
-            distances[index] = beacon.calculateDistance(res.rssi, 4)
+            distances[index] = beacon.calculateDistance(res.rssi, 4, this)
         }
 
         userMapView.clearBeacons()
