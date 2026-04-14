@@ -82,6 +82,8 @@ class MapActivity : AppCompatActivity() {
             }
             true
         }
+
+        userMapView.addBeacons(beaconProjects.values.map { it.getCoordinates() }.toTypedArray())
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -127,8 +129,8 @@ class MapActivity : AppCompatActivity() {
             distances[index] = beacon.calculateDistance(res.rssi, 4)
         }
 
-        userMapView.clearBeacons()
-        userMapView.addBeacons(coords)
+        userMapView.clearActiveBeacons()
+        userMapView.addActiveBeacons(coords)
         solveForUser(coords, distances)
 
         // add here to show the angle that the user is facing
