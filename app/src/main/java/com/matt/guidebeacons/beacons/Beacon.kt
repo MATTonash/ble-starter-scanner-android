@@ -44,7 +44,7 @@ class Beacon(beaconName: String,
         val yVal = DoubleArray(measurements.size)
         val xVal = DoubleArray(measurements.size)
 
-        val oneMetreRssi = measurements.find { it.getMeasuredDistance() == 1.0}
+        val oneMetreRssi = measurements.find { it.getMeasuredDistance() == 1.0 }
         if (oneMetreRssi != null) {
             calibrationRSSI = oneMetreRssi.getMeasuredRssi().toInt()
         }
@@ -59,10 +59,10 @@ class Beacon(beaconName: String,
             val regCoeff = regressionFunction.coefficients
             val nonNegRssi = -rssi.toDouble()
 //            val distance = regCoeff[0] * (nonNegRssi.pow(regCoeff[1]))
-            val distance = regCoeff[0]+ regCoeff[1]* ln(nonNegRssi)
+            val distance = regCoeff[0] + regCoeff[1] * ln(nonNegRssi)
             return distance
         }
-        return 10.0.pow((calibrationRSSI - rssi).toDouble()/(10*txPower).toDouble())
+        return 10.0.pow((calibrationRSSI - rssi).toDouble() / (10 * txPower).toDouble())
     }
 
     public fun getCalibrationRSSI(): Int {
