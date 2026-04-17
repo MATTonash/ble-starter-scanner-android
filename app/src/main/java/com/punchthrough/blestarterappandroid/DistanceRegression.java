@@ -43,7 +43,8 @@ public class DistanceRegression {
         this.sum_y = 0;
         this.av_x = 0;
         this.av_y = 0;
-        PowerModelCurveFit();
+        // PowerModelCurveFit();
+        ExponentialModelCurveFit();
         // call get coefficients
         // TODO: Implement the comparison of R Squared calculations to choose which is best fit
         // TODO: Implement polyfit function
@@ -75,43 +76,31 @@ public class DistanceRegression {
         coefficients[0] = alpha;
         coefficients[1] = beta;
     }
+
+    public void ExponentialModelCurveFit() {
+        for (int i = 0; i < n; i++) {
+            lin_y[i] = Math.log(-y_vals[i]);
+            sum_y += lin_y[i];
+        }
+        for (int i = 0; i < n; i++) {
+            lin_x[i] = x_vals[i];
+            sum_x += lin_x[i];
+            sum_xy += lin_y[i]*lin_x[i];
+            sum_x_pow_2 += Math.pow(lin_x[i],2);
+        }
+        a_1 = ((n*sum_xy) - (sum_x*sum_y))/((n*sum_x_pow_2) - Math.pow((sum_x),2));
+        a_0 = sum_y/n - (a_1*(sum_x/n));
+        double alpha = Math.exp(a_0);
+        double beta = a_1;
+        this.coefficients = new double[2];
+        coefficients[0] = alpha;
+        coefficients[1] = beta;
+    }
+
 //
-//    public double[][] ExponentialModelCurveFit() {
+//    public void LogarithmicModelCurveFit() {
 //        for (int i = 0; i < n; i++) {
-//            lin_y[i] = Math.log(y_vals[i]);
-//            sum_y += lin_y[i];
-//        }
-//        for (int i = 0; i < n; i++) {
-//            lin_x[i] = x_vals[i];
-//            sum_x += lin_x[i];
-//            sum_xy += lin_y[i]*lin_x[i];
-//            sum_x_pow_2 += Math.pow(lin_x[i],2);
-//        }
-//        a_1 = ((n*sum_xy) - (sum_x*sum_y))/((n*sum_x_pow_2) - Math.pow((sum_x),2));
-//        a_0 = sum_y/n - (a_1*(sum_x/n));
-//        double alpha = Math.exp(a_0);
-//        double beta = a_1;
-//        double[][] curve_vals = new double[2][n];
-//        curve_vals[0] = lin_x;
-//        for (int i = 0; i < n; i++) {
-//            curve_vals[1][i] = alpha*Math.exp(curve_vals[0][i]*beta);
-//        }
-//        return curve_vals;
-//    }
-//
-//    public double RSquaredValue(double[][] curveVals, double yAverage, double a_0, double a_1) {
-//        double s_t = 0;
-//        double s_r = 0;
-//        for (int i = 0; i < n; i++) {
-//            s_t += Math.pow((curveVals[0][i] - yAverage),2);
-//            s_r += Math.pow((curveVals[0][i] - a_0 - (a_1*curveVals[1][i])),2);
-//        }
-//        return (s_t - s_r)/s_t;
-//    }
-//
-//    public double[] PolynomialModelCurveFit() {
-//        for (int i = 0; i < n; i++) {
-//            lin_y[i] = Math.log(y_vals[i]);
+//            lin_y[i] = -y_vals[i];
 //            sum_y += lin_y[i];
 //        }
 //        for (int i = 0; i < n; i++) {
@@ -124,8 +113,11 @@ public class DistanceRegression {
 //        a_0 = sum_y/n - (a_1*(sum_x/n));
 //        double alpha = Math.exp(a_0);
 //        double beta = a_1;
-//
+//        this.coefficients = new double[2];
+//        coefficients[0] = alpha;
+//        coefficients[1] = beta;
 //    }
+
     public double[] getCoefficients() {
         return coefficients;
     }

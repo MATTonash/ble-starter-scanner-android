@@ -3,6 +3,7 @@ package com.matt.guidebeacons.beacons
 import android.content.Context
 import com.punchthrough.blestarterappandroid.DistanceRegression
 import kotlinx.serialization.Serializable
+import kotlin.math.exp
 import kotlin.math.pow
 
 /**
@@ -26,6 +27,8 @@ class Beacon(beaconName: String,
     private lateinit var regressionFunction: DistanceRegression
     private lateinit var yVal: DoubleArray
     private lateinit var xVal: DoubleArray
+
+    private lateinit var regCoeff: DoubleArray
 
     // Kalman filter variables
     private var filteredRSSI: Double = calibrationRSSI.toDouble() // Arbitrary value
@@ -57,9 +60,10 @@ class Beacon(beaconName: String,
                 i ++
             }
             regressionFunction = DistanceRegression(yVal, xVal)
-            val coeff = regressionFunction.coefficients
+            regCoeff = regressionFunction.coefficients
             val nonNegRssi = -rssi.toDouble()
-            val distance = coeff[0] * (nonNegRssi.pow(coeff[1]))
+//            val distance = regCoeff[0] * (nonNegRssi.pow(regCoeff[1]))
+            val distance = regCoeff[0]*exp(nonNegRssi*regCoeff[1])
             return distance
         }
         return 10.0.pow((calibrationRSSI - rssi).toDouble()/(10*txPower).toDouble())
