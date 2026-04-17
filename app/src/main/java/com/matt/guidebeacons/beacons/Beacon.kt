@@ -42,6 +42,7 @@ class Beacon(beaconName: String,
             val regCoeff = regressionFunction!!.coefficients
             val nonNegRssi = -rssi.toDouble()
 //            val distance = regCoeff[0] * (nonNegRssi.pow(regCoeff[1]))
+//            val distance = regCoeff[0] * exp(nonNegRssi * regCoeff[1])
             val distance = regCoeff[0] + regCoeff[1] * ln(nonNegRssi)
             return distance
         }

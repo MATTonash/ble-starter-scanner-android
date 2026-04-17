@@ -43,8 +43,9 @@ public class DistanceRegression {
         this.sum_y = 0;
         this.av_x = 0;
         this.av_y = 0;
-        // PowerModelCurveFit();
-        ExponentialModelCurveFit();
+//        PowerModelCurveFit();
+//        ExponentialModelCurveFit();
+        LogarithmicModelCurveFit();
         // call get coefficients
         // TODO: Implement the comparison of R Squared calculations to choose which is best fit
         // TODO: Implement polyfit function
