@@ -97,26 +97,26 @@ public class DistanceRegression {
         coefficients[1] = beta;
     }
 
-//
-//    public void LogarithmicModelCurveFit() {
-//        for (int i = 0; i < n; i++) {
-//            lin_y[i] = -y_vals[i];
-//            sum_y += lin_y[i];
-//        }
-//        for (int i = 0; i < n; i++) {
-//            lin_x[i] = Math.log(x_vals[i]);
-//            sum_x += lin_x[i];
-//            sum_xy += lin_y[i]*lin_x[i];
-//            sum_x_pow_2 += Math.pow(lin_x[i],2);
-//        }
-//        a_1 = ((n*sum_xy) - (sum_x*sum_y))/((n*sum_x_pow_2) - Math.pow((sum_x),2));
-//        a_0 = sum_y/n - (a_1*(sum_x/n));
-//        double alpha = Math.exp(a_0);
-//        double beta = a_1;
-//        this.coefficients = new double[2];
-//        coefficients[0] = alpha;
-//        coefficients[1] = beta;
-//    }
+
+    public void LogarithmicModelCurveFit() {
+        for (int i = 0; i < n; i++) {
+            lin_y[i] = -y_vals[i];
+            sum_y += lin_y[i];
+        }
+        for (int i = 0; i < n; i++) {
+            lin_x[i] = Math.log(x_vals[i]);
+            sum_x += lin_x[i];
+            sum_xy += lin_y[i]*lin_x[i];
+            sum_x_pow_2 += Math.pow(lin_x[i],2);
+        }
+        a_1 = ((n*sum_xy) - (sum_x*sum_y))/((n*sum_x_pow_2) - Math.pow((sum_x),2));
+        a_0 = sum_y/n - (a_1*(sum_x/n));
+        double alpha = a_0;
+        double beta = a_1;
+        this.coefficients = new double[2];
+        coefficients[0] = alpha;
+        coefficients[1] = Math.exp(beta);
+    }
 
     public double[] getCoefficients() {
         return coefficients;
