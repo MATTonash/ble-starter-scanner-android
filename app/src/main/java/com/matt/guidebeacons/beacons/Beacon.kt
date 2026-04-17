@@ -24,7 +24,7 @@ class Beacon(beaconName: String,
     private var buzzerSensitivity = 0
     private var beaconType = BeaconType.DEFAULT
 
-    private lateinit var regressionFunction: DistanceRegression
+    private var regressionFunction: DistanceRegression? = null
 
     // Kalman filter variables
     private var filteredRSSI: Double = calibrationRSSI.toDouble() // Arbitrary value
@@ -34,6 +34,26 @@ class Beacon(beaconName: String,
     private var isInitialized: Boolean = false
 
     public fun calculateDistance(rssi: Int, txPower: Int, context: Context): Double {
+        if (regressionFunction === null) {
+            generateRegressionFunction(rssi, txPower, context)
+        }
+
+        if (regressionFunction !== null) {
+            val regCoeff = regressionFunction!!.coefficients
+            val nonNegRssi = -rssi.toDouble()
+//            val distance = regCoeff[0] * (nonNegRssi.pow(regCoeff[1]))
+            val distance = regCoeff[0] + regCoeff[1] * ln(nonNegRssi)
+            return distance
+        }
+        return 10.0.pow((calibrationRSSI - rssi).toDouble() / (10 * txPower).toDouble())
+    }
+
+    /**
+     * Attempts to generate a [DistanceRegression] for this beacon,
+     * based on collected RSSI values.
+     * @return whether or not a regression function was successfully generated.
+     */
+    public fun generateRegressionFunction(rssi: Int, txPower: Int, context: Context): Boolean {
         val rssiCollection = RssiCollection.readFromFile(
             context,
             BeaconData.getBeaconMacAddress(this).toString(),
@@ -55,14 +75,10 @@ class Beacon(beaconName: String,
                 xVal[i] = rssiVal.getMeasuredDistance()
             }
             regressionFunction = DistanceRegression(yVal, xVal)
-
-            val regCoeff = regressionFunction.coefficients
-            val nonNegRssi = -rssi.toDouble()
-//            val distance = regCoeff[0] * (nonNegRssi.pow(regCoeff[1]))
-            val distance = regCoeff[0] + regCoeff[1] * ln(nonNegRssi)
-            return distance
+            return true
         }
-        return 10.0.pow((calibrationRSSI - rssi).toDouble() / (10 * txPower).toDouble())
+
+        return false
     }
 
     public fun getCalibrationRSSI(): Int {
