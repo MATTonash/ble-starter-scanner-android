@@ -25,10 +25,6 @@ class Beacon(beaconName: String,
     private var beaconType = BeaconType.DEFAULT
 
     private lateinit var regressionFunction: DistanceRegression
-    private lateinit var yVal: DoubleArray
-    private lateinit var xVal: DoubleArray
-
-    private lateinit var regCoeff: DoubleArray
 
     // Kalman filter variables
     private var filteredRSSI: Double = calibrationRSSI.toDouble() // Arbitrary value
@@ -37,30 +33,30 @@ class Beacon(beaconName: String,
     private val measurementNoise: Double = 4.0  // R - sensor noise (tune based on RSSI variance)
     private var isInitialized: Boolean = false
 
-    public fun calculateDistance(rssi: Int, txPower: Int, context: Context): Double{
+    public fun calculateDistance(rssi: Int, txPower: Int, context: Context): Double {
         val rssiCollection = RssiCollection.readFromFile(
             context,
             BeaconData.getBeaconMacAddress(this).toString(),
             this.beaconName
         )
-        val measurements = rssiCollection.getMeasurements().filter { it.getType() == RssiValue.CollectionType.AVERAGE }
 
-        val n = measurements.size
-        yVal = DoubleArray(n)
-        xVal = DoubleArray(n)
-        var i = 0
-        var oneMetreRssi = measurements.find { it.getMeasuredDistance() == 1.0}
+        val measurements = rssiCollection.getMeasurements().filter { it.getType() == RssiValue.CollectionType.AVERAGE }
+        val yVal = DoubleArray(measurements.size)
+        val xVal = DoubleArray(measurements.size)
+
+        val oneMetreRssi = measurements.find { it.getMeasuredDistance() == 1.0}
         if (oneMetreRssi != null) {
             calibrationRSSI = oneMetreRssi.getMeasuredRssi().toInt()
         }
-        if (n > 4) {
-            for (rssiVal in measurements) {
+
+        if (measurements.size > 4) {
+            for ((i, rssiVal) in measurements.withIndex()) {
                 yVal[i] = rssiVal.getMeasuredRssi() // it sooooo has to do with my indexing fuckkk
                 xVal[i] = rssiVal.getMeasuredDistance()
-                i ++
             }
             regressionFunction = DistanceRegression(yVal, xVal)
-            regCoeff = regressionFunction.coefficients
+
+            val regCoeff = regressionFunction.coefficients
             val nonNegRssi = -rssi.toDouble()
 //            val distance = regCoeff[0] * (nonNegRssi.pow(regCoeff[1]))
             val distance = regCoeff[0]*exp(nonNegRssi*regCoeff[1])
