@@ -1,34 +1,20 @@
-/*
- * Copyright 2026 Punch Through Design LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.matt.guidebeacons.mvvm.repository
 
 import android.content.Context
+import kotlinx.coroutines.flow.Flow
 import com.matt.guidebeacons.mvvm.BeaconDatabase
 import com.matt.guidebeacons.mvvm.models.Beacon
 
-class BeaconRepository(context : Context) {
+class BeaconRepository(context: Context) {
 
     private val beaconDao = BeaconDatabase.getDatabase(context).beaconDao()
+
+    // Expose reactive stream from Room
+    fun getAllBeaconsStream(): Flow<List<Beacon>> = beaconDao.getAllBeaconsFlow()
 
     suspend fun insertBeacon(beacon: Beacon) {
         beaconDao.insertBeacon(beacon)
     }
 
-    suspend fun getAllBeacons(): List<Beacon> {
-        return beaconDao.getAllBeacons()
-    }
+    suspend fun getAllBeacons(): List<Beacon> = beaconDao.getAllBeacons()
 }
