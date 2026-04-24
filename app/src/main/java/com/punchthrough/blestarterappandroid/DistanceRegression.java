@@ -15,7 +15,6 @@
  */
 
 package com.punchthrough.blestarterappandroid;
-
 public class DistanceRegression {
 
     int n;
@@ -43,9 +42,8 @@ public class DistanceRegression {
         this.sum_y = 0;
         this.av_x = 0;
         this.av_y = 0;
-//        PowerModelCurveFit();
-//        ExponentialModelCurveFit();
-        LogarithmicModelCurveFit();
+        PowerModelCurveFit();
+        // LogarithmicModelCurveFit();
         // call get coefficients
         // TODO: Implement the comparison of R Squared calculations to choose which is best fit
         // TODO: Implement polyfit function
@@ -54,11 +52,11 @@ public class DistanceRegression {
     // returns a double array of coefficients
     public void PowerModelCurveFit() {
         for (int i = 0; i < n; i++) {
-            lin_y[i] = Math.log10(-y_vals[i]);
+            lin_y[i] = Math.log10(y_vals[i]);
             sum_y += lin_y[i];
         }
         for (int i = 0; i < n; i++) {
-            lin_x[i] = Math.log10(x_vals[i]);
+            lin_x[i] = Math.log10(-x_vals[i]);
             sum_x += lin_x[i];
             sum_xy += lin_y[i]*lin_x[i];
             sum_x_pow_2 += Math.pow(lin_x[i],2);
@@ -67,59 +65,31 @@ public class DistanceRegression {
         a_0 = sum_y/n - (a_1*(sum_x/n));
         double alpha = Math.pow(10, a_0);
         double beta = a_1;
-        double[][] curve_vals = new double[2][n];
-        curve_vals[0] = lin_x;
-        for (int i = 0; i < n; i++) {
-            curve_vals[1][i] = alpha*Math.pow(curve_vals[0][i], beta);
-        }
-        // RSquaredValue(curve_vals, (sum_y/n), a_0, a_1);
         this.coefficients = new double[2];
         coefficients[0] = alpha;
         coefficients[1] = beta;
     }
-
-    public void ExponentialModelCurveFit() {
-        for (int i = 0; i < n; i++) {
-            lin_y[i] = Math.log(-y_vals[i]);
-            sum_y += lin_y[i];
-        }
-        for (int i = 0; i < n; i++) {
-            lin_x[i] = x_vals[i];
-            sum_x += lin_x[i];
-            sum_xy += lin_y[i]*lin_x[i];
-            sum_x_pow_2 += Math.pow(lin_x[i],2);
-        }
-        a_1 = ((n*sum_xy) - (sum_x*sum_y))/((n*sum_x_pow_2) - Math.pow((sum_x),2));
-        a_0 = sum_y/n - (a_1*(sum_x/n));
-        double alpha = Math.exp(a_0);
-        double beta = a_1;
-        this.coefficients = new double[2];
-        coefficients[0] = alpha;
-        coefficients[1] = beta;
-    }
-
-
     public void LogarithmicModelCurveFit() {
         for (int i = 0; i < n; i++) {
-            lin_y[i] = -y_vals[i];
+            lin_y[i] = y_vals[i];
             sum_y += lin_y[i];
         }
         for (int i = 0; i < n; i++) {
-            lin_x[i] = Math.log(x_vals[i]);
+            lin_x[i] = Math.log10(-x_vals[i]);
             sum_x += lin_x[i];
             sum_xy += lin_y[i]*lin_x[i];
             sum_x_pow_2 += Math.pow(lin_x[i],2);
         }
-        a_1 = ((n*sum_xy) - (sum_x*sum_y))/((n*sum_x_pow_2) - Math.pow((sum_x),2));
-        a_0 = sum_y/n - (a_1*(sum_x/n));
+        a_0 = ((n*sum_xy) - (sum_x*sum_y))/((n*sum_x_pow_2) - Math.pow((sum_x),2));
+        a_1 = sum_y/n - (a_1*(sum_x/n));
         double alpha = a_0;
         double beta = a_1;
         this.coefficients = new double[2];
         coefficients[0] = alpha;
-        coefficients[1] = Math.exp(beta);
+        coefficients[1] = beta;
     }
-
     public double[] getCoefficients() {
         return coefficients;
     }
 }
+
