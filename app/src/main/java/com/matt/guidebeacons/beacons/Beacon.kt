@@ -46,7 +46,32 @@ class Beacon(beaconName: String,
             val distance = regCoeff[0] + regCoeff[1] * ln(nonNegRssi)
             return distance
         }
+        return calculateDistanceGeneric(rssi, txPower)
+    }
+
+    public fun calculateDistanceGeneric(rssi: Int, txPower: Int): Double {
         return 10.0.pow((calibrationRSSI - rssi).toDouble() / (10 * txPower).toDouble())
+    }
+
+    /**
+     * Copied function body; only use for debugging/comparing.
+     * @see[calculateDistance]
+     */
+    public fun calculateDistanceUsingRegression(rssi: Int, txPower: Int, context: Context): Double {
+        if (regressionFunction === null) {
+            generateRegressionFunction(rssi, txPower, context)
+        }
+
+        if (regressionFunction !== null) {
+            val regCoeff = regressionFunction!!.coefficients
+            val nonNegRssi = -rssi.toDouble()
+//            val distance = regCoeff[0] * (nonNegRssi.pow(regCoeff[1]))
+//            val distance = regCoeff[0] * exp(nonNegRssi * regCoeff[1])
+            val distance = regCoeff[0] + regCoeff[1] * ln(nonNegRssi)
+            return distance
+        }
+
+        return -1.0;
     }
 
     /**
