@@ -82,6 +82,14 @@ class Beacon(beaconName: String,
         return false
     }
 
+    public fun getRegressionCoefficients(): DoubleArray? {
+        return regressionFunction?.coefficients
+    }
+
+    public fun clearRegression() {
+        regressionFunction = null
+    }
+
     public fun getCalibrationRSSI(): Int {
         return calibrationRSSI
     }
