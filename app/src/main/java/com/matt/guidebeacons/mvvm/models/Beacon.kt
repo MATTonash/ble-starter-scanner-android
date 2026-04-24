@@ -28,7 +28,8 @@ data class Beacon(
     val type : BeaconType,
     val distance : Double,
     val x_coordinate : Double,
-    val y_coordinate : Double
+    val y_coordinate : Double,
+    val z_coordinate : Double
 )
 
 enum class BeaconType {
