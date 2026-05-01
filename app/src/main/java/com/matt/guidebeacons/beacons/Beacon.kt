@@ -28,7 +28,7 @@ class Beacon(beaconName: String,
     private var filteredRSSI: Double = calibrationRSSI.toDouble() // Arbitrary value
     private var estimateError: Double = 50.0  // P - estimate uncertainty
     private val processNoise: Double = 0.5  // Q - how much we expect RSSI to change
-    private val measurementNoise: Double = 25.0  // R - sensor noise (tune based on RSSI variance)
+    private val measurementNoise: Double = 20.0  // R - sensor noise (tune based on RSSI variance)
     private var isInitialized: Boolean = false
 
     public fun calculateDistance(rssi: Int, txPower: Int): Double{
