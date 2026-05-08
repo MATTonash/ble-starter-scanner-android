@@ -122,13 +122,6 @@
                 android:text="@string/view_map"
                 android:contentDescription="@string/view_map_cd"/>
 
-            <!-- Record RSSI Button -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/record_rssi_button"
-                style="@style/MenuButton"
-                android:text="@string/record_signal"
-                android:contentDescription="@string/record_signal_cd"/>
-
             <!-- Admin Panel Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/admin_panel_button"

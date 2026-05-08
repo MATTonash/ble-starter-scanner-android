@@ -157,8 +157,9 @@
 
     <Button
         android:id="@+id/save_edits"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="8dp"
         android:text="Save"
         app:layout_constraintBottom_toTopOf="@+id/delete_beacon"
         app:layout_constraintEnd_toEndOf="parent"
@@ -167,8 +168,9 @@
 
     <Button
         android:id="@+id/delete_beacon"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="8dp"
         android:backgroundTint="@color/design_default_color_error"
         android:text="Delete Beacon"
         android:textColor="@color/design_default_color_on_primary"

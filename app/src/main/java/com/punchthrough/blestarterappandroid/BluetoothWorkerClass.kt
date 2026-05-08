@@ -1,6 +1,5 @@
 package com.punchthrough.blestarterappandroid
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
@@ -8,15 +7,12 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import com.matt.guidebeacons.beacons.BeaconData
+import com.matt.guidebeacons.utils.readableBleScanFailedErrorCode
 import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import timber.log.Timber
 
@@ -25,7 +21,6 @@ import timber.log.Timber
  * This is a worker class that continually scans across activities, previously we relied on data
  * from scanning in MainActivity so this might look a bit rough
  *
- * It also stores the MAC addresses of the beacons we are using in this project
  * More on bluetooth in the doc
  */
 class BluetoothWorkerClass private constructor() {
@@ -43,10 +38,6 @@ class BluetoothWorkerClass private constructor() {
     private val handler = Handler(Looper.getMainLooper())
 
     private val beaconProjects = BeaconData.getBeaconProjects()
-
-    private lateinit var vibrator: Vibrator
-    private var isToastShowing = false
-
 
     // Makes sure this class is only instantiated once
     // Separate from and independent to any other class (not like an activity)
@@ -86,7 +77,6 @@ class BluetoothWorkerClass private constructor() {
             Toast.makeText(appContext, "Bluetooth is disabled. Please enable Bluetooth.", Toast.LENGTH_LONG).show()
             // Leave bleScanner null and avoid calling it elsewhere until Bluetooth is enabled.
             bleScanner = null
-            initializeVibrator()
             return
         }
 
@@ -96,8 +86,6 @@ class BluetoothWorkerClass private constructor() {
         } else {
             null
         }
-
-        initializeVibrator()
     }
 //    /**
 //     * Initialises the companion object according to the activity
@@ -306,12 +294,6 @@ class BluetoothWorkerClass private constructor() {
             // Sort results by RSSI
             scanResults.sortByDescending { it.rssi }
 
-            scanResults.forEach { result ->
-                if (result.rssi > -55) {
-                    handleNearbyDevice(result)
-                }
-            }
-
             // Check and maintain connections
             //checkAndMaintainConnections()
 
@@ -322,41 +304,8 @@ class BluetoothWorkerClass private constructor() {
         }
 
         override fun onScanFailed(errorCode: Int) {
-            Timber.e("BLE Scan Failed with code $errorCode")
+            Timber.e("BLE scan failed with code: ${readableBleScanFailedErrorCode(errorCode)}")
             isScanning = false
-        }
-    }
-
-    private fun initializeVibrator() {
-        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = appContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            vibratorManager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            appContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
-    }
-
-    private fun handleNearbyDevice(result: ScanResult) {
-        if (!isToastShowing) {
-            Toast.makeText(
-                appContext,
-                "Close to ${beaconProjects[result.device.address] ?: "Unknown Beacon"}",
-                Toast.LENGTH_SHORT
-            ).show()
-            isToastShowing = true
-
-            Handler(Looper.getMainLooper()).postDelayed({
-                isToastShowing = false
-            }, Toast.LENGTH_SHORT.toLong())
-
-            if (ContextCompat.checkSelfPermission(
-                    appContext,
-                    Manifest.permission.VIBRATE
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                vibrator.vibrate(500)
-            }
         }
     }
 }
