@@ -24,8 +24,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.matt.guidebeacons.beacons.BeaconData
 import com.punchthrough.blestarterappandroid.databinding.RowScanResultBinding
-import kotlin.text.get
-import kotlin.text.toDouble
+import kotlin.math.roundToInt
 
 /**
 * The adapter for recycler view of all the beacons/scan results in mainActivity
@@ -70,30 +69,32 @@ class ScanResultAdapter(
 
         @SuppressLint("MissingPermission", "SetTextI18n")
         fun bind(result: ScanResult) {
-            val beaconProject = beaconProjects[result.device.address]
+            val beacon = beaconProjects[result.device.address]
 
             binding.deviceName.text =
                 if (binding.root.context.hasRequiredRuntimePermissions()) {
-                    beaconProjects[result.device.address].toString() ?: "Unknown Beacon"
+                    beacon.toString() ?: "Unknown Beacon"
                 } else {
                     error("Missing required Bluetooth permissions")
                 }
             binding.macAddress.text = result.device.address
-            binding.signalStrength.text =
-                if (result.rssi < -65 && result.rssi > -80) {
-                    "Far (" +  result.rssi.toString() + " dBm)"
-                } else if(result.rssi < -80){
-                    "Very Far (" +  result.rssi.toString() + " dBm)"
-                } else {
-                    "Near (" +  result.rssi.toString() + " dBm)"
-                }
 
-            val filteredRssi = beaconProject?.let {
+            val rawDistance = (beacon?.calculateDistanceGeneric(result.rssi, 4))
+            var signalSignalText = "\n\n\nRaw: ${"%.1f".format(rawDistance)}m (${result.rssi} dBm)"
+            val regressionRawDistance = (beacon?.calculateDistanceUsingRegression(result.rssi, 4, itemView.context))
+            if (regressionRawDistance != -1.0) signalSignalText += " ~ ${"%.1f".format(regressionRawDistance)}m"
+            binding.signalStrength.text = signalSignalText
+
+            val filteredRssi = beacon?.let {
                 it.updateFilteredRSSI(result.rssi)
                 it.getFilteredRSSI()
             } ?: result.rssi.toDouble()
 
-            binding.filteredStrength.text = "Filtered: ${"%.1f".format(filteredRssi)} dBm"
+            val filteredDistance = (beacon?.calculateDistanceGeneric(filteredRssi.roundToInt(), 4))
+            var filteredStrengthText = "Filtered: ${"%.1f".format(filteredDistance)}m (${"%.1f".format(filteredRssi)} dBm)"
+            val regressionFilteredDistance = (beacon?.calculateDistanceUsingRegression(filteredRssi.roundToInt(), 4, itemView.context))
+            if (regressionFilteredDistance != -1.0) filteredStrengthText += " ~ ${"%.1f".format(regressionFilteredDistance)}m"
+            binding.filteredStrength.text = filteredStrengthText
 
             binding.root.setOnClickListener {
                 onClickListener.invoke(result) //Temporary removal of Item Click

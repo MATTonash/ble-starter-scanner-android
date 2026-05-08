@@ -180,7 +180,7 @@ class PointGraphActivity : AppCompatActivity() {
         knownResults.forEachIndexed { index, res ->
             val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed
             coords[index] = beacon.getCoordinates()
-            distances[index] = beacon.calculateDistance(res.rssi, res.txPower)
+            distances[index] = beacon.calculateDistance(res.rssi, res.txPower, this)
         }
 
         // Create solver with current beacons and set distances
