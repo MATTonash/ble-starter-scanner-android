@@ -34,7 +34,14 @@
         android:id="@+id/save_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Save"
+        android:text="Save (snapshot)"
+        android:layout_marginTop="16dp" />
+
+    <Button
+        android:id="@+id/record_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Record (average)"
         android:layout_marginTop="16dp" />
 
     <TextView

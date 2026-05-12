@@ -28,6 +28,8 @@ import android.view.MotionEvent
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import com.matt.guidebeacons.beacons.BeaconData
+import com.matt.guidebeacons.services.BuzzerVibration
+import com.matt.guidebeacons.services.NEARBY_BUZZER_RSSI
 
 
 class MapActivity : AppCompatActivity() {
@@ -40,6 +42,7 @@ class MapActivity : AppCompatActivity() {
     private lateinit var userMapView: UserMapView
     private lateinit var trilaterationFunction : TrilaterationFunction
 
+    private lateinit var buzzer: BuzzerVibration
     private lateinit var vibrator: Vibrator
 
     @SuppressLint("ClickableViewAccessibility")
@@ -51,7 +54,9 @@ class MapActivity : AppCompatActivity() {
         userMapView = findViewById(R.id.user_map_view)
         userMapView.loadConfigFromRawXml(R.raw.user_map_config)
 
-        vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+        buzzer = BuzzerVibration(this)
+        vibrator = buzzer.getVibrator()
+
         bluetoothWorker.initialize(this)
         startRssiTracking()
 
@@ -93,6 +98,7 @@ class MapActivity : AppCompatActivity() {
                 handleScanResults(results)
             },
             continuous = true,
+            //TODO: this is too frequent and will trigger the OS 30s timeout
             period = 1000L,    // Scan every second
             interval = 200L    // Small interval between scans
         )
@@ -126,7 +132,7 @@ class MapActivity : AppCompatActivity() {
         knownResults.forEachIndexed { index, res ->
             val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed
             coords[index] = beacon.getCoordinates()
-            distances[index] = beacon.calculateDistance(res.rssi, 4)
+            distances[index] = beacon.calculateDistance(res.rssi, 4, this)
         }
 
         userMapView.clearActiveBeacons()
@@ -135,6 +141,12 @@ class MapActivity : AppCompatActivity() {
 
         // add here to show the angle that the user is facing
         userMapView.setUserAngle(null)
+
+        rawResults.forEach { result ->
+            if (result.rssi > NEARBY_BUZZER_RSSI) {
+                buzzer.buzzForNearbyDevice(result)
+            }
+        }
     }
 
     private fun alertUser() {

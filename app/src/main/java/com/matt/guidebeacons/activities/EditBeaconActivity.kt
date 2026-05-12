@@ -53,6 +53,8 @@ class EditBeaconActivity : AppCompatActivity() {
         val saveButton = binding.saveEdits
         val deleteButton = binding.deleteBeacon
 
+        val clearRegressionButton = binding.clearRegression
+
         macAddressTextView.text = macAddress
         deviceNameEditText.setText(beacon.toString())
         rssiEditText.setText(beacon.getCalibrationRSSI().toString())
@@ -100,5 +102,27 @@ class EditBeaconActivity : AppCompatActivity() {
                 }
             builder.show()
         }
+
+
+        clearRegressionButton.setOnClickListener {
+            val colorHex = Integer.toHexString(ContextCompat.getColor(this, R.color.design_default_color_error)).drop(2)
+            val builder = AlertDialog.Builder(this)
+            builder
+                .setTitle("Are you sure?")
+                .setMessage("You are about to reset the regression coefficients for beacon \"${beacon}\" (${macAddress})")
+                .setNegativeButton("Cancel") { dialog, id -> }
+                .setPositiveButton(Html.fromHtml("<font color='#${colorHex}'>Clear</font>")) { dialog, id ->
+                    beacon.clearRegression()
+                    updateDebugText()
+                }
+            builder.show()
+        }
+
+        updateDebugText()
+    }
+
+    private fun updateDebugText() {
+        val debugText = binding.debugTextView
+        debugText.text = if (beacon.getRegressionCoefficients() == null) "No regression function yet." else "Regression coefficients:\n${beacon.getRegressionCoefficients().contentToString()}"
     }
 }

@@ -5,12 +5,11 @@ import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.addTextChangedListener
+import com.matt.guidebeacons.beacons.RssiCollection
+import com.matt.guidebeacons.beacons.RssiValue
 import com.punchthrough.blestarterappandroid.databinding.ActivityRssiMappingBinding
-
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
-import java.io.File
+import kotlin.math.pow
 
 class RssiMappingActivity : AppCompatActivity() {
 
@@ -18,12 +17,24 @@ class RssiMappingActivity : AppCompatActivity() {
     private lateinit var rssiTextView: TextView
     private lateinit var distanceEditText: EditText
     private lateinit var saveButton: Button
+    private lateinit var recordButton: Button
     private lateinit var debugTextView: TextView
 
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
     private val beaconProjects = com.matt.guidebeacons.beacons.BeaconData.getBeaconProjects()
+
     private var selectedBeacon: String? = null
+    private var rssiCollection: RssiCollection? = null
     private var currentRssi: Int? = null
+
+    private var recording: Boolean = false
+        set(value) {
+            field = value
+            recordButton.text = if (value) "Finish" else "Recording (average)"
+            beaconSpinner.isEnabled = !value
+            saveButton.isEnabled = !value
+            distanceEditText.isEnabled = !value
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,10 +46,12 @@ class RssiMappingActivity : AppCompatActivity() {
         rssiTextView = binding.rssiTextView
         distanceEditText = binding.distanceEditText
         saveButton = binding.saveButton
+        recordButton = binding.recordButton
         debugTextView = binding.debugTextView
 
         setupBeaconSpinner()
         setupSaveButton()
+        setupRecordButton()
         startRssiTracking()
     }
 
@@ -52,10 +65,20 @@ class RssiMappingActivity : AppCompatActivity() {
         beaconSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 selectedBeacon = beaconAddresses[position]
+                rssiCollection = RssiCollection.readFromFile(
+                    this@RssiMappingActivity,
+                    selectedBeacon!!,
+                    beaconProjects[selectedBeacon].toString()
+                )
+                // Clear currentRssi to prevent saving scan results from a different beacon
+                setCurrentRssi(null)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {
                 selectedBeacon = null
+                rssiCollection = null
+                // Clear currentRssi to prevent saving scan results from a different beacon
+                setCurrentRssi(null)
             }
         }
     }
@@ -65,12 +88,49 @@ class RssiMappingActivity : AppCompatActivity() {
             val distance = distanceEditText.text.toString().toDoubleOrNull()
             if (selectedBeacon != null && currentRssi != null && distance != null) {
                 val debugInfo = "Beacon: $selectedBeacon, RSSI: $currentRssi, Distance: $distance"
-                val json = Json.encodeToString(BeaconData(selectedBeacon!!, currentRssi!!, distance))
-                debugTextView.text = json
-                writeJsonToFile("beacon_data.json", json)
+                rssiCollection!!.getMeasurements().add(RssiValue(currentRssi!!.toDouble(), distance, RssiValue.CollectionType.SNAPSHOT))
+                val result = rssiCollection!!.writeToFile(this, true)
+                debugTextView.text = result
+                // Clear currentRssi to prevent saving an old scan result
+                setCurrentRssi(null)
                 Toast.makeText(this, "Saved: $debugInfo", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Please select a beacon, collect RSSI, and enter a distance", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun updateRecordButtonEnabled() {
+        recordButton.isEnabled = (distanceEditText.text.toString().toDoubleOrNull() != null)
+    }
+
+    private fun setupRecordButton() {
+        updateRecordButtonEnabled()
+        distanceEditText.addTextChangedListener { updateRecordButtonEnabled() }
+
+        recordButton.setOnClickListener {
+            recording = !recording
+
+            if (!recording) {
+                if (rssiCollection == null) {
+                    timber.log.Timber.w("err: no rssi collection")
+                    Toast.makeText(this, "err: no rssi collection", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                val distance = distanceEditText.text.toString().toDouble()
+                val averageRssi = calculateRecordedRssiAverage(rssiCollection!!, distance, false)
+                if (averageRssi != null) {
+                    rssiCollection!!.getMeasurements().add(RssiValue(averageRssi, distance, RssiValue.CollectionType.AVERAGE))
+                    rssiCollection!!.writeToFile(this, true)
+                    val variance = calculateRecordedRssiVariance(averageRssi, rssiCollection!!, distance, true)
+                    if (variance != null) {
+                        debugTextView.text =
+                            "Beacon: $selectedBeacon, RSSI: $averageRssi, Distance: $distance, Variance: $variance"
+                    } else {
+                        debugTextView.text =
+                            "Beacon: $selectedBeacon, RSSI: $averageRssi, Distance: $distance"
+                    }
+                }
             }
         }
     }
@@ -81,29 +141,85 @@ class RssiMappingActivity : AppCompatActivity() {
                 handleScanResults(results)
             },
             continuous = true,
-            period = 1000L,
-            interval = 200L
+            period = 5000L,
+            interval = 2000L
         )
     }
+
+    private fun setCurrentRssi(rssi: Int?) {
+        currentRssi = rssi
+        runOnUiThread {
+            rssiTextView.text = "RSSI: ${currentRssi ?: "N/A"}"
+        }
+    }
+
+    private fun calculateRecordedRssiAverage(rssiCollection: RssiCollection, recordedDistance: Double, deleteRecordedValues: Boolean): Double? {
+        val minimumCollectedValuesCount = 5
+        val predicate : (RssiValue) -> Boolean = { it.getType() == RssiValue.CollectionType.RECORDING && it.getMeasuredDistance() == recordedDistance }
+
+        val values = rssiCollection.getMeasurements()
+        var count = 0
+        var sum = 0.0
+        for (value in values) {
+            if (predicate(value)) {
+                count++
+                sum += value.getMeasuredRssi()
+            }
+        }
+
+        if (count < minimumCollectedValuesCount) {
+            timber.log.Timber.w("err: not enough rssi values")
+            Toast.makeText(this, "err: not enough rssi values", Toast.LENGTH_SHORT).show()
+            return null
+        }
+
+        if (deleteRecordedValues) {
+            rssiCollection.getMeasurements().removeAll { predicate(it) }
+        }
+
+        return sum / count
+    }
+
+    private fun calculateRecordedRssiVariance(averageRssi: Double, rssiCollection: RssiCollection, recordedDistance: Double, deleteRecordedValues: Boolean): Double? {
+        val minimumCollectedValuesCount = 5
+        val predicate : (RssiValue) -> Boolean = { it.getType() == RssiValue.CollectionType.RECORDING && it.getMeasuredDistance() == recordedDistance }
+
+        val values = rssiCollection.getMeasurements()
+        var count = 0
+        var sum = 0.0
+        for (value in values) {
+            if (predicate(value)) {
+                count++
+                sum += (value.getMeasuredRssi() - averageRssi).pow(2.0)
+            }
+        }
+
+        if (count < minimumCollectedValuesCount) {
+            timber.log.Timber.w("err: not enough rssi values")
+            Toast.makeText(this, "err: not enough rssi values", Toast.LENGTH_SHORT).show()
+            return null
+        }
+
+        if (deleteRecordedValues) {
+            rssiCollection.getMeasurements().removeAll { predicate(it) }
+        }
+
+        return sum / count
+    }
+
+
 
     private fun handleScanResults(results: List<ScanResult>) {
         val selectedResult = results.find { it.device.address == selectedBeacon }
         if (selectedResult != null) {
-            currentRssi = selectedResult.rssi
-            runOnUiThread {
-                rssiTextView.text = "RSSI: ${currentRssi ?: "N/A"}"
-            }
-        }
-    }
+            setCurrentRssi(selectedResult.rssi)
 
-    private fun writeJsonToFile(fileName: String, json: String) {
-        try {
-            openFileOutput(fileName, MODE_PRIVATE).use { output ->
-                output.write(json.toByteArray())
+            if (recording) {
+                val distance = distanceEditText.text.toString().toDoubleOrNull()
+                if (rssiCollection != null && currentRssi != null && distance != null) {
+                    rssiCollection!!.getMeasurements().add(RssiValue(currentRssi!!.toDouble(), distance, RssiValue.CollectionType.RECORDING))
+                }
             }
-            Toast.makeText(this, "File saved successfully", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "Error saving file: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -116,7 +232,4 @@ class RssiMappingActivity : AppCompatActivity() {
         super.onDestroy()
         bluetoothWorker.stopScanning()
     }
-
-    @Serializable
-    data class BeaconData(var beaconAddress: String, var rssi: Int, var distance: Double)
 }
