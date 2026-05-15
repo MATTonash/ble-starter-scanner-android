@@ -81,7 +81,7 @@ class ScanResultAdapter(
 
             val rawDistance = (beacon?.calculateDistanceGeneric(result.rssi, 4))
             var signalSignalText = "\n\n\nRaw: ${"%.1f".format(rawDistance)}m (${result.rssi} dBm)"
-            val regressionRawDistance = (beacon?.calculateDistanceUsingRegression(result.rssi, 4, itemView.context))
+            val regressionRawDistance = (beacon?.calculateDistance(result.rssi, 4, itemView.context))
             if (regressionRawDistance != -1.0) signalSignalText += " ~ ${"%.1f".format(regressionRawDistance)}m"
             binding.signalStrength.text = signalSignalText
 
@@ -92,7 +92,7 @@ class ScanResultAdapter(
 
             val filteredDistance = (beacon?.calculateDistanceGeneric(filteredRssi.roundToInt(), 4))
             var filteredStrengthText = "Filtered: ${"%.1f".format(filteredDistance)}m (${"%.1f".format(filteredRssi)} dBm)"
-            val regressionFilteredDistance = (beacon?.calculateDistanceUsingRegression(filteredRssi.roundToInt(), 4, itemView.context))
+            val regressionFilteredDistance = (beacon?.calculateDistance(filteredRssi.roundToInt(), 4, itemView.context))
             if (regressionFilteredDistance != -1.0) filteredStrengthText += " ~ ${"%.1f".format(regressionFilteredDistance)}m"
             binding.filteredStrength.text = filteredStrengthText
 
