@@ -3,7 +3,6 @@ package com.matt.guidebeacons.beacons
 import android.content.Context
 import com.punchthrough.blestarterappandroid.DistanceRegression
 import kotlinx.serialization.Serializable
-import kotlin.math.log10
 import kotlin.math.pow
 
 /**
@@ -41,9 +40,9 @@ class Beacon(beaconName: String,
         if (regressionFunction !== null) {
             val regCoeff = regressionFunction!!.coefficients
             val nonNegRssi = -rssi.toDouble()
-//            val distance = regCoeff[0] * (nonNegRssi.pow(regCoeff[1]))
+            val distance = regCoeff[0] * (nonNegRssi.pow(regCoeff[1]))
 //            val distance = regCoeff[0] * exp(nonNegRssi * regCoeff[1])
-            val distance = regCoeff[0] + regCoeff[1] * log10(nonNegRssi)
+            // val distance = regCoeff[0] + regCoeff[1] * log10(nonNegRssi)
             return distance
         }
         return calculateDistanceGeneric(rssi, txPower)
