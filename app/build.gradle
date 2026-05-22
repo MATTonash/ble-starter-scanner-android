@@ -93,9 +93,3 @@ task ktlintFormat(type: JavaExec, group: "formatting") {
     args "-F", "src/**/*.kt"
 }
 
-tasks.withType(Test) {
-    filter {
-        includeTestsMatching "com.punchthrough.blestarterappandroid.TestMath.test3DMultilaterationWithNoErrors"
-    }
-}
-
