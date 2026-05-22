@@ -31,6 +31,7 @@ import kotlin.math.log10
  * Local unit tests, which will execute on the development machine (host).
  */
 
+private const val ACCEPTABLE_ERROR_RATE = 0.1 // e.g. 0.1 means up to 10% of all individual scenarios can fail
 private const val ACCEPTABLE_TOLERANCE = 0.5 // in m
 private const val CHECKS_PER_TEST = 10000
 private const val DISTANCE_FROM_PREV = 0.5 // in m
@@ -68,6 +69,7 @@ class TestMath {
         assertTrue("Found location (within tolerance of ${ACCEPTABLE_TOLERANCE}) ${successes} out of ${CHECKS_PER_TEST} times", successes == CHECKS_PER_TEST)
     }
 
+    @Test
     fun test3DMultilaterationWithErrors() {
         var successes = 0
         repeat(CHECKS_PER_TEST) {
@@ -75,6 +77,7 @@ class TestMath {
                 successes++
             }
         }
+        assertTrue("Found location (within tolerance of ${ACCEPTABLE_TOLERANCE}) ${successes} out of ${CHECKS_PER_TEST} times", successes >= (1 - ACCEPTABLE_ERROR_RATE) * CHECKS_PER_TEST)
     }
 
     fun dist(p1: DoubleArray, p2: DoubleArray): Double {
