@@ -66,6 +66,8 @@ class TestMath {
                 successes++
             }
         }
+        val percentage = (successes.toDouble() / CHECKS_PER_TEST * 100)
+        println("Testing (with NO errors in distance measurements): $successes/$CHECKS_PER_TEST passed (${percentage}%)")
         assertTrue("Found location (within tolerance of ${ACCEPTABLE_TOLERANCE}) ${successes} out of ${CHECKS_PER_TEST} times", successes == CHECKS_PER_TEST)
     }
 
@@ -77,6 +79,8 @@ class TestMath {
                 successes++
             }
         }
+        val percentage = (successes.toDouble() / CHECKS_PER_TEST * 100)
+        println("Testing (with errors in distance measurements): $successes/$CHECKS_PER_TEST passed (${percentage}%)")
         assertTrue("Found location (within tolerance of ${ACCEPTABLE_TOLERANCE}) ${successes} out of ${CHECKS_PER_TEST} times", successes >= (1 - ACCEPTABLE_ERROR_RATE) * CHECKS_PER_TEST)
     }
 

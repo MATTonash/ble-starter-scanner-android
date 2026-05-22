@@ -35,4 +35,4 @@ jobs:
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
       - name: Run tests
-        run: ./gradlew :app:test
+        run: ./gradlew :app:test --rerun-tasks --info
