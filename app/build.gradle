@@ -93,4 +93,10 @@ task ktlintFormat(type: JavaExec, group: "formatting") {
     args "-F", "src/**/*.kt"
 }
 
+tasks.withType(Test) {
+    filter {
+        failOnNoMatchingTests = false
+    }
+}
+
 
