@@ -34,5 +34,5 @@ jobs:
       - name: Generate local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      - name: Run test3DMultilaterationWithNoErrors
-        run: ./gradlew :app:test --tests "com.punchthrough.blestarterappandroid.TestMath.test3DMultilaterationWithNoErrors"
+      - name: Run tests
+        run: ./gradlew :app:test

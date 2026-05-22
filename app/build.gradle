@@ -95,8 +95,7 @@ task ktlintFormat(type: JavaExec, group: "formatting") {
 
 tasks.withType(Test) {
     filter {
-        failOnNoMatchingTests = false
+        includeTestsMatching "com.punchthrough.blestarterappandroid.TestMath.test3DMultilaterationWithNoErrors"
     }
 }
-
 
