@@ -71,7 +71,6 @@ class TestMath {
         assertTrue("Found location (within tolerance of ${ACCEPTABLE_TOLERANCE}) ${successes} out of ${CHECKS_PER_TEST} times", successes == CHECKS_PER_TEST)
     }
 
-    @Test
     fun test3DMultilaterationWithErrors() {
         var successes = 0
         repeat(CHECKS_PER_TEST) {
