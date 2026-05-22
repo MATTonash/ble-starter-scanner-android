@@ -74,6 +74,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     private val screenBackgroundPaint = Paint().apply { color = Color.DKGRAY; style = Paint.Style.FILL }
     private val mapBackgroundPaint = Paint().apply { color = Color.LTGRAY; style = Paint.Style.FILL }
     private val beaconPaint = Paint().apply { color = Color.CYAN; style = Paint.Style.FILL }
+    private val activeBeaconPaint = Paint().apply { color = Color.RED; style = Paint.Style.STROKE }
     private val polygonPaint = Paint().apply { color = Color.BLACK; style = Paint.Style.FILL }
     private val linePaint = Paint().apply { color = Color.BLUE; style = Paint.Style.STROKE; strokeWidth = LINE_WIDTH }
     private val startRectPaint = Paint().apply { color = Color.YELLOW; style = Paint.Style.FILL }
@@ -85,6 +86,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     private var userPosition: ConfigPoint? = null
     private var userAngle: Float? = null
     private val beacons = mutableListOf<ConfigPoint>()
+    private val activeBeacons = mutableListOf<ConfigPoint>()
     private val polygons = mutableListOf<List<ConfigPoint>>()
     private val paths = mutableListOf<List<ConfigPoint>>()
     private val userDrawnPath = mutableListOf<ConfigPoint>()
@@ -366,6 +368,16 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         }
     }
 
+    fun clearActiveBeacons() {
+        activeBeacons.clear()
+    }
+
+    fun addActiveBeacons(newBeacons: Array<DoubleArray>) {
+        for (beaconLoc: DoubleArray in newBeacons) {
+            activeBeacons.add(ConfigPoint(beaconLoc[0].toFloat(), beaconLoc[1].toFloat()))
+        }
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
@@ -388,6 +400,12 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
             val px = offsetX + point.x * scale
             val py = offsetY + point.y * scale
             canvas.drawCircle(px, py, 0.2f * scale, beaconPaint)
+        }
+
+        activeBeacons.forEach { point ->
+            val px = offsetX + point.x * scale
+            val py = offsetY + point.y * scale
+            canvas.drawCircle(px, py, 0.2f * scale, activeBeaconPaint)
         }
 
         paths.forEach { points ->
