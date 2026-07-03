@@ -115,8 +115,8 @@ class BluetoothWorkerClass private constructor() {
         if (appContext.hasRequiredRuntimePermissions()) {
             bleScanner?.startScan(null, scanSettings, bleScanCallback)
             isScanning = true
-            Timber.d("Started BLE scan")
 
+            Timber.d("Started BLE scan for ${scanPeriod}ms")
             // Schedule scan stop after scanPeriod
             scanLoopHandler.postDelayed(scanRunnable, scanPeriod)
         } else {
@@ -171,9 +171,10 @@ class BluetoothWorkerClass private constructor() {
                 // Stop scanning
                 bleScanner?.stopScan(bleScanCallback)
                 isScanning = false
-                Timber.d("Stopped BLE scan")
+                Timber.d("Stopping BLE scan.")
 
                 if (continuousScanning) {
+                    Timber.d("Waiting ${scanInterval}ms until next scan.")
                     // Schedule next scan after interval
                     scanLoopHandler.postDelayed({
                         startScanCycle()
