@@ -41,6 +41,7 @@ class BluetoothWorkerClass private constructor() {
     private var scanPeriod: Long = DEFAULT_SCAN_PERIOD
     private var scanInterval: Long = DEFAULT_SCAN_INTERVAL
     private var continuousScanning = false
+    private var isInScanPeriod = false
 
 
     // Makes sure this class is only instantiated once
@@ -106,32 +107,12 @@ class BluetoothWorkerClass private constructor() {
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
-    private fun startScanCycle() {
-        if (!::bluetoothAdapter.isInitialized || !::appContext.isInitialized) {
-            Timber.e("BluetoothWorkerClass not initialized")
-            return
-        }
-
-        if (appContext.hasRequiredRuntimePermissions()) {
-            bleScanner?.startScan(null, scanSettings, bleScanCallback)
-            isScanning = true
-
-            Timber.d("Started BLE scan for ${scanPeriod}ms")
-            // Schedule scan stop after scanPeriod
-            scanLoopHandler.postDelayed(scanRunnable, scanPeriod)
-        } else {
-            Timber.e("Missing required Bluetooth permissions")
-        }
-    }
-
-    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun startScanning(
         callback: (List<ScanResult>) -> Unit,
         continuous: Boolean = true,
         period: Long = DEFAULT_SCAN_PERIOD,
         interval: Long = DEFAULT_SCAN_INTERVAL
     ) {
-        // TODO: isScanning should not be used this way, as may be in a pause between scans / between scan cycles
         if (isScanning && !::bluetoothAdapter.isInitialized) {
             Timber.e("Already scanning")
             return
@@ -142,19 +123,22 @@ class BluetoothWorkerClass private constructor() {
         continuousScanning = continuous
         scanPeriod = period
         scanInterval = interval
+        isScanning = true
 
-        startScanCycle()
+        Timber.i("Starting BLE scan with { period: ${scanPeriod}, interval: ${scanInterval}, continuous: ${continuousScanning} }")
+        scanLoopHandler.post(scanRunnable)
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun stopScanning() {
-        // TODO: isScanning should not be used this way, as may be in a pause between scans / between scan cycles
         if (!isScanning || !::bluetoothAdapter.isInitialized) return
 
         scanLoopHandler.removeCallbacks(scanRunnable)
         bleScanner?.stopScan(bleScanCallback)
-        isScanning = false
         continuousScanning = false
+        scanPeriod = DEFAULT_SCAN_PERIOD
+        scanInterval = DEFAULT_SCAN_INTERVAL
+        isScanning = false
 
         for (beacon in beaconProjects.values) {
             beacon.resetKalmanFilter()
@@ -163,26 +147,40 @@ class BluetoothWorkerClass private constructor() {
         Timber.d("Stopped BLE scan")
     }
 
+    /**
+     * Loops scan cycles by toggling [isInScanPeriod]
+     */
     private val scanRunnable = object : Runnable {
+        /**
+         * @see[scanRunnable]
+         */
         @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
         override fun run() {
-            if (isScanning) {
-
-                // Stop scanning
-                bleScanner?.stopScan(bleScanCallback)
-                isScanning = false
-                Timber.d("Stopping BLE scan.")
-
+            if (isInScanPeriod) {
+                // Stop scanning ===================================================================
                 if (continuousScanning) {
-                    Timber.d("Waiting ${scanInterval}ms until next scan.")
+                    Timber.d("Stopping and waiting ${scanInterval}ms until next scan")
+                    bleScanner?.stopScan(bleScanCallback)
                     // Schedule next scan after interval
-                    scanLoopHandler.postDelayed({
-                        startScanCycle()
-                    }, scanInterval)
-                }
+                    isInScanPeriod = false
+                    scanLoopHandler.postDelayed(this, scanInterval)
+                } else stopScanning()
             } else {
-                // Start scanning
-                startScanCycle()
+                // Start scanning ==================================================================
+                if (!::bluetoothAdapter.isInitialized || !::appContext.isInitialized) {
+                    Timber.e("BluetoothWorkerClass not initialized")
+                    return
+                }
+
+                if (appContext.hasRequiredRuntimePermissions()) {
+                    Timber.d("Starting BLE scan for ${scanPeriod}ms")
+                    bleScanner?.startScan(null, scanSettings, bleScanCallback)
+                    // Schedule scan stop after scanPeriod
+                    isInScanPeriod = true
+                    scanLoopHandler.postDelayed(this, scanPeriod)
+                } else {
+                    Timber.e("Missing required Bluetooth permissions")
+                }
             }
         }
     }
@@ -208,9 +206,10 @@ class BluetoothWorkerClass private constructor() {
             }
         }
 
+        @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
         override fun onScanFailed(errorCode: Int) {
             Timber.e("BLE scan failed with code: ${readableBleScanFailedErrorCode(errorCode)}")
-            isScanning = false
+            stopScanning()
         }
     }
 }
