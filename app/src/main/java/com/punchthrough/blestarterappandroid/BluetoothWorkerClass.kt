@@ -1,6 +1,6 @@
 package com.punchthrough.blestarterappandroid
 
-import android.annotation.SuppressLint
+import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
@@ -10,6 +10,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
+import androidx.annotation.RequiresPermission
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.utils.readableBleScanFailedErrorCode
 import timber.log.Timber
@@ -104,31 +105,7 @@ class BluetoothWorkerClass private constructor() {
         bleScanner = bluetoothAdapter.bluetoothLeScanner
     }
 
-    private val scanRunnable = object : Runnable {
-        @SuppressLint("MissingPermission")
-        override fun run() {
-            if (isScanning) {
-
-                // Stop scanning
-                bleScanner?.stopScan(bleScanCallback)
-                isScanning = false
-                Timber.d("Stopped BLE scan")
-
-                if (continuousScanning) {
-                    // Schedule next scan after interval
-                    scanLoopHandler.postDelayed({
-                        startScanCycle()
-                    }, scanInterval)
-                }
-            } else {
-                // Start scanning
-                startScanCycle()
-            }
-        }
-    }
-
-    // WHAT DOES THIS MEANNNNNNN (actually doesn't matter but would be nice to find out eventually...)
-    @SuppressLint("MissingPermission")
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     private fun startScanCycle() {
         if (!::bluetoothAdapter.isInitialized || !::appContext.isInitialized) {
             Timber.e("BluetoothWorkerClass not initialized")
@@ -147,7 +124,7 @@ class BluetoothWorkerClass private constructor() {
         }
     }
 
-    @SuppressLint("MissingPermission")
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun startScanning(
         callback: (List<ScanResult>) -> Unit,
         continuous: Boolean = true,
@@ -168,7 +145,7 @@ class BluetoothWorkerClass private constructor() {
         startScanCycle()
     }
 
-    @SuppressLint("MissingPermission")
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun stopScanning() {
         if (!isScanning || !::bluetoothAdapter.isInitialized) return
 
@@ -182,6 +159,29 @@ class BluetoothWorkerClass private constructor() {
         }
 
         Timber.d("Stopped BLE scan")
+    }
+
+    private val scanRunnable = object : Runnable {
+        @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
+        override fun run() {
+            if (isScanning) {
+
+                // Stop scanning
+                bleScanner?.stopScan(bleScanCallback)
+                isScanning = false
+                Timber.d("Stopped BLE scan")
+
+                if (continuousScanning) {
+                    // Schedule next scan after interval
+                    scanLoopHandler.postDelayed({
+                        startScanCycle()
+                    }, scanInterval)
+                }
+            } else {
+                // Start scanning
+                startScanCycle()
+            }
+        }
     }
 
     private val bleScanCallback = object : ScanCallback() {
