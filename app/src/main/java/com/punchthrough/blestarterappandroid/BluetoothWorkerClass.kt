@@ -131,6 +131,7 @@ class BluetoothWorkerClass private constructor() {
         period: Long = DEFAULT_SCAN_PERIOD,
         interval: Long = DEFAULT_SCAN_INTERVAL
     ) {
+        // TODO: isScanning should not be used this way, as may be in a pause between scans / between scan cycles
         if (isScanning && !::bluetoothAdapter.isInitialized) {
             Timber.e("Already scanning")
             return
@@ -147,6 +148,7 @@ class BluetoothWorkerClass private constructor() {
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun stopScanning() {
+        // TODO: isScanning should not be used this way, as may be in a pause between scans / between scan cycles
         if (!isScanning || !::bluetoothAdapter.isInitialized) return
 
         scanLoopHandler.removeCallbacks(scanRunnable)
