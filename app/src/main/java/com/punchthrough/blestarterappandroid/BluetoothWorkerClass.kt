@@ -27,7 +27,7 @@ class BluetoothWorkerClass private constructor() {
     private var scanResults = mutableListOf<ScanResult>()
     private var isScanning = false
     private lateinit var bluetoothAdapter: BluetoothAdapter
-  //  private lateinit var bleScanner: android.bluetooth.le.BluetoothLeScanner
+    private var bleScanner: android.bluetooth.le.BluetoothLeScanner? = null
     private var scanCallback: ((List<ScanResult>) -> Unit)? = null
     private lateinit var appContext: Context
     private val connectedDevices = mutableSetOf<String>() // Track connected devices
@@ -38,6 +38,7 @@ class BluetoothWorkerClass private constructor() {
     private val handler = Handler(Looper.getMainLooper())
 
     private val beaconProjects = BeaconData.getBeaconProjects()
+
 
     // Makes sure this class is only instantiated once
     // Separate from and independent to any other class (not like an activity)
@@ -61,17 +62,15 @@ class BluetoothWorkerClass private constructor() {
     private var continuousScanning = false
 
 
-    private var bleScanner: android.bluetooth.le.BluetoothLeScanner? = null
-
     fun initialize(context: Context) {
         appContext = context.applicationContext
+
         val bluetoothManager = appContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val adapter = bluetoothManager.adapter
-        if (adapter == null) {
+        if (bluetoothManager.adapter == null) {
             Toast.makeText(appContext, "Bluetooth not supported on this device", Toast.LENGTH_LONG).show()
             return
         }
-        bluetoothAdapter = adapter
+        bluetoothAdapter = bluetoothManager.adapter
 
         if (!bluetoothAdapter.isEnabled) {
             Toast.makeText(appContext, "Bluetooth is disabled. Please enable Bluetooth.", Toast.LENGTH_LONG).show()
@@ -80,30 +79,8 @@ class BluetoothWorkerClass private constructor() {
             return
         }
 
-        // bluetoothLeScanner exists from API 21 (LOLLIPOP)
-        bleScanner = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            bluetoothAdapter.bluetoothLeScanner
-        } else {
-            null
-        }
+        bleScanner = bluetoothAdapter.bluetoothLeScanner
     }
-//    /**
-//     * Initialises the companion object according to the activity
-//     * @param context of the environment (typically activity)
-//     */
-//    fun initialize(context: Context) {
-//        appContext = context.applicationContext
-//        val bluetoothManager = appContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-//        bluetoothAdapter = bluetoothManager.adapter
-//        //TODO: fix below (check and warning popup?); will crash the app on launch if bluetooth is disabled
-//        bleScanner = bluetoothAdapter.bluetoothLeScanner
-//        // ^ bleScanner is lateinit and cannot be null, but bluetoothAdapter.bluetoothLeScanner will be null if bluetooth is disabled
-//
-//        initializeVibrator()
-//
-//
-//
-//    }
 
     private val scanSettings = ScanSettings.Builder()
         .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // Changed to LOW_POWER mode
@@ -136,7 +113,7 @@ class BluetoothWorkerClass private constructor() {
      * Checks if a certain beacon (based of MAC Address) is in the scan list
      * @param MACAddress String of address
      */
-    fun caughtInScan(MACAddress : String) : ScanResult? {
+    fun caughtInScan(MACAddress: String): ScanResult? {
         for (scanResult in getCurrentResults()) {
             if (scanResult.device.address == MACAddress) {
                 return scanResult
@@ -267,7 +244,7 @@ class BluetoothWorkerClass private constructor() {
         }
         connectedDevices.clear()
 
-        for (beacon in beaconProjects.values){
+        for (beacon in beaconProjects.values) {
             beacon.resetKalmanFilter()
         }
 
