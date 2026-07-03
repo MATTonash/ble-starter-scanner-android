@@ -30,10 +30,6 @@ class BluetoothWorkerClass private constructor() {
     private var bleScanner: android.bluetooth.le.BluetoothLeScanner? = null
     private var scanCallback: ((List<ScanResult>) -> Unit)? = null
     private lateinit var appContext: Context
-    private val connectedDevices = mutableSetOf<String>() // Track connected devices
-    private val connectionCheckHandler = Handler(Looper.getMainLooper())
-    private val connectionCheckInterval = 5000L // Check connections every 5 seconds
-    private val maxConnections = 30 // Maximum number of simultaneous connections
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -142,70 +138,6 @@ class BluetoothWorkerClass private constructor() {
         }
     }
 
-
-    private val connectionCheckRunnable = object : Runnable {
-        override fun run() {
-            //checkAndMaintainConnections()
-            connectionCheckHandler.postDelayed(this, connectionCheckInterval)
-        }
-    }
-
-    private fun checkAndMaintainConnections() {
-        // Get all available devices from trilateratingMacAddresses that are in range
-        val availableDevices = beaconProjects.mapNotNull { address ->
-            caughtInScan(address.key)?.let { scanResult ->
-                Pair(address, scanResult)
-            }
-        }.sortedByDescending { it.second.rssi } // Sort by RSSI (strongest first)
-
-        // Handle devices that are no longer in range
-        val devicesToRemove = connectedDevices.filter { address ->
-            !availableDevices.any { it.first.key == address }
-        }
-        devicesToRemove.forEach { address ->
-            Timber.d("Device no longer in range: $address")
-            connectedDevices.remove(address)
-        }
-
-
-        // Connect to new devices if we have capacity
-        val availableSlots = maxConnections - connectedDevices.size
-        if (availableSlots > 0) {
-            availableDevices
-                .filter { it.first.key !in connectedDevices }
-                .take(availableSlots)
-                .forEach { (address, scanResult) ->
-                    Timber.d("Attempting to connect to device: $address (RSSI: ${scanResult.rssi})")
-                    scanResult.device.let { device ->
-                        ConnectionManager.connect(device, appContext)
-                        connectedDevices.add(address.key)
-                    }
-                }
-        }
-        // if we want to limit the amount of connections, see maxConnections var in the init
-//        else if (availableDevices.isNotEmpty()) {
-//            // If we're at max connections but have stronger signals available,
-//            // disconnect the weakest connected device and connect to the stronger one
-//            val weakestConnectedDevice = connectedDevices.minByOrNull { address ->
-//                availableDevices.find { it.first == address }?.second?.rssi ?: Int.MIN_VALUE
-//            }
-//
-//            val strongestAvailableDevice = availableDevices.first()
-//
-//            if (weakestConnectedDevice != null) {
-//                val weakestRssi = availableDevices.find { it.first == weakestConnectedDevice }?.second?.rssi ?: Int.MIN_VALUE
-//                if (strongestAvailableDevice.second.rssi > weakestRssi) {
-//                    Timber.d("Switching connection from $weakestConnectedDevice to ${strongestAvailableDevice.first} due to better signal")
-//                    connectedDevices.remove(weakestConnectedDevice)
-//                    strongestAvailableDevice.second.device.let { device ->
-//                        ConnectionManager.connect(device, appContext)
-//                        connectedDevices.add(strongestAvailableDevice.first)
-//                    }
-//                }
-//            }
-//        }
-    }
-
     @SuppressLint("MissingPermission")
     fun startScanning(
         callback: (List<ScanResult>) -> Unit,
@@ -224,8 +156,6 @@ class BluetoothWorkerClass private constructor() {
         scanPeriod = period
         scanInterval = interval
 
-        // Start connection maintenance
-        connectionCheckHandler.post(connectionCheckRunnable)
         startScanCycle()
     }
 
@@ -234,21 +164,15 @@ class BluetoothWorkerClass private constructor() {
         if (!isScanning || !::bluetoothAdapter.isInitialized) return
 
         handler.removeCallbacks(scanRunnable)
-        connectionCheckHandler.removeCallbacks(connectionCheckRunnable)
         bleScanner?.stopScan(bleScanCallback)
         isScanning = false
         continuousScanning = false
-        connectedDevices.forEach { address ->
-            val device = bluetoothAdapter.getRemoteDevice(address)
-            ConnectionManager.teardownConnection(device)
-        }
-        connectedDevices.clear()
 
         for (beacon in beaconProjects.values) {
             beacon.resetKalmanFilter()
         }
 
-        Timber.d("Stopped BLE scan and connection maintenance")
+        Timber.d("Stopped BLE scan")
     }
 
     fun isScanning(): Boolean = isScanning
@@ -270,9 +194,6 @@ class BluetoothWorkerClass private constructor() {
 
             // Sort results by RSSI
             scanResults.sortByDescending { it.rssi }
-
-            // Check and maintain connections
-            //checkAndMaintainConnections()
 
             // Notify callback on main thread
             handler.post {
