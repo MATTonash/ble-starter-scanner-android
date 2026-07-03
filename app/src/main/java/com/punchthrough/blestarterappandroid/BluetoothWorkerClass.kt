@@ -7,13 +7,11 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.utils.readableBleScanFailedErrorCode
-import com.punchthrough.blestarterappandroid.ble.ConnectionManager
 import timber.log.Timber
 
 
@@ -24,16 +22,24 @@ import timber.log.Timber
  * More on bluetooth in the doc
  */
 class BluetoothWorkerClass private constructor() {
-    private var scanResults = mutableListOf<ScanResult>()
-    private var isScanning = false
+    private lateinit var appContext: Context
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private var bleScanner: android.bluetooth.le.BluetoothLeScanner? = null
-    private var scanCallback: ((List<ScanResult>) -> Unit)? = null
-    private lateinit var appContext: Context
 
-    private val handler = Handler(Looper.getMainLooper())
+    private val scanLoopHandler = Handler(Looper.getMainLooper())
+    private val scanSettings = ScanSettings.Builder()
+        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // Changed to LOW_POWER mode
+        .build()
 
     private val beaconProjects = BeaconData.getBeaconProjects()
+
+    private var isScanning = false
+    private var scanResults = mutableListOf<ScanResult>()
+    private var scanCallback: ((List<ScanResult>) -> Unit)? = null
+
+    private var scanPeriod: Long = DEFAULT_SCAN_PERIOD
+    private var scanInterval: Long = DEFAULT_SCAN_INTERVAL
+    private var continuousScanning = false
 
 
     // Makes sure this class is only instantiated once
@@ -42,9 +48,15 @@ class BluetoothWorkerClass private constructor() {
         @Volatile
         private var instance: BluetoothWorkerClass? = null
 
-        // Default scan parameters
-        private const val SCAN_PERIOD = 5000L // Scan for 5 seconds
-        private const val SCAN_INTERVAL = 10000L // Wait 10 seconds between scans
+        /**
+         * Scan for 5 seconds.
+         */
+        private const val DEFAULT_SCAN_PERIOD = 5000L
+
+        /**
+         * Wait 10 seconds between scans.
+         */
+        private const val DEFAULT_SCAN_INTERVAL = 10000L
 
         fun getInstance(): BluetoothWorkerClass {
             return instance ?: synchronized(this) {
@@ -53,9 +65,23 @@ class BluetoothWorkerClass private constructor() {
         }
     }
 
-    private var scanPeriod: Long = SCAN_PERIOD
-    private var scanInterval: Long = SCAN_INTERVAL
-    private var continuousScanning = false
+
+    fun isScanning(): Boolean = isScanning
+
+    fun getCurrentResults(): List<ScanResult> = scanResults.toList()
+
+    /**
+     * Checks if a certain beacon (based of MAC Address) is in the scan list
+     * @param MACAddress String of address
+     */
+    fun caughtInScan(MACAddress: String): ScanResult? {
+        for (scanResult in getCurrentResults()) {
+            if (scanResult.device.address == MACAddress) {
+                return scanResult
+            }
+        }
+        return null
+    }
 
 
     fun initialize(context: Context) {
@@ -78,10 +104,6 @@ class BluetoothWorkerClass private constructor() {
         bleScanner = bluetoothAdapter.bluetoothLeScanner
     }
 
-    private val scanSettings = ScanSettings.Builder()
-        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // Changed to LOW_POWER mode
-        .build()
-
     private val scanRunnable = object : Runnable {
         @SuppressLint("MissingPermission")
         override fun run() {
@@ -94,7 +116,7 @@ class BluetoothWorkerClass private constructor() {
 
                 if (continuousScanning) {
                     // Schedule next scan after interval
-                    handler.postDelayed({
+                    scanLoopHandler.postDelayed({
                         startScanCycle()
                     }, scanInterval)
                 }
@@ -103,19 +125,6 @@ class BluetoothWorkerClass private constructor() {
                 startScanCycle()
             }
         }
-    }
-
-    /**
-     * Checks if a certain beacon (based of MAC Address) is in the scan list
-     * @param MACAddress String of address
-     */
-    fun caughtInScan(MACAddress: String): ScanResult? {
-        for (scanResult in getCurrentResults()) {
-            if (scanResult.device.address == MACAddress) {
-                return scanResult
-            }
-        }
-        return null
     }
 
     // WHAT DOES THIS MEANNNNNNN (actually doesn't matter but would be nice to find out eventually...)
@@ -132,7 +141,7 @@ class BluetoothWorkerClass private constructor() {
             Timber.d("Started BLE scan")
 
             // Schedule scan stop after scanPeriod
-            handler.postDelayed(scanRunnable, scanPeriod)
+            scanLoopHandler.postDelayed(scanRunnable, scanPeriod)
         } else {
             Timber.e("Missing required Bluetooth permissions")
         }
@@ -142,8 +151,8 @@ class BluetoothWorkerClass private constructor() {
     fun startScanning(
         callback: (List<ScanResult>) -> Unit,
         continuous: Boolean = true,
-        period: Long = SCAN_PERIOD,
-        interval: Long = SCAN_INTERVAL
+        period: Long = DEFAULT_SCAN_PERIOD,
+        interval: Long = DEFAULT_SCAN_INTERVAL
     ) {
         if (isScanning && !::bluetoothAdapter.isInitialized) {
             Timber.e("Already scanning")
@@ -163,7 +172,7 @@ class BluetoothWorkerClass private constructor() {
     fun stopScanning() {
         if (!isScanning || !::bluetoothAdapter.isInitialized) return
 
-        handler.removeCallbacks(scanRunnable)
+        scanLoopHandler.removeCallbacks(scanRunnable)
         bleScanner?.stopScan(bleScanCallback)
         isScanning = false
         continuousScanning = false
@@ -174,11 +183,6 @@ class BluetoothWorkerClass private constructor() {
 
         Timber.d("Stopped BLE scan")
     }
-
-    fun isScanning(): Boolean = isScanning
-
-    fun getCurrentResults(): List<ScanResult> = scanResults.toList()
-
 
     private val bleScanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
@@ -196,7 +200,7 @@ class BluetoothWorkerClass private constructor() {
             scanResults.sortByDescending { it.rssi }
 
             // Notify callback on main thread
-            handler.post {
+            scanLoopHandler.post {
                 scanCallback?.invoke(scanResults.toList())
             }
         }
