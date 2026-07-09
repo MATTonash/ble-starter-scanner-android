@@ -45,6 +45,8 @@ class MapActivity : AppCompatActivity() {
     private lateinit var buzzer: BuzzerVibration
     private lateinit var vibrator: Vibrator
 
+    private val positionCalculator: PositionCalculator = PositionCalculatorFactory.getCalculator()
+
     @SuppressLint("ClickableViewAccessibility")
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -163,12 +165,14 @@ class MapActivity : AppCompatActivity() {
      */
     private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray) {
         // Create solver with current beacons and set distances
-        val initial: DoubleArray? = userMapView.getUserPosition()
-        trilaterationFunction = TrilaterationFunction(initial, coords, distances)
+        val initial: DoubleArray = userMapView.getUserPosition()
+//        trilaterationFunction = TrilaterationFunction(initial, coords, distances)
+//
+//        val userCoordinates = trilaterationFunction.solve()
 
-        val userCoordinates = trilaterationFunction.solve()
+        val position = positionCalculator.calculatePosition(BeaconData.getBeaconProjects().values.toList())
 
-        userMapView.setUserPosition(userCoordinates[0].toFloat(), userCoordinates[1].toFloat(), userCoordinates[2].toFloat())
+        userMapView.setUserPosition(position?.latitude!!.toFloat(), position?.longitude!!.toFloat(), 0.00f)
     }
 
     override fun onStart() { super.onStart() }

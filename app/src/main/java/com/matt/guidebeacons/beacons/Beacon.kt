@@ -17,7 +17,7 @@ class Beacon(beaconName: String,
              y: Double,
              z: Double
 ) {
-    private var beaconName = beaconName
+    var beaconName = beaconName
     private var calibrationRSSI = calibrationRSSI
     private var coordinates = doubleArrayOf(x, y, z)
     private var buzzerSensitivity = 0

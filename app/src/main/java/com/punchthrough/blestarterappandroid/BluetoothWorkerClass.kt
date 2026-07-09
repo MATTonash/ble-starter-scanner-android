@@ -33,7 +33,7 @@ class BluetoothWorkerClass private constructor() {
     private val connectedDevices = mutableSetOf<String>() // Track connected devices
     private val connectionCheckHandler = Handler(Looper.getMainLooper())
     private val connectionCheckInterval = 5000L // Check connections every 5 seconds
-    private val maxConnections = 30 // Maximum number of simultaneous connections
+    private val maxConnections = 7 // Maximum number of simultaneous connections
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -106,7 +106,7 @@ class BluetoothWorkerClass private constructor() {
 //    }
 
     private val scanSettings = ScanSettings.Builder()
-        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // Changed to LOW_POWER mode
+        .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER) // Changed to LOW_POWER mode
         .build()
 
     private val scanRunnable = object : Runnable {
