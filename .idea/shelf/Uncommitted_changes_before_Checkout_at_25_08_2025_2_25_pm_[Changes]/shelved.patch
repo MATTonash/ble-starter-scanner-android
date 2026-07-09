@@ -1,0 +1,669 @@
+Index: app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>/*\r\n * Copyright 2025 Punch Through Design LLC\r\n *\r\n * Licensed under the Apache License, Version 2.0 (the \"License\");\r\n * you may not use this file except in compliance with the License.\r\n * You may obtain a copy of the License at\r\n *\r\n *     http://www.apache.org/licenses/LICENSE-2.0\r\n *\r\n * Unless required by applicable law or agreed to in writing, software\r\n * distributed under the License is distributed on an \"AS IS\" BASIS,\r\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\r\n * See the License for the specific language governing permissions and\r\n * limitations under the License.\r\n */\r\n\r\n\r\npackage com.punchthrough.blestarterappandroid;\r\n\r\n/**\r\n * This trilateration function uses the newton Raphson's method to solve for 3 simultaneous equations with 3 unknowns\r\n * NOTE: This is implemented for 3D use cases but we have temporarily just used it for 2 (only 2 unknowns, 2 beacons)\r\n * TODO(The augmented matrix solver is not always correct, either will need to find another one that works or create our\r\n * own for this use case)\r\n * Please see https://tomrocksmaths.com/wp-content/uploads/2023/06/sunny-miao_-mathematical-approaches-to-global-positioning-systems.pdf\r\n * It is basically what they use for GPS mapping\r\n */\r\npublic class TrilaterationFunction {\r\n    // 2D trilateration just uses 2 functions\r\n//    Expr rearrangedCircleFormula = SymMath.sqrt(SymMath.pow(x.subtract(a), 2)\r\n//            .add(SymMath.pow(y.subtract(b), 2))).subtract(SymMath.pow(d,2));\r\n\r\n    int numEquations;\r\n    int numColumns;\r\n    double precision = 0.01;\r\n    double[][] fMatrix;\r\n    double[][] jacobianMatrix;\r\n    double[] beacon1;\r\n    double[] beacon2;\r\n    double[] beacon3;\r\n    double beacon1dist;\r\n    double beacon2dist;\r\n    double beacon3dist;\r\n\r\n    TrilaterationFunction(double[] coordinates1, double dist1) {\r\n        this.beacon1 = coordinates1;\r\n        this.beacon2 = null;\r\n        this.beacon3 = null;\r\n        this.beacon1dist = dist1;\r\n        this.numEquations = 1;\r\n        this.numColumns = 2;\r\n        this.fMatrix = new double[numEquations][1];\r\n        this.jacobianMatrix = new double[numEquations][numColumns];\r\n    }\r\n\r\n    TrilaterationFunction(double[] coordinates1, double[] coordinates2,  double dist1, double dist2) {\r\n        this.beacon1 = coordinates1;\r\n        this.beacon2 = coordinates2;\r\n        this.beacon3 = null;\r\n        this.beacon1dist = dist1;\r\n        this.beacon2dist = dist2;\r\n        this.numEquations = 2;\r\n        this.numColumns = 3;\r\n        this.fMatrix = new double[numEquations][1];\r\n        this.jacobianMatrix = new double[numEquations][numColumns];\r\n    }\r\n\r\n// For 3D!!!!!!!!!\r\n    // NOTE: ALL COORDINATES WILL NEED 3 VALUES [X,Y,Z]\r\n    TrilaterationFunction(double[] coordinates1, double[] coordinates2, double[] coordinates3, double dist1, double dist2, double dist3) {\r\n        this.beacon1 = coordinates1;\r\n        this.beacon2 = coordinates2;\r\n        this.beacon3 = coordinates3;\r\n        this.beacon1dist = dist1;\r\n        this.beacon2dist = dist2;\r\n        this.beacon3dist = dist3;\r\n        this.numEquations = 3;\r\n        this.numColumns = 4;\r\n        this.fMatrix = new double[numEquations][1];\r\n        this.jacobianMatrix = new double[numEquations][numColumns];\r\n    }\r\n\r\n    void setBeacon1Dist(double dist) {\r\n        this.beacon1dist = dist;\r\n    }\r\n\r\n    void setBeacon2Dist(double dist) {\r\n        this.beacon2dist = dist;\r\n    }\r\n\r\n    void setBeacon3Dist(double dist) {\r\n        this.beacon3dist = dist;\r\n    }\r\n\r\n    void setBeacon1(double[] coordinates) {\r\n        this.beacon1 = coordinates;\r\n    }\r\n\r\n    void setBeacon2(double[] coordinates) {\r\n        this.beacon2 = coordinates;\r\n    }\r\n\r\n    void setBeacon3(double[] coordinates) {\r\n        this.beacon3 = coordinates;\r\n    }\r\n\r\n    double[] solve() {\r\n        double[] initial = {1,1};\r\n        double[] next = this.iterate(initial);\r\n        while (!this.calcError(initial, next)) {\r\n            initial = next;\r\n            next = this.iterate(initial);\r\n        }\r\n        return next;\r\n    }\r\n\r\n    double[] iterate(double[] initial) {\r\n\r\n        fMatrix[0][0] = (Math.pow((initial[0]-beacon1[0]), 2) + Math.pow((initial[1]-beacon1[1]), 2) - Math.pow(beacon1dist, 2));\r\n        if (beacon2 != null) {\r\n            fMatrix[1][0] = (Math.pow((initial[0]-beacon2[0]), 2) + Math.pow((initial[1]-beacon2[1]), 2) - Math.pow(beacon2dist, 2));\r\n        }\r\n\r\n        // for 3D\r\n        if (beacon3 != null) {\r\n            fMatrix[2][0] = (Math.pow((initial[0]-beacon3[0]), 2) + Math.pow((initial[1]-beacon3[1]), 2) - Math.pow(beacon3dist, 2));\r\n        }\r\n\r\n        jacobianMatrix[0][0] = 2*(initial[0]-beacon1[0]);\r\n        jacobianMatrix[0][1] = 2*(initial[1]-beacon1[1]);\r\n        jacobianMatrix[0][2] = -1*fMatrix[0][0];\r\n\r\n        if (beacon2 != null) {\r\n            jacobianMatrix[1][0] = 2 * (initial[0] - beacon2[0]);\r\n            jacobianMatrix[1][1] = 2 * (initial[1] - beacon2[1]);\r\n            jacobianMatrix[1][2] = -1 * fMatrix[1][0];\r\n        }\r\n\r\n        // for 3D\r\n        if (beacon3 != null) {\r\n            jacobianMatrix[2][0] = 2*(initial[0]-beacon3[0]);\r\n            jacobianMatrix[2][1] = 2*(initial[1]-beacon3[1]);\r\n            jacobianMatrix[2][2] = -1*fMatrix[2][0];\r\n        }\r\n\r\n        double[][] reducedMatrix = rowReduce(jacobianMatrix);\r\n\r\n        double[] nextGuess = new double[reducedMatrix.length];\r\n\r\n        for (int i = 0; i < reducedMatrix.length; i ++) {\r\n            nextGuess[i] = reducedMatrix[i][this.numEquations] + initial[i];\r\n        }\r\n\r\n        return nextGuess; // return the last column = coordinates\r\n    }\r\n\r\n    public double[][] rowReduce(double[][] matrix)\r\n    {\r\n        //1:\r\n        reduceToTriangleForm:\r\n        for(int pivotColumn = 0, pivotRow = 0; pivotRow < numEquations; pivotRow++)\r\n        {\r\n            int pivotRowCheck = pivotRow; // pivotRowCheck is used to check each row\r\n            // until a pivot point is found in the column\r\n            while ( matrix[pivotRowCheck][pivotColumn] == 0 )\r\n            {\r\n                pivotRowCheck++;\r\n                // if checks all of equations and finds no potential pivot points in the\r\n                // current pivot column, the seach continues in the next pivot column\r\n                if ( pivotRowCheck == numEquations )\r\n                {\r\n                    pivotColumn++;\r\n                    pivotRowCheck = pivotRow;\r\n                }\r\n                // should no more pivot columns points be found, exit search\r\n                if ( pivotColumn == numColumns)\r\n                {\r\n                    // System.out.println(\"Matrix is now in triangle form\");\r\n                    break reduceToTriangleForm;\r\n                }\r\n            }\r\n            // a new pivot poition has been found in pivotRowCheck\r\n            // move this equaiton to the pivotRow\r\n            if ( pivotRow != pivotRowCheck )\r\n            {\r\n                // System.out.println(\"interchanging row \" + pivotRow + \" with row \" + pivotRowCheck);\r\n                interchange(pivotRow,pivotRowCheck, matrix);\r\n                // System.out.print(this);\r\n            }\r\n\r\n//3: row replacement algorithm\r\n            // reduce row so that pivot point is a 1\r\n            if ( Math.abs( matrix[pivotRow][pivotColumn] ) > precision)\r\n            {\r\n                // System.out.println(\"scale row \" + (pivotRow+1) + \" by \" +  (1/matrix[pivotRow][pivotColumn]));\r\n                scale(pivotRow, 1/matrix[pivotRow][pivotColumn], matrix);\r\n                // System.out.print(this);\r\n            }\r\n\r\n//interate through rest of equaitons\r\n            for ( int row = pivotRow+1; row < numEquations; row++)\r\n            {\r\n                // replace all other rows such that pivot column in other rows = 0\r\n                if ( matrix[row][pivotColumn] != 0 )\r\n                {\r\n                    // System.out.println(\"add \" + ( -1*matrix[row][pivotColumn] ) + \" times row \" + (pivotRow+1) + \" to row \" + (row+1));\r\n                    replace(row, -1*matrix[row][pivotColumn], pivotRow, matrix);\r\n                    // System.out.print(this);\r\n                }\r\n\r\n            }\r\n\r\n            //4: itterate through loop and try to find another pivot point in next column\r\n            if ( pivotRow == numEquations-1)\r\n            {\r\n                // System.out.println(\"Matrix is now in triangle form\");\r\n            }\r\n        }\r\n        //reached end of itterating though loop\r\n        //5: Begining with the rightmost pivot and working upward and to the left\r\n        // create zeros above each pivot.\r\n        boolean solved = true;\r\n        reduceToRREF:\r\n        for ( int pivotRow = numEquations-1; pivotRow >= 0; pivotRow-- )\r\n        {\r\n            for (int pivotColumn = 0; pivotColumn < numColumns; pivotColumn++)\r\n            {\r\n                if ( matrix[pivotRow][pivotColumn] != 0 )\r\n                {\r\n// if a pivot is found and is not in last column\r\n                    if ( pivotColumn != numColumns-1 )\r\n                    {\r\n                        // add to the rows above the pivot\r\n                        for ( int row = pivotRow-1; row >= 0; row--)\r\n                        {\r\n                            // System.out.println(\"add \" + ( -1*matrix[row][pivotColumn] ) + \" times row \" + (pivotRow+1) + \" to row \" + (row+1));\r\n                            replace(row, -1*matrix[row][pivotColumn], pivotRow, matrix);\r\n                            // System.out.print(this);\r\n                        }\r\n                        break;\r\n                    }\r\n                    // if a pivot is found but is in the last column -> matrix inconsistent\r\n                    else if ( pivotColumn == numColumns-1 )\r\n                    {\r\n                        solved = false;\r\n                        break reduceToRREF;\r\n                    }\r\n                }\r\n            }\r\n        }\r\n        return matrix;\r\n    }\r\n    // interchange two rows\r\n    public void interchange(int row1, int row2, double[][] matrix)\r\n    {\r\n        if (row1 < 0 || row1 >= numEquations || row2 < 0 || row2 >= numEquations)\r\n            System.err.println(\"one or more invalid equations attempting to be inte\" +\r\n                    \"rchanged\");\r\n\r\n        // if row1 == row2 do nothing\r\n        if( row1 == row2 )\r\n            return;\r\n\r\n        // swap individual coefficents/constants of the two rows\r\n        double temp;\r\n        for (int i = 0; i< numColumns; i++)\r\n        {\r\n            temp = matrix[row1][i];\r\n            matrix[row1][i] = matrix[row2][i];\r\n            matrix[row2][i] = temp;\r\n        }\r\n    }\r\n\r\n    // multiply all entries in a row by a nonzero constant\r\n    public void scale(int equation, double scalar, double[][] matrix)\r\n    {\r\n        if (equation < 0 || equation >= numEquations)\r\n            System.err.println(\"invalid equation attempting to be scaled\");\r\n\r\n        for (int i = 0; i< numColumns; i++)\r\n        {\r\n            if ( Math.abs(matrix[equation][i] = matrix[equation][i]*scalar) < precision)\r\n                matrix[equation][i] = 0;\r\n        }\r\n    }\r\n\r\n    // replace one row by the sum of itself and a multiple of another row\r\n    // row1 = row1 + scalar*row2\r\n    public void replace(int row1, double scalar, int row2, double[][] matrix)\r\n    {\r\n        if (row1 < 0 || row1 >= numEquations || row2 < 0 || row2 >= numEquations)\r\n            System.err.println(\"one or more invalid equations attempting to used in\" +\r\n                    \"replace\");\r\n        for (int i = 0; i< numColumns; i++)\r\n        {\r\n            matrix[row1][i] += matrix[row2][i]*scalar;\r\n            if( Math.abs(matrix[row1][i]) < precision)\r\n                matrix[row1][i] = 0;\r\n        }\r\n    }\r\n\r\n    public boolean calcError(double[] initial, double[] next) {\r\n        boolean sufficientError = false;\r\n        for (int i = 0; i <= this.numEquations-1; i++) {\r\n            double error = Math.abs((initial[i] - next[i])/initial[i]);\r\n            if (error < this.precision) {\r\n                return sufficientError = true;\r\n            }\r\n            sufficientError = false;\r\n        }\r\n        return sufficientError;\r\n    }\r\n}\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java b/app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java
+--- a/app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java	
++++ b/app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java	
+@@ -25,16 +25,15 @@
+  * Please see https://tomrocksmaths.com/wp-content/uploads/2023/06/sunny-miao_-mathematical-approaches-to-global-positioning-systems.pdf
+  * It is basically what they use for GPS mapping
+  */
++
+ public class TrilaterationFunction {
+     // 2D trilateration just uses 2 functions
+-//    Expr rearrangedCircleFormula = SymMath.sqrt(SymMath.pow(x.subtract(a), 2)
+-//            .add(SymMath.pow(y.subtract(b), 2))).subtract(SymMath.pow(d,2));
+ 
+-    int numEquations;
+-    int numColumns;
+-    double precision = 0.01;
+-    double[][] fMatrix;
+-    double[][] jacobianMatrix;
++    int numEquations = 2;
++    int numColumns = 3;
++    double precision = 1E-10;
++    double[][] fMatrix = new double[numEquations][1];
++    double[][] jacobianMatrix = new double[numEquations][numColumns];
+     double[] beacon1;
+     double[] beacon2;
+     double[] beacon3;
+@@ -42,30 +41,16 @@
+     double beacon2dist;
+     double beacon3dist;
+ 
+-    TrilaterationFunction(double[] coordinates1, double dist1) {
+-        this.beacon1 = coordinates1;
+-        this.beacon2 = null;
+-        this.beacon3 = null;
+-        this.beacon1dist = dist1;
+-        this.numEquations = 1;
+-        this.numColumns = 2;
+-        this.fMatrix = new double[numEquations][1];
+-        this.jacobianMatrix = new double[numEquations][numColumns];
+-    }
++    double[] initial = {1,1};
+ 
+     TrilaterationFunction(double[] coordinates1, double[] coordinates2,  double dist1, double dist2) {
+         this.beacon1 = coordinates1;
+         this.beacon2 = coordinates2;
+-        this.beacon3 = null;
+         this.beacon1dist = dist1;
+         this.beacon2dist = dist2;
+-        this.numEquations = 2;
+-        this.numColumns = 3;
+-        this.fMatrix = new double[numEquations][1];
+-        this.jacobianMatrix = new double[numEquations][numColumns];
+     }
+ 
+-// For 3D!!!!!!!!!
++    // For 3D!!!!!!!!!
+     // NOTE: ALL COORDINATES WILL NEED 3 VALUES [X,Y,Z]
+     TrilaterationFunction(double[] coordinates1, double[] coordinates2, double[] coordinates3, double dist1, double dist2, double dist3) {
+         this.beacon1 = coordinates1;
+@@ -78,7 +63,9 @@
+         this.numColumns = 4;
+         this.fMatrix = new double[numEquations][1];
+         this.jacobianMatrix = new double[numEquations][numColumns];
++        this.initial = new double[]{1, 1, 1};
+     }
++
+ 
+     void setBeacon1Dist(double dist) {
+         this.beacon1dist = dist;
+@@ -88,24 +75,11 @@
+         this.beacon2dist = dist;
+     }
+ 
+-    void setBeacon3Dist(double dist) {
+-        this.beacon3dist = dist;
+-    }
+-
+-    void setBeacon1(double[] coordinates) {
+-        this.beacon1 = coordinates;
+-    }
+-
+-    void setBeacon2(double[] coordinates) {
+-        this.beacon2 = coordinates;
+-    }
+-
+-    void setBeacon3(double[] coordinates) {
+-        this.beacon3 = coordinates;
++    void setBeacon3Dist(double beacon3dist) {
++        this.beacon3dist = beacon3dist;
+     }
+ 
+     double[] solve() {
+-        double[] initial = {1,1};
+         double[] next = this.iterate(initial);
+         while (!this.calcError(initial, next)) {
+             initial = next;
+@@ -115,195 +89,62 @@
+     }
+ 
+     double[] iterate(double[] initial) {
+-
+         fMatrix[0][0] = (Math.pow((initial[0]-beacon1[0]), 2) + Math.pow((initial[1]-beacon1[1]), 2) - Math.pow(beacon1dist, 2));
+-        if (beacon2 != null) {
+-            fMatrix[1][0] = (Math.pow((initial[0]-beacon2[0]), 2) + Math.pow((initial[1]-beacon2[1]), 2) - Math.pow(beacon2dist, 2));
+-        }
++        fMatrix[1][0] = (Math.pow((initial[0]-beacon2[0]), 2) + Math.pow((initial[1]-beacon2[1]), 2) - Math.pow(beacon2dist, 2));
+ 
+         // for 3D
+         if (beacon3 != null) {
+-            fMatrix[2][0] = (Math.pow((initial[0]-beacon3[0]), 2) + Math.pow((initial[1]-beacon3[1]), 2) - Math.pow(beacon3dist, 2));
++            fMatrix[0][0] = (Math.pow((initial[0]-beacon1[0]), 2) + Math.pow((initial[1]-beacon1[1]), 2) + Math.pow((initial[2]-beacon1[2]), 2) - Math.pow(beacon1dist, 2));
++            fMatrix[1][0] = (Math.pow((initial[0]-beacon2[0]), 2) + Math.pow((initial[1]-beacon2[1]), 2) + Math.pow((initial[2]-beacon2[2]), 2) - Math.pow(beacon2dist, 2));
++            fMatrix[2][0] = (Math.pow((initial[0]-beacon3[0]), 2) + Math.pow((initial[1]-beacon3[1]), 2) + Math.pow((initial[2]-beacon3[2]), 2) - Math.pow(beacon3dist, 2));
+         }
+ 
+         jacobianMatrix[0][0] = 2*(initial[0]-beacon1[0]);
+         jacobianMatrix[0][1] = 2*(initial[1]-beacon1[1]);
+         jacobianMatrix[0][2] = -1*fMatrix[0][0];
+ 
+-        if (beacon2 != null) {
+-            jacobianMatrix[1][0] = 2 * (initial[0] - beacon2[0]);
+-            jacobianMatrix[1][1] = 2 * (initial[1] - beacon2[1]);
+-            jacobianMatrix[1][2] = -1 * fMatrix[1][0];
+-        }
++        // for 3D
++        if (beacon3 != null) {
++            jacobianMatrix[0][0] = 2*(initial[0]-beacon1[0]);
++            jacobianMatrix[0][1] = 2*(initial[1]-beacon1[1]);
++            jacobianMatrix[0][2] = 2*(initial[2]-beacon1[2]);
++            jacobianMatrix[0][3] = -1*fMatrix[0][0];
++
++            jacobianMatrix[1][0] = 2*(initial[0]-beacon2[0]);
++            jacobianMatrix[1][1] = 2*(initial[1]-beacon2[1]);
++            jacobianMatrix[1][2] = 2*(initial[2]-beacon2[2]);
++            jacobianMatrix[1][3] = -1*fMatrix[1][0];
+ 
+-        // for 3D
+-        if (beacon3 != null) {
+             jacobianMatrix[2][0] = 2*(initial[0]-beacon3[0]);
+             jacobianMatrix[2][1] = 2*(initial[1]-beacon3[1]);
+-            jacobianMatrix[2][2] = -1*fMatrix[2][0];
++            jacobianMatrix[2][2] = 2*(initial[2]-beacon3[2]);
++            jacobianMatrix[2][3] = -1*fMatrix[2][0];
+         }
+ 
+-        double[][] reducedMatrix = rowReduce(jacobianMatrix);
++        AugmentedMatrix reducedMatrix = new AugmentedMatrix(numEquations, numColumns);
++        for (int i = 0; i < numEquations; i ++) {
++            for (int a = 0; a < numColumns; a ++) {
++                reducedMatrix.set(i, a, jacobianMatrix[i][a]);
++            }
++        }
+ 
+-        double[] nextGuess = new double[reducedMatrix.length];
++        reducedMatrix.rowReduce();
+ 
+-        for (int i = 0; i < reducedMatrix.length; i ++) {
+-            nextGuess[i] = reducedMatrix[i][this.numEquations] + initial[i];
++        double[] nextGuess = new double[reducedMatrix.matrix.length];
++
++        for (int i = 0; i < reducedMatrix.matrix.length; i ++) {
++            nextGuess[i] = reducedMatrix.matrix[i][this.numEquations] + initial[i];
+         }
+ 
+         return nextGuess; // return the last column = coordinates
+     }
+ 
+-    public double[][] rowReduce(double[][] matrix)
+-    {
+-        //1:
+-        reduceToTriangleForm:
+-        for(int pivotColumn = 0, pivotRow = 0; pivotRow < numEquations; pivotRow++)
+-        {
+-            int pivotRowCheck = pivotRow; // pivotRowCheck is used to check each row
+-            // until a pivot point is found in the column
+-            while ( matrix[pivotRowCheck][pivotColumn] == 0 )
+-            {
+-                pivotRowCheck++;
+-                // if checks all of equations and finds no potential pivot points in the
+-                // current pivot column, the seach continues in the next pivot column
+-                if ( pivotRowCheck == numEquations )
+-                {
+-                    pivotColumn++;
+-                    pivotRowCheck = pivotRow;
+-                }
+-                // should no more pivot columns points be found, exit search
+-                if ( pivotColumn == numColumns)
+-                {
+-                    // System.out.println("Matrix is now in triangle form");
+-                    break reduceToTriangleForm;
+-                }
+-            }
+-            // a new pivot poition has been found in pivotRowCheck
+-            // move this equaiton to the pivotRow
+-            if ( pivotRow != pivotRowCheck )
+-            {
+-                // System.out.println("interchanging row " + pivotRow + " with row " + pivotRowCheck);
+-                interchange(pivotRow,pivotRowCheck, matrix);
+-                // System.out.print(this);
+-            }
+-
+-//3: row replacement algorithm
+-            // reduce row so that pivot point is a 1
+-            if ( Math.abs( matrix[pivotRow][pivotColumn] ) > precision)
+-            {
+-                // System.out.println("scale row " + (pivotRow+1) + " by " +  (1/matrix[pivotRow][pivotColumn]));
+-                scale(pivotRow, 1/matrix[pivotRow][pivotColumn], matrix);
+-                // System.out.print(this);
+-            }
+-
+-//interate through rest of equaitons
+-            for ( int row = pivotRow+1; row < numEquations; row++)
+-            {
+-                // replace all other rows such that pivot column in other rows = 0
+-                if ( matrix[row][pivotColumn] != 0 )
+-                {
+-                    // System.out.println("add " + ( -1*matrix[row][pivotColumn] ) + " times row " + (pivotRow+1) + " to row " + (row+1));
+-                    replace(row, -1*matrix[row][pivotColumn], pivotRow, matrix);
+-                    // System.out.print(this);
+-                }
+-
+-            }
+-
+-            //4: itterate through loop and try to find another pivot point in next column
+-            if ( pivotRow == numEquations-1)
+-            {
+-                // System.out.println("Matrix is now in triangle form");
+-            }
+-        }
+-        //reached end of itterating though loop
+-        //5: Begining with the rightmost pivot and working upward and to the left
+-        // create zeros above each pivot.
+-        boolean solved = true;
+-        reduceToRREF:
+-        for ( int pivotRow = numEquations-1; pivotRow >= 0; pivotRow-- )
+-        {
+-            for (int pivotColumn = 0; pivotColumn < numColumns; pivotColumn++)
+-            {
+-                if ( matrix[pivotRow][pivotColumn] != 0 )
+-                {
+-// if a pivot is found and is not in last column
+-                    if ( pivotColumn != numColumns-1 )
+-                    {
+-                        // add to the rows above the pivot
+-                        for ( int row = pivotRow-1; row >= 0; row--)
+-                        {
+-                            // System.out.println("add " + ( -1*matrix[row][pivotColumn] ) + " times row " + (pivotRow+1) + " to row " + (row+1));
+-                            replace(row, -1*matrix[row][pivotColumn], pivotRow, matrix);
+-                            // System.out.print(this);
+-                        }
+-                        break;
+-                    }
+-                    // if a pivot is found but is in the last column -> matrix inconsistent
+-                    else if ( pivotColumn == numColumns-1 )
+-                    {
+-                        solved = false;
+-                        break reduceToRREF;
+-                    }
+-                }
+-            }
+-        }
+-        return matrix;
+-    }
+-    // interchange two rows
+-    public void interchange(int row1, int row2, double[][] matrix)
+-    {
+-        if (row1 < 0 || row1 >= numEquations || row2 < 0 || row2 >= numEquations)
+-            System.err.println("one or more invalid equations attempting to be inte" +
+-                    "rchanged");
+-
+-        // if row1 == row2 do nothing
+-        if( row1 == row2 )
+-            return;
+-
+-        // swap individual coefficents/constants of the two rows
+-        double temp;
+-        for (int i = 0; i< numColumns; i++)
+-        {
+-            temp = matrix[row1][i];
+-            matrix[row1][i] = matrix[row2][i];
+-            matrix[row2][i] = temp;
+-        }
+-    }
+-
+-    // multiply all entries in a row by a nonzero constant
+-    public void scale(int equation, double scalar, double[][] matrix)
+-    {
+-        if (equation < 0 || equation >= numEquations)
+-            System.err.println("invalid equation attempting to be scaled");
+-
+-        for (int i = 0; i< numColumns; i++)
+-        {
+-            if ( Math.abs(matrix[equation][i] = matrix[equation][i]*scalar) < precision)
+-                matrix[equation][i] = 0;
+-        }
+-    }
+-
+-    // replace one row by the sum of itself and a multiple of another row
+-    // row1 = row1 + scalar*row2
+-    public void replace(int row1, double scalar, int row2, double[][] matrix)
+-    {
+-        if (row1 < 0 || row1 >= numEquations || row2 < 0 || row2 >= numEquations)
+-            System.err.println("one or more invalid equations attempting to used in" +
+-                    "replace");
+-        for (int i = 0; i< numColumns; i++)
+-        {
+-            matrix[row1][i] += matrix[row2][i]*scalar;
+-            if( Math.abs(matrix[row1][i]) < precision)
+-                matrix[row1][i] = 0;
+-        }
+-    }
+ 
+     public boolean calcError(double[] initial, double[] next) {
+         boolean sufficientError = false;
+         for (int i = 0; i <= this.numEquations-1; i++) {
+             double error = Math.abs((initial[i] - next[i])/initial[i]);
+-            if (error < this.precision) {
++            if (error < 0.01) {
+                 return sufficientError = true;
+             }
+             sufficientError = false;
+Index: app/src/main/java/com/punchthrough/blestarterappandroid/MainActivity.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.punchthrough.blestarterappandroid\r\n\r\nimport android.Manifest\r\nimport android.annotation.SuppressLint\r\nimport android.app.Activity\r\nimport android.bluetooth.BluetoothAdapter\r\nimport android.bluetooth.le.ScanResult\r\nimport android.content.Context\r\nimport android.content.Intent\r\nimport android.content.pm.PackageManager\r\nimport android.os.Build\r\nimport android.os.Bundle\r\nimport android.os.Handler\r\nimport android.os.Looper\r\nimport android.os.Vibrator\r\nimport android.os.VibratorManager\r\nimport android.widget.Toast\r\nimport androidx.activity.result.contract.ActivityResultContracts\r\nimport androidx.annotation.UiThread\r\nimport androidx.appcompat.app.AppCompatActivity\r\nimport androidx.core.app.ActivityCompat\r\nimport androidx.core.content.ContextCompat\r\nimport androidx.recyclerview.widget.LinearLayoutManager\r\nimport androidx.recyclerview.widget.RecyclerView\r\nimport androidx.recyclerview.widget.SimpleItemAnimator\r\nimport com.punchthrough.blestarterappandroid.ble.ConnectionManager\r\nimport com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding\r\nimport timber.log.Timber\r\n\r\nprivate const val PERMISSION_REQUEST_CODE = 1\r\n\r\nclass MainActivity : AppCompatActivity() {\r\n    private lateinit var binding: ActivityMainBinding\r\n    private val bluetoothWorker = BluetoothWorkerClass.getInstance()\r\n\r\n    private val beaconProjects = bluetoothWorker.getBeaconProjects()\r\n    private var isScanning = false\r\n        set(value) {\r\n            field = value\r\n            runOnUiThread { binding.scanButton.text = if (value) \"Stop Scan\" else \"Start Scan\" }\r\n        }\r\n\r\n    private val scanResults = mutableListOf<ScanResult>()\r\n    private val scanResultAdapter: ScanResultAdapter by lazy {\r\n        ScanResultAdapter(scanResults) { result ->\r\n            if (isScanning) {\r\n                stopBleScan()\r\n            }\r\n            with(result.device) {\r\n                Timber.w(\"Connecting to $address\")\r\n                //ConnectionManager.connect(this, this@MainActivity)\r\n            }\r\n        }\r\n    }\r\n\r\n    private var topThreeDevices = mutableListOf<String>()\r\n\r\n    private lateinit var vibrator: Vibrator\r\n    private var isToastShowing = false\r\n\r\n    private val bluetoothEnablingResult = registerForActivityResult(\r\n        ActivityResultContracts.StartActivityForResult()\r\n    ) { result ->\r\n        if (result.resultCode == Activity.RESULT_OK) {\r\n            Timber.i(\"Bluetooth is enabled, good to go\")\r\n        } else {\r\n            Timber.e(\"User dismissed or denied Bluetooth prompt\")\r\n            promptEnableBluetooth()\r\n        }\r\n    }\r\n\r\n    override fun onCreate(savedInstanceState: Bundle?) {\r\n        super.onCreate(savedInstanceState)\r\n        binding = ActivityMainBinding.inflate(layoutInflater)\r\n        setContentView(binding.root)\r\n        isScanning = false\r\n\r\n        // Initialize BluetoothWorker\r\n        bluetoothWorker.initialize(this)\r\n\r\n        // Setup UI\r\n        setupRecyclerView()\r\n\r\n        setupScanButton()\r\n        //initializeVibrator()\r\n\r\n        // only setup viewmap button when 3 beacons collected\r\n\r\n        setupViewMapButton()\r\n\r\n    }\r\n\r\n    private fun setupScanButton() {\r\n        binding.scanButton.setOnClickListener {\r\n            if (isScanning) {\r\n                stopBleScan()\r\n            } else {\r\n                startBleScan()\r\n\r\n            }\r\n        }\r\n    }\r\n\r\n    private fun allowClickViewMapButton() : Boolean {\r\n        return scanResults.size >= 3\r\n    }\r\n    private fun setupViewMapButton() {\r\n        binding.viewMapButton.setEnabled(allowClickViewMapButton())\r\n        binding.viewMapButton.setOnClickListener {\r\n            launchPointGraphActivity()\r\n        }\r\n    }\r\n\r\n    //private fun initializeVibrator() {\r\n    //    vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {\r\n    //        val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager\r\n    //        vibratorManager.defaultVibrator\r\n    //    } else {\r\n    //        @Suppress(\"DEPRECATION\")\r\n     //       getSystemService(Context.VIBRATOR_SERVICE) as Vibrator\r\n    //    }\r\n    //}\r\n\r\n    override fun onResume() {\r\n        super.onResume()\r\n        if (!hasRequiredBluetoothPermissions()) {\r\n            requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)\r\n        }\r\n    }\r\n\r\n    override fun onPause() {\r\n        super.onPause()\r\n        isScanning = false\r\n        //stopBleScan()\r\n    }\r\n\r\n    @UiThread\r\n    private fun setupRecyclerView() {\r\n        binding.scanResultsRecyclerView.apply {\r\n            adapter = scanResultAdapter\r\n            layoutManager = LinearLayoutManager(\r\n                this@MainActivity,\r\n                RecyclerView.VERTICAL,\r\n                false\r\n            )\r\n            isNestedScrollingEnabled = false\r\n            itemAnimator.let {\r\n                if (it is SimpleItemAnimator) {\r\n                    it.supportsChangeAnimations = false\r\n                }\r\n            }\r\n        }\r\n    }\r\n\r\n\r\n\r\n    private fun startBleScan() {\r\n        if (!hasRequiredBluetoothPermissions()) {\r\n            requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)\r\n            return\r\n        }\r\n\r\n        scanResults.clear()\r\n        scanResultAdapter.updateList(scanResults)\r\n\r\n        bluetoothWorker.startScanning(\r\n            callback = { results ->\r\n                handleScanResults(results)\r\n            },\r\n            continuous = true,\r\n            period = 5000L,    // Scan for 5 seconds\r\n            interval = 2000L   // Wait 2 seconds between scans\r\n        )\r\n        isScanning = true\r\n\r\n    }\r\n\r\n    private fun stopBleScan() {\r\n        bluetoothWorker.stopScanning()\r\n        isScanning = false\r\n\r\n    }\r\n\r\n    @SuppressLint(\"LogNotTimber\")\r\n    private fun handleScanResults(results: List<ScanResult>) {\r\n        runOnUiThread {\r\n            scanResults.clear()\r\n            scanResults.addAll(results)\r\n\r\n            // Process each result for notifications\r\n            //results.forEach { result ->\r\n            //    if (result.rssi > -55) {\r\n            //        handleNearbyDevice(result)\r\n            //    }\r\n            //}\r\n\r\n            if (allowClickViewMapButton()){\r\n                setupViewMapButton()\r\n            } else {\r\n                binding.viewMapButton.setEnabled(false)\r\n            }\r\n\r\n            // Sort and update the display\r\n            scanResults.sortByDescending { it.rssi }\r\n\r\n            scanResultAdapter.updateList(scanResults)\r\n        }\r\n    }\r\n\r\n    private fun handleNearbyDevice(result: ScanResult) {\r\n        if (!isToastShowing) {\r\n            Toast.makeText(\r\n                this,\r\n                \"Close to ${beaconProjects[result.device.address] ?: \"Unknown Beacon\"}\",\r\n                Toast.LENGTH_SHORT\r\n            ).show()\r\n            isToastShowing = true\r\n\r\n            Handler(Looper.getMainLooper()).postDelayed({\r\n                isToastShowing = false\r\n            }, Toast.LENGTH_SHORT.toLong())\r\n\r\n            if (ContextCompat.checkSelfPermission(\r\n                    this,\r\n                    Manifest.permission.VIBRATE\r\n                ) == PackageManager.PERMISSION_GRANTED\r\n            ) {\r\n                vibrator.vibrate(500)\r\n            }\r\n        }\r\n    }\r\n\r\n    private fun launchPointGraphActivity() {\r\n        val pointGraphIntent = Intent(this, PointGraphActivity::class.java)\r\n        startActivity(pointGraphIntent)\r\n    }\r\n\r\n    override fun onRequestPermissionsResult(\r\n        requestCode: Int,\r\n        permissions: Array<out String>,\r\n        grantResults: IntArray\r\n    ) {\r\n        super.onRequestPermissionsResult(requestCode, permissions, grantResults)\r\n        if (requestCode != PERMISSION_REQUEST_CODE) {\r\n            return\r\n        }\r\n        if (permissions.isEmpty() && grantResults.isEmpty()) {\r\n            Timber.e(\"Empty permissions and grantResults array in onRequestPermissionsResult\")\r\n            Timber.w(\"This is likely a cancellation due to user interaction interrupted\")\r\n            return\r\n        }\r\n\r\n        val resultsDescriptions = grantResults.map {\r\n            when (it) {\r\n                PackageManager.PERMISSION_DENIED -> \"Denied\"\r\n                PackageManager.PERMISSION_GRANTED -> \"Granted\"\r\n                else -> \"Unknown\"\r\n            }\r\n        }\r\n        Timber.w(\"Permissions: ${permissions.toList()}, grant results: $resultsDescriptions\")\r\n\r\n        val containsPermanentDenial = permissions.zip(grantResults.toTypedArray()).any {\r\n            it.second == PackageManager.PERMISSION_DENIED &&\r\n                !ActivityCompat.shouldShowRequestPermissionRationale(this, it.first)\r\n        }\r\n        val containsDenial = grantResults.any { it == PackageManager.PERMISSION_DENIED }\r\n        val allGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }\r\n\r\n        when {\r\n//            containsPermanentDenial -> {\r\n//                promptManualPermissionGranting()\r\n//            }\r\n            containsDenial -> {\r\n                requestRelevantBluetoothPermissions(PERMISSION_REQUEST_CODE)\r\n            }\r\n            allGranted && hasRequiredBluetoothPermissions() -> {\r\n                startBleScan()\r\n            }\r\n            else -> {\r\n                Timber.e(\"Unexpected scenario encountered when handling permissions\")\r\n                recreate()\r\n            }\r\n        }\r\n    }\r\n\r\n    private fun promptEnableBluetooth() {\r\n        if (hasRequiredBluetoothPermissions()) {\r\n            Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE).apply {\r\n                bluetoothEnablingResult.launch(this)\r\n            }\r\n        }\r\n    }\r\n\r\n//    private fun promptManualPermissionGranting() {\r\n//        AlertDialog.Builder(this)\r\n//            .setTitle(R.string.bluetooth_permission_required)\r\n//            //.setMessage(R.string.bluetooth_permission_denied_permanently)\r\n//            .setPositiveButton(R.string.open_settings) { _, _ ->\r\n//                try {\r\n//                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {\r\n//                        data = Uri.fromParts(\"package\", packageName, null)\r\n//                        startActivity(this)\r\n//                    }\r\n//                } catch (e: ActivityNotFoundException) {\r\n//                    Timber.e(\"Could not open Settings: $e\")\r\n//                }\r\n//            }\r\n//            .setNegativeButton(R.string.quit) { _, _ -> finishAndRemoveTask() }\r\n//            .setCancelable(false)\r\n//            .show()\r\n//    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/punchthrough/blestarterappandroid/MainActivity.kt b/app/src/main/java/com/punchthrough/blestarterappandroid/MainActivity.kt
+--- a/app/src/main/java/com/punchthrough/blestarterappandroid/MainActivity.kt	
++++ b/app/src/main/java/com/punchthrough/blestarterappandroid/MainActivity.kt	
+@@ -5,15 +5,12 @@
+ import android.app.Activity
+ import android.bluetooth.BluetoothAdapter
+ import android.bluetooth.le.ScanResult
+-import android.content.Context
+ import android.content.Intent
+ import android.content.pm.PackageManager
+-import android.os.Build
+ import android.os.Bundle
+ import android.os.Handler
+ import android.os.Looper
+ import android.os.Vibrator
+-import android.os.VibratorManager
+ import android.widget.Toast
+ import androidx.activity.result.contract.ActivityResultContracts
+ import androidx.annotation.UiThread
+@@ -23,7 +20,6 @@
+ import androidx.recyclerview.widget.LinearLayoutManager
+ import androidx.recyclerview.widget.RecyclerView
+ import androidx.recyclerview.widget.SimpleItemAnimator
+-import com.punchthrough.blestarterappandroid.ble.ConnectionManager
+ import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
+ import timber.log.Timber
+ 
+Index: app/src/main/java/com/punchthrough/blestarterappandroid/BluetoothWorkerClass.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.punchthrough.blestarterappandroid\r\n\r\nimport android.Manifest\r\nimport android.annotation.SuppressLint\r\nimport android.bluetooth.BluetoothAdapter\r\nimport android.bluetooth.BluetoothManager\r\nimport android.bluetooth.le.ScanCallback\r\nimport android.bluetooth.le.ScanResult\r\nimport android.bluetooth.le.ScanSettings\r\nimport android.content.Context\r\nimport android.content.pm.PackageManager\r\nimport android.os.Build\r\nimport android.os.Handler\r\nimport android.os.Looper\r\nimport android.os.Vibrator\r\nimport android.os.VibratorManager\r\nimport android.widget.Toast\r\nimport androidx.core.content.ContextCompat\r\nimport com.punchthrough.blestarterappandroid.ble.ConnectionManager\r\nimport timber.log.Timber\r\n\r\n\r\n/**\r\n * This is a worker class that continually scans across activities, previously we relied on data\r\n * from scanning in MainActivity so this might look a bit rough\r\n *\r\n * It also stores the MAC addresses of the beacons we are using in this project\r\n * More on bluetooth in the doc\r\n */\r\nclass BluetoothWorkerClass private constructor() {\r\n    private var scanResults = mutableListOf<ScanResult>()\r\n    private var isScanning = false\r\n    private lateinit var bluetoothAdapter: BluetoothAdapter\r\n    private lateinit var bleScanner: android.bluetooth.le.BluetoothLeScanner\r\n    private var scanCallback: ((List<ScanResult>) -> Unit)? = null\r\n    private lateinit var appContext: Context\r\n    private val connectedDevices = mutableSetOf<String>() // Track connected devices\r\n    private val connectionCheckHandler = Handler(Looper.getMainLooper())\r\n    private val connectionCheckInterval = 5000L // Check connections every 5 seconds\r\n    private val maxConnections = 30 // Maximum number of simultaneous connections\r\n\r\n    private val handler = Handler(Looper.getMainLooper())\r\n\r\n    private val beaconProjects = mapOf(\r\n        \"80:EC:CC:CD:33:28\" to Beacon(\"Losing THings\", -60, 0.0, 1.0),\r\n        \"80:EC:CC:CD:33:7C\" to Beacon(\"Happy Mornings\", -57, 1.0, 2.0),\r\n        \"80:EC:CC:CD:33:7E\" to Beacon(\"STEM\", -59, 2.0, 2.0),\r\n        \"80:EC:CC:CD:33:58\" to Beacon(\"Visual Clutter\", -60, 2.0, 1.0),\r\n        \"00:3C:84:28:87:01\" to Beacon(\"MAP\", -58, 1.0, 0.0),\r\n        \"00:3C:84:28:77:AB\" to Beacon(\"Dance\", -60, 1.00, 1.0),\r\n    )\r\n\r\n    private lateinit var vibrator: Vibrator\r\n    private var isToastShowing = false\r\n\r\n    public fun getBeaconProjects():Map<String, Beacon>{\r\n        return beaconProjects;\r\n    }\r\n\r\n\r\n    // Makes sure this class is only instantiated once\r\n    // Separate from and independent to any other class (not like an activity)\r\n    companion object {\r\n        @Volatile\r\n        private var instance: BluetoothWorkerClass? = null\r\n\r\n        // Default scan parameters\r\n        private const val SCAN_PERIOD = 5000L // Scan for 5 seconds\r\n        private const val SCAN_INTERVAL = 10000L // Wait 10 seconds between scans\r\n\r\n        fun getInstance(): BluetoothWorkerClass {\r\n            return instance ?: synchronized(this) {\r\n                instance ?: BluetoothWorkerClass().also { instance = it }\r\n            }\r\n        }\r\n    }\r\n\r\n    private var scanPeriod: Long = SCAN_PERIOD\r\n    private var scanInterval: Long = SCAN_INTERVAL\r\n    private var continuousScanning = false\r\n\r\n    /**\r\n     * Initialises the companion object according to the activity\r\n     * @param context of the environment (typically activity)\r\n     */\r\n    fun initialize(context: Context) {\r\n        appContext = context.applicationContext\r\n        val bluetoothManager = appContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager\r\n        bluetoothAdapter = bluetoothManager.adapter\r\n        bleScanner = bluetoothAdapter.bluetoothLeScanner\r\n\r\n        initializeVibrator()\r\n    }\r\n\r\n    private val scanSettings = ScanSettings.Builder()\r\n        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // Changed to LOW_POWER mode\r\n        .build()\r\n\r\n    private val scanRunnable = object : Runnable {\r\n        @SuppressLint(\"MissingPermission\")\r\n        override fun run() {\r\n            if (isScanning) {\r\n\r\n                // Stop scanning\r\n                bleScanner.stopScan(bleScanCallback)\r\n                isScanning = false\r\n                Timber.d(\"Stopped BLE scan\")\r\n\r\n                if (continuousScanning) {\r\n                    // Schedule next scan after interval\r\n                    handler.postDelayed({\r\n                        startScanCycle()\r\n                    }, scanInterval)\r\n                }\r\n            } else {\r\n                // Start scanning\r\n                startScanCycle()\r\n            }\r\n        }\r\n    }\r\n\r\n    /**\r\n     * Checks if a certain beacon (based of MAC Address) is in the scan list\r\n     * @param MACAddress String of address\r\n     */\r\n    fun caughtInScan(MACAddress : String) : ScanResult? {\r\n        for (scanResult in getCurrentResults()) {\r\n            if (scanResult.device.address == MACAddress) {\r\n                return scanResult\r\n            }\r\n        }\r\n        return null\r\n    }\r\n\r\n    // WHAT DOES THIS MEANNNNNNN (actually doesn't matter but would be nice to find out eventually...)\r\n    @SuppressLint(\"MissingPermission\")\r\n    private fun startScanCycle() {\r\n        if (!::bluetoothAdapter.isInitialized || !::appContext.isInitialized) {\r\n            Timber.e(\"BluetoothWorkerClass not initialized\")\r\n            return\r\n        }\r\n\r\n        if (appContext.hasRequiredBluetoothPermissions()) {\r\n            bleScanner.startScan(null, scanSettings, bleScanCallback)\r\n            isScanning = true\r\n            Timber.d(\"Started BLE scan\")\r\n\r\n            // Schedule scan stop after scanPeriod\r\n            handler.postDelayed(scanRunnable, scanPeriod)\r\n        } else {\r\n            Timber.e(\"Missing required Bluetooth permissions\")\r\n        }\r\n    }\r\n\r\n    private val connectionCheckRunnable = object : Runnable {\r\n        override fun run() {\r\n            //checkAndMaintainConnections()\r\n            connectionCheckHandler.postDelayed(this, connectionCheckInterval)\r\n        }\r\n    }\r\n\r\n    private fun checkAndMaintainConnections() {\r\n        // Get all available devices from trilateratingMacAddresses that are in range\r\n        val availableDevices = beaconProjects.mapNotNull { address ->\r\n            caughtInScan(address.key)?.let { scanResult ->\r\n                Pair(address, scanResult)\r\n            }\r\n        }.sortedByDescending { it.second.rssi } // Sort by RSSI (strongest first)\r\n\r\n        // Handle devices that are no longer in range\r\n        val devicesToRemove = connectedDevices.filter { address ->\r\n            !availableDevices.any { it.first.key == address }\r\n        }\r\n        devicesToRemove.forEach { address ->\r\n            Timber.d(\"Device no longer in range: $address\")\r\n            connectedDevices.remove(address)\r\n        }\r\n\r\n\r\n        // Connect to new devices if we have capacity\r\n        val availableSlots = maxConnections - connectedDevices.size\r\n        if (availableSlots > 0) {\r\n            availableDevices\r\n                .filter { it.first.key !in connectedDevices }\r\n                .take(availableSlots)\r\n                .forEach { (address, scanResult) ->\r\n                    Timber.d(\"Attempting to connect to device: $address (RSSI: ${scanResult.rssi})\")\r\n                    scanResult.device.let { device ->\r\n                        ConnectionManager.connect(device, appContext)\r\n                        connectedDevices.add(address.key)\r\n                    }\r\n                }\r\n        }\r\n        // if we want to limit the amount of connections, see maxConnections var in the init\r\n//        else if (availableDevices.isNotEmpty()) {\r\n//            // If we're at max connections but have stronger signals available,\r\n//            // disconnect the weakest connected device and connect to the stronger one\r\n//            val weakestConnectedDevice = connectedDevices.minByOrNull { address ->\r\n//                availableDevices.find { it.first == address }?.second?.rssi ?: Int.MIN_VALUE\r\n//            }\r\n//\r\n//            val strongestAvailableDevice = availableDevices.first()\r\n//\r\n//            if (weakestConnectedDevice != null) {\r\n//                val weakestRssi = availableDevices.find { it.first == weakestConnectedDevice }?.second?.rssi ?: Int.MIN_VALUE\r\n//                if (strongestAvailableDevice.second.rssi > weakestRssi) {\r\n//                    Timber.d(\"Switching connection from $weakestConnectedDevice to ${strongestAvailableDevice.first} due to better signal\")\r\n//                    connectedDevices.remove(weakestConnectedDevice)\r\n//                    strongestAvailableDevice.second.device.let { device ->\r\n//                        ConnectionManager.connect(device, appContext)\r\n//                        connectedDevices.add(strongestAvailableDevice.first)\r\n//                    }\r\n//                }\r\n//            }\r\n//        }\r\n    }\r\n\r\n    @SuppressLint(\"MissingPermission\")\r\n    fun startScanning(\r\n        callback: (List<ScanResult>) -> Unit,\r\n        continuous: Boolean = true,\r\n        period: Long = SCAN_PERIOD,\r\n        interval: Long = SCAN_INTERVAL\r\n    ) {\r\n        if (isScanning) {\r\n            Timber.e(\"Already scanning\")\r\n            return\r\n        }\r\n\r\n        scanCallback = callback\r\n        scanResults.clear()\r\n        continuousScanning = continuous\r\n        scanPeriod = period\r\n        scanInterval = interval\r\n\r\n        // Start connection maintenance\r\n        //connectionCheckHandler.post(connectionCheckRunnable)\r\n        \r\n        startScanCycle()\r\n    }\r\n\r\n    @SuppressLint(\"MissingPermission\")\r\n    fun stopScanning() {\r\n        if (!isScanning || !::bluetoothAdapter.isInitialized) return\r\n\r\n        handler.removeCallbacks(scanRunnable)\r\n        connectionCheckHandler.removeCallbacks(connectionCheckRunnable)\r\n        bleScanner.stopScan(bleScanCallback)\r\n        isScanning = false\r\n        continuousScanning = false\r\n        //connectedDevices.forEach { address ->\r\n        //    val device = bluetoothAdapter.getRemoteDevice(address)\r\n        //    ConnectionManager.teardownConnection(device)\r\n        //}\r\n        connectedDevices.clear()\r\n        Timber.d(\"Stopped BLE scan and connection maintenance\")\r\n    }\r\n\r\n    fun isScanning(): Boolean = isScanning\r\n\r\n    fun getCurrentResults(): List<ScanResult> = scanResults.toList()\r\n\r\n\r\n    private val bleScanCallback = object : ScanCallback() {\r\n        override fun onScanResult(callbackType: Int, result: ScanResult) {\r\n            if (result.device.address in beaconProjects) {\r\n                val indexQuery =\r\n                    scanResults.indexOfFirst { it.device.address == result.device.address }\r\n                if (indexQuery != -1) {\r\n                    scanResults[indexQuery] = result\r\n                } else {\r\n                    scanResults.add(result)\r\n                }\r\n            }\r\n\r\n            // Sort results by RSSI\r\n            scanResults.sortByDescending { it.rssi }\r\n\r\n            scanResults.forEach { result ->\r\n                if (result.rssi > -55) {\r\n                    handleNearbyDevice(result)\r\n                }\r\n            }\r\n\r\n            // Check and maintain connections\r\n            //checkAndMaintainConnections()\r\n\r\n            // Notify callback on main thread\r\n            handler.post {\r\n                scanCallback?.invoke(scanResults.toList())\r\n            }\r\n        }\r\n\r\n        override fun onScanFailed(errorCode: Int) {\r\n            Timber.e(\"BLE Scan Failed with code $errorCode\")\r\n            isScanning = false\r\n        }\r\n    }\r\n\r\n    private fun initializeVibrator() {\r\n        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {\r\n            val vibratorManager = appContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager\r\n            vibratorManager.defaultVibrator\r\n        } else {\r\n            @Suppress(\"DEPRECATION\")\r\n            appContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator\r\n        }\r\n    }\r\n\r\n    private fun handleNearbyDevice(result: ScanResult) {\r\n        if (!isToastShowing) {\r\n            Toast.makeText(\r\n                appContext,\r\n                \"Close to ${beaconProjects[result.device.address] ?: \"Unknown Beacon\"}\",\r\n                Toast.LENGTH_SHORT\r\n            ).show()\r\n            isToastShowing = true\r\n\r\n            Handler(Looper.getMainLooper()).postDelayed({\r\n                isToastShowing = false\r\n            }, Toast.LENGTH_SHORT.toLong())\r\n\r\n            if (ContextCompat.checkSelfPermission(\r\n                    appContext,\r\n                    Manifest.permission.VIBRATE\r\n                ) == PackageManager.PERMISSION_GRANTED\r\n            ) {\r\n                vibrator.vibrate(500)\r\n            }\r\n        }\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/punchthrough/blestarterappandroid/BluetoothWorkerClass.kt b/app/src/main/java/com/punchthrough/blestarterappandroid/BluetoothWorkerClass.kt
+--- a/app/src/main/java/com/punchthrough/blestarterappandroid/BluetoothWorkerClass.kt	
++++ b/app/src/main/java/com/punchthrough/blestarterappandroid/BluetoothWorkerClass.kt	
+@@ -96,6 +96,15 @@
+         .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // Changed to LOW_POWER mode
+         .build()
+ 
++//    private fun buildScanFilters(): List<ScanFilter> {
++//        val scanFilters: MutableList<ScanFilter> = ArrayList()
++//        val builder = ScanFilter.Builder() /* Comment out the below line to see all BLE devices around you
++//    the Service_UUID is the UUID in the advertisement packet*/
++//        scanFilters.add(builder.build())
++//
++//        return scanFilters
++//    }
++
+     private val scanRunnable = object : Runnable {
+         @SuppressLint("MissingPermission")
+         override fun run() {
+Index: app/src/main/java/com/punchthrough/blestarterappandroid/PointGraphActivity.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.punchthrough.blestarterappandroid\r\n\r\nimport android.bluetooth.le.ScanResult\r\nimport android.graphics.Color\r\nimport android.os.Build\r\nimport android.os.Bundle\r\nimport androidx.annotation.RequiresApi\r\nimport androidx.appcompat.app.AppCompatActivity\r\nimport com.github.mikephil.charting.charts.ScatterChart\r\nimport com.github.mikephil.charting.components.XAxis\r\nimport com.github.mikephil.charting.data.Entry\r\nimport com.github.mikephil.charting.data.ScatterData\r\nimport com.github.mikephil.charting.data.ScatterDataSet\r\nimport com.github.mikephil.charting.interfaces.datasets.IScatterDataSet\r\nimport kotlin.math.pow\r\n\r\n\r\n/**\r\n * The mapping of user position activity\r\n * For now hardcoding the beacon locations but later will implement this in a calibration stage\r\n * Please see doc for the layout\r\n *\r\n * To understand mapping methods we use the MPAndroidChart library\r\n * https://github.com/PhilJay/MPAndroidChart/wiki/Dynamic-&-Realtime-Data\r\n */\r\nclass PointGraphActivity : AppCompatActivity() {\r\n    // private lateinit var lineChart: LineChart\r\n    private lateinit var scatterChart: ScatterChart\r\n    private val bluetoothWorker = BluetoothWorkerClass.getInstance()\r\n    private var userPoints = ArrayList<Entry>()\r\n    private var locationDataSet = ScatterDataSet(userPoints,\"User position\")\r\n\r\n    private val beaconProjects = bluetoothWorker.getBeaconProjects()\r\n    private val beacons = beaconProjects.values.toList()\r\n    var beacon1 = beacons[0]\r\n    var beacon2 = beacons[1]\r\n    var beacon3 = beacons[2]\r\n    var beacon4 = beacons[3]\r\n    var beacon5 = beacons[4]\r\n    var beacon6 = beacons[5]\r\n    private var beaconLocations = ArrayList<Entry>()\r\n    private var beaconsDataSet = ScatterDataSet(beaconLocations, \"Beacons\")\r\n\r\n    var beacon1dist: Double = 0.0\r\n    var beacon2dist: Double = 0.0\r\n    var beacon3dist: Double = 0.0\r\n    private var trilaterationFunction = TrilaterationFunction(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon1dist, beacon2dist)\r\n\r\n    private var scatterDataSets = ArrayList<IScatterDataSet>()\r\n\r\n    /**\r\n     * Bluetooth worker instances are saved but reinitialised in each activity\r\n     */\r\n    @RequiresApi(Build.VERSION_CODES.O)\r\n    override fun onCreate(savedInstanceState: Bundle?) {\r\n        super.onCreate(savedInstanceState)\r\n\r\n        setContentView(R.layout.activity_point_graph)\r\n\r\n        // Initialize Bluetooth Worker\r\n        bluetoothWorker.initialize(this)\r\n\r\n        // Setup chart\r\n        setupChart()\r\n\r\n        // Start scanning with custom parameters for graphing\r\n        //startRssiTracking()\r\n    }\r\n\r\n    private fun setupChart() {\r\n        scatterChart = findViewById(R.id.scatterChart)\r\n\r\n        title = \"User location\"\r\n\r\n        val scatterData = ScatterData()\r\n\r\n        // Add the data sets to the chart data\r\n        // scatterData.addDataSet(beaconsDataSet)\r\n        scatterData.addDataSet(locationDataSet)\r\n\r\n        // Set the data to the chart\r\n        scatterChart.data = scatterData\r\n\r\n        scatterChart.isDragEnabled = true\r\n        scatterChart.setPinchZoom(true)\r\n        scatterChart.setScaleEnabled(true)\r\n\r\n        scatterChart.setBackgroundColor(Color.WHITE)\r\n        val xAxis = scatterChart.xAxis\r\n        xAxis.position = XAxis.XAxisPosition.BOTTOM\r\n        xAxis.textColor = Color.BLACK\r\n        xAxis.setDrawGridLines(true)\r\n        xAxis.axisMinimum = -4f\r\n        xAxis.axisMaximum = 4f\r\n\r\n        val yAxisL = scatterChart.axisLeft\r\n        yAxisL.textColor = Color.BLACK\r\n        yAxisL.setDrawGridLines(true)\r\n        yAxisL.axisMinimum = -4f\r\n        yAxisL.axisMaximum = 4f\r\n\r\n        val yAxisR = scatterChart.axisRight\r\n        yAxisR.isEnabled = false\r\n\r\n        locationDataSet.setScatterShape(ScatterChart.ScatterShape.TRIANGLE)\r\n        locationDataSet.setColor(Color.BLUE)\r\n        locationDataSet.setDrawValues(true)\r\n\r\n        beaconsDataSet.setScatterShape(ScatterChart.ScatterShape.CIRCLE)\r\n        beaconsDataSet.setColor(Color.BLACK)\r\n        beaconsDataSet.setDrawValues(false)\r\n\r\n        // This was to map beacons at the same time but this fucks up dynamic updating for some reason :(\r\n        beaconLocations.add(Entry(beacon1.getCoordinates()[0].toFloat(), beacon1.getCoordinates()[1].toFloat()))\r\n        beaconLocations.add(Entry(beacon2.getCoordinates()[0].toFloat(), beacon2.getCoordinates()[1].toFloat()))\r\n        beaconLocations.add(Entry(beacon3.getCoordinates()[0].toFloat(), beacon3.getCoordinates()[1].toFloat()))\r\n        beaconLocations.add(Entry(beacon4.getCoordinates()[0].toFloat(), beacon4.getCoordinates()[1].toFloat()))\r\n        beaconLocations.add(Entry(beacon5.getCoordinates()[0].toFloat(), beacon5.getCoordinates()[1].toFloat()))\r\n        beaconLocations.add(Entry(beacon6.getCoordinates()[0].toFloat(), beacon6.getCoordinates()[1].toFloat()))\r\n\r\n        beaconsDataSet.notifyDataSetChanged()\r\n\r\n        // Initial chart update\r\n        updateChartData()\r\n    }\r\n\r\n    private fun updateChartData() {\r\n        val locationDataSet = ScatterDataSet(userPoints, \"User position\").apply {\r\n            setScatterShape(ScatterChart.ScatterShape.TRIANGLE)\r\n            color = Color.BLUE\r\n            setDrawIcons(true)\r\n            setDrawValues(true)\r\n            scatterShapeSize = 20f\r\n        }\r\n\r\n        val scatterData = scatterChart.scatterData\r\n        scatterData.removeDataSet(0)\r\n        scatterData.addDataSet(locationDataSet)\r\n\r\n        scatterChart.data = scatterData\r\n\r\n        // Notify the chart that data has changed\r\n        scatterChart.data.notifyDataChanged()\r\n        scatterChart.notifyDataSetChanged()\r\n\r\n        // Force the chart to redraw\r\n        scatterChart.invalidate()\r\n    }\r\n\r\n    @RequiresApi(Build.VERSION_CODES.O)\r\n    private fun startRssiTracking() {\r\n        bluetoothWorker.startScanning(\r\n            callback = { results ->\r\n                handleScanResults(results)\r\n            },\r\n            continuous = true,\r\n            period = 1000L,    // Scan every second\r\n            interval = 200L    // Small interval between scans\r\n        )\r\n    }\r\n\r\n\r\n\r\n    @RequiresApi(Build.VERSION_CODES.O)\r\n    private fun handleScanResults(rawResults: List<ScanResult>) {\r\n        val results = rawResults.sortedByDescending { it.rssi }\r\n        var coordinates = doubleArrayOf(0.0, 0.0)\r\n\r\n        if (results.size < 2) {\r\n            return\r\n        }\r\n\r\n        if (results.size == 2) {\r\n            beacon1dist = (beaconProjects[results[0].device.address]?.calculateDistance(results[0].rssi, results[0].txPower.toDouble())\r\n                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double\r\n            beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())\r\n                ?: trilaterationFunction.setBeacon2Dist(beacon2dist )) as Double\r\n            trilaterationFunction.setBeacon2Dist(beacon2dist)\r\n            coordinates = trilaterationFunction.solve()\r\n\r\n            userPoints.clear()\r\n            userPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))\r\n        }\r\n\r\n\r\n        else {\r\n            // or use trilaterateFunction and omit 3rd dimension from map\r\n            beacon1dist = (beaconProjects[results[0].device.address]?.calculateDistance(results[0].rssi, results[0].txPower.toDouble())\r\n                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double\r\n            beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())\r\n                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double\r\n            beacon3dist = (beaconProjects[results[2].device.address]?.calculateDistance(results[2].rssi, results[2].txPower.toDouble())\r\n                ?: trilaterationFunction.setBeacon1Dist(beacon3dist )) as Double\r\n            coordinates = trilaterate2D(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon3.getCoordinates(), beacon1dist, beacon2dist, beacon3dist)\r\n\r\n            userPoints.clear()\r\n            userPoints.add(Entry(coordinates[0].toFloat(), coordinates[1].toFloat()))\r\n        }\r\n\r\n        updateChartData()\r\n    }\r\n\r\n    /**\r\n     * In the scenario that the app is only able to detect 2 beacons, we have implemented trilateration equations\r\n     * using only 2 coordinates and sets of distances\r\n     *\r\n     * NOTE: There are 3 equations here, still testing which is the most accurate\r\n     */\r\n    private fun trilaterate2D(beacon1: DoubleArray, beacon2: DoubleArray, beacon3: DoubleArray, beacon1dist: Double, beacon2dist: Double, beacon3dist: Double): DoubleArray {\r\n\r\n//        val A = 2 * (beacon2[0] - beacon1[0])\r\n//        val B = 2 * (beacon2[1] - beacon1[1])\r\n//        val C = beacon1dist.pow(2) - beacon2dist.pow(2) - beacon1[0].pow(2) - beacon1[1].pow(2) + beacon2[0].pow(2) + beacon2[1].pow(2)\r\n//        val D = 2 * (beacon3[0] - beacon2[0])\r\n//        val E = 2 * (beacon3[1] - beacon2[1])\r\n//        val F = beacon2dist.pow(2) - beacon3dist.pow(2) - beacon2[0].pow(2) - beacon2[1].pow(2) + beacon3[0].pow(2) + beacon3[1].pow(2)\r\n//\r\n//        val x = (C * E - F * B) / (E * A - B * D)\r\n//        val y = (C * D - A * F) / (B * D - A * E)\r\n//\r\n//        return doubleArrayOf(x, y)\r\n\r\n\r\n//        // The separation of beacons 1 and 2\r\n//        // Distance formula\r\n//        val u = sqrt((beacon1[0] - beacon2[0]).pow(2) + (beacon1[1] - beacon2[1]).pow(2))\r\n//\r\n//        val x = (beacon1dist.pow(2)-beacon2dist.pow(2) + u.pow(2))/(2*u)\r\n//        val negativeY = -sqrt(beacon1dist.pow(2) - x.pow(2))\r\n//        val positiveY = sqrt(beacon1dist.pow(2) - x.pow(2))\r\n//\r\n//        // See which potential y value is closest to the third beacon\r\n//        val negGap = sqrt((beacon3[0] - x).pow(2) + (beacon3[1] - negativeY).pow(2))\r\n//        val posGap = sqrt((beacon3[0] - x).pow(2) + (beacon3[1] - positiveY).pow(2))\r\n//        if (negGap <= posGap || posGap.isNaN()) {\r\n//            return doubleArrayOf(x, negativeY)\r\n//        } else if (negGap.isNaN()) {\r\n//            return doubleArrayOf(x, positiveY)\r\n//        }\r\n//        return doubleArrayOf(x, positiveY)\r\n\r\n\r\n        // another way (stackexchange)\r\n        val y = (1 - beacon3dist.pow(2) + beacon1dist.pow(2))/2\r\n        val x = (beacon2dist.pow(2) - beacon3dist.pow(2) + 2*y)/2\r\n\r\n        return doubleArrayOf(x, y)\r\n    }\r\n\r\n    @RequiresApi(Build.VERSION_CODES.O)\r\n    override fun onResume() {\r\n        super.onResume()\r\n        //startRssiTracking()\r\n    }\r\n\r\n    override fun onPause() {\r\n        super.onPause()\r\n        bluetoothWorker.stopScanning()\r\n    }\r\n\r\n    override fun onDestroy() {\r\n        super.onDestroy()\r\n        bluetoothWorker.stopScanning()\r\n    }\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/punchthrough/blestarterappandroid/PointGraphActivity.kt b/app/src/main/java/com/punchthrough/blestarterappandroid/PointGraphActivity.kt
+--- a/app/src/main/java/com/punchthrough/blestarterappandroid/PointGraphActivity.kt	
++++ b/app/src/main/java/com/punchthrough/blestarterappandroid/PointGraphActivity.kt	
+@@ -64,7 +64,7 @@
+         setupChart()
+ 
+         // Start scanning with custom parameters for graphing
+-        //startRssiTracking()
++        startRssiTracking()
+     }
+ 
+     private fun setupChart() {
+@@ -188,9 +188,9 @@
+             beacon1dist = (beaconProjects[results[0].device.address]?.calculateDistance(results[0].rssi, results[0].txPower.toDouble())
+                 ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double
+             beacon2dist = (beaconProjects[results[1].device.address]?.calculateDistance(results[1].rssi, results[1].txPower.toDouble())
+-                ?: trilaterationFunction.setBeacon1Dist(beacon1dist )) as Double
++                ?: trilaterationFunction.setBeacon2Dist(beacon1dist )) as Double
+             beacon3dist = (beaconProjects[results[2].device.address]?.calculateDistance(results[2].rssi, results[2].txPower.toDouble())
+-                ?: trilaterationFunction.setBeacon1Dist(beacon3dist )) as Double
++                ?: trilaterationFunction.setBeacon3Dist(beacon3dist )) as Double
+             coordinates = trilaterate2D(beacon1.getCoordinates(), beacon2.getCoordinates(), beacon3.getCoordinates(), beacon1dist, beacon2dist, beacon3dist)
+ 
+             userPoints.clear()
+Index: app/src/main/AndroidManifest.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<manifest\r\n    xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    xmlns:tools=\"http://schemas.android.com/tools\"\r\n    >\r\n\r\n    <uses-permission android:name=\"android.permission.VIBRATE\" /> <!-- Add this line -->\r\n    <!-- Request legacy Bluetooth permissions on versions older than API 31 (Android 12). -->\r\n    <uses-permission\r\n        android:name=\"android.permission.BLUETOOTH\"\r\n        android:maxSdkVersion=\"30\"\r\n        />\r\n    <uses-permission\r\n        android:name=\"android.permission.BLUETOOTH_ADMIN\"\r\n        android:maxSdkVersion=\"30\"\r\n        />\r\n    <uses-permission\r\n        android:name=\"android.permission.ACCESS_COARSE_LOCATION\"\r\n        android:maxSdkVersion=\"30\"\r\n        />\r\n    <uses-permission\r\n        android:name=\"android.permission.ACCESS_FINE_LOCATION\"\r\n        android:maxSdkVersion=\"30\"\r\n        />\r\n    <uses-permission\r\n        android:name=\"android.permission.BLUETOOTH_SCAN\"\r\n        android:usesPermissionFlags=\"neverForLocation\"\r\n        tools:targetApi=\"s\"\r\n        />\r\n    <uses-permission android:name=\"android.permission.BLUETOOTH_CONNECT\" />\r\n\r\n    <uses-feature\r\n        android:name=\"android.hardware.bluetooth_le\"\r\n        android:required=\"true\"\r\n        />\r\n\r\n    <application\r\n        android:icon=\"@mipmap/ic_launcher\"\r\n        android:label=\"@string/app_name\"\r\n        android:roundIcon=\"@mipmap/ic_launcher_round\"\r\n        android:supportsRtl=\"true\"\r\n        android:theme=\"@style/AppTheme\"\r\n        tools:ignore=\"GoogleAppIndexingWarning\"\r\n        >\r\n        <activity\r\n            android:name=\".PointGraphActivity\"\r\n            android:exported=\"false\"\r\n            android:label=\"RSSI Graph\" /> <!-- Add this line -->\r\n        <activity\r\n            android:name=\".BleOperationsActivity\"\r\n            android:exported=\"false\"\r\n            android:screenOrientation=\"portrait\"\r\n            />\r\n        <activity\r\n            android:name=\".MainActivity\"\r\n            android:exported=\"true\"\r\n            android:screenOrientation=\"portrait\"/>\r\n            <intent-filter>\r\n                <action android:name=\"android.intent.action.MAIN\" />\r\n\r\n                <category android:name=\"android.intent.category.LAUNCHER\" />\r\n            </intent-filter>\r\n    </application>\r\n\r\n</manifest>\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/AndroidManifest.xml b/app/src/main/AndroidManifest.xml
+--- a/app/src/main/AndroidManifest.xml	
++++ b/app/src/main/AndroidManifest.xml	
+@@ -49,17 +49,19 @@
+         <activity
+             android:name=".BleOperationsActivity"
+             android:exported="false"
+-            android:screenOrientation="portrait"
++            android:screenOrientation="fullSensor"
+             />
+         <activity
+             android:name=".MainActivity"
+             android:exported="true"
+-            android:screenOrientation="portrait"/>
++            android:screenOrientation="fullSensor">
+             <intent-filter>
+                 <action android:name="android.intent.action.MAIN" />
+ 
+                 <category android:name="android.intent.category.LAUNCHER" />
+             </intent-filter>
++        </activity>
++
+     </application>
+ 
+ </manifest>
+Index: app/src/main/java/com/punchthrough/blestarterappandroid/AugmentedMatrix.java
+===================================================================
+diff --git a/app/src/main/java/com/punchthrough/blestarterappandroid/AugmentedMatrix.java b/app/src/main/java/com/punchthrough/blestarterappandroid/AugmentedMatrix.java
+new file mode 100644
+--- /dev/null	
++++ b/app/src/main/java/com/punchthrough/blestarterappandroid/AugmentedMatrix.java	
+@@ -0,0 +1,211 @@
++/*
++ * Copyright 2025 Punch Through Design LLC
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package com.punchthrough.blestarterappandroid;
++
++public class AugmentedMatrix {
++        public double[][] matrix; //the augmented matrix
++        private int numEquations; //number of rows in the matrix
++        private int numVariables; //number of columns-1 in the matrix, the last
++        //column is the constants from rigt sides of the equaiton
++        private int numColumns;
++        private static final double percision = 0.5;
++
++        // constructor for the augmented matrix
++        public AugmentedMatrix(int equations, int columns) {
++            numEquations = equations;
++            numVariables = columns - 1;
++            numColumns = columns;
++
++            matrix = new double[equations][numColumns];
++            this.clear();
++        }
++
++        // function to allow the setting of matrix values
++        public void set(int row, int col, double val) {
++
++            matrix[row][col] = val;
++        }
++
++        public double get(int row, int col) {
++            return matrix[row][col];
++        }
++
++        /**
++         * clears the board that calls it by setting each position in the matrix
++         * 2D array to '0'
++         */
++        public void clear() {
++            for (int i = 0; i < numEquations; i++) {
++                for (int j = 0; j < numColumns; j++)
++                    matrix[i][j] = 0;
++            }
++        }
++
++        // multiply all entries in a row by a nonzero constant
++        public void scale(int equation, double scalar) {
++
++            for (int i = 0; i < numColumns; i++) {
++                if (Math.abs(matrix[equation][i] = matrix[equation][i] * scalar) < percision)
++                    matrix[equation][i] = 0;
++            }
++        }
++
++        // interchange two rows
++        public void interchange(int row1, int row2) {
++
++            // if row1 == row2 do nothing
++            if (row1 == row2)
++                return;
++
++            // swap individual coefficents/constants of the two rows
++            double temp;
++            for (int i = 0; i < numColumns; i++) {
++                temp = matrix[row1][i];
++                matrix[row1][i] = matrix[row2][i];
++                matrix[row2][i] = temp;
++            }
++        }
++
++        // replace one row by the sum of itself and a multiple of another row
++        // row1 = row1 + scalar*row2
++        public void replace(int row1, double scalar, int row2) {
++            for (int i = 0; i < numColumns; i++) {
++                matrix[row1][i] += matrix[row2][i] * scalar;
++                if (Math.abs(matrix[row1][i]) < percision)
++                    matrix[row1][i] = 0;
++            }
++        }
++
++        /* The Row Reduction Algorithm
++         * 1: Begin with the leftmost nonzero column this is a pivot column.
++         * The pivot position is at the top.
++         * 2: Select a nonzero entry in the pivot column as a pivot. If necessary,
++         * interchange rows to move this entry into the pivot position.
++         * 3: Use row replacement operations to create all zeros in all positions below pivot
++         * 4: Cover or ignore the row containing the pivot position and coler all rows
++         * if any above it. Apply steps 1-3 to the submatrix that remains. Repeat the
++         * process until there are no more nonzero rows to modify
++         * 5: Begining with the right most pivot and working upward and to the left
++         * create zeros above each pivot
++         **/
++        public void rowReduce() {
++            System.out.print(this);
++
++            //1:
++            reduceToTriangleForm:
++            for (int pivotColumn = 0, pivotRow = 0; pivotRow < numEquations; pivotRow++) {
++                int pivotRowCheck = pivotRow; // pivotRowCheck is used to check each row
++                // until a pivot point is found in the column
++                while (matrix[pivotRowCheck][pivotColumn] == 0) {
++                    pivotRowCheck++;
++                    // if checks all of equations and finds no potential pivot points in the
++                    // current pivot column, the seach continues in the next pivot column
++                    if (pivotRowCheck == numEquations) {
++                        pivotColumn++;
++                        pivotRowCheck = pivotRow;
++                    }
++                    // should no more pivot columns points be found, exit search
++                    if (pivotColumn == numColumns) {
++                        break reduceToTriangleForm;
++                    }
++                }
++                // a new pivot poition has been found in pivotRowCheck
++                // move this equaiton to the pivotRow
++                if (pivotRow != pivotRowCheck) {
++                    interchange(pivotRow, pivotRowCheck);
++                }
++
++//3: row replacement algorithm
++                // reduce row so that pivot point is a 1
++                if (Math.abs(matrix[pivotRow][pivotColumn]) > percision) {
++                    scale(pivotRow, 1 / matrix[pivotRow][pivotColumn]);
++                }
++
++//interate through rest of equaitons
++                for (int row = pivotRow + 1; row < numEquations; row++) {
++                    // replace all other rows such that pivot column in other rows = 0
++                    if (matrix[row][pivotColumn] != 0) {
++                        replace(row, -1 * matrix[row][pivotColumn], pivotRow);
++                    }
++
++                }
++
++                //4: itterate through loop and try to find another pivot point in next column
++            }
++            //reached end of itterating though loop
++            //5: Begining with the rightmost pivot and working upward and to the left
++            // create zeros above each pivot.
++            boolean solved = true;
++            reduceToRREF:
++            for (int pivotRow = numEquations - 1; pivotRow >= 0; pivotRow--) {
++                for (int pivotColumn = 0; pivotColumn < numColumns; pivotColumn++) {
++                    if (matrix[pivotRow][pivotColumn] != 0) {
++// if a pivot is found and is not in last column
++                        if (pivotColumn != numColumns - 1) {
++                            // add to the rows above the pivot
++                            for (int row = pivotRow - 1; row >= 0; row--) {
++                                replace(row, -1 * matrix[row][pivotColumn], pivotRow);
++                            }
++                            break;
++                        }
++                        // if a pivot is found but is in the last column -> matrix inconsistent
++                        else if (pivotColumn == numColumns - 1) {
++                            solved = false;
++                            break reduceToRREF;
++                        }
++                    }
++                }
++            }
++            if (solved) {
++                // System.out.println(getSolutions());
++            } else
++                System.out.println("Matrix is inconsistent, no solution can be found");
++        }
++
++        private String getSolutions() {
++            int[] freeVariables = new int[numVariables];
++            String toReturn = "";
++            for (int row = 0; row < numEquations; row++) {
++                int col = 0;
++                for (; col < numColumns - 1; col++) {
++                    if (Math.abs(matrix[row][col]) > percision) {
++                        toReturn += ("\nx" + (col + 1) + " = ");
++                        break;
++                    }
++                }
++                if (col == numColumns - 1)
++                    break;
++                toReturn += String.format("%.5f ", matrix[row][numColumns - 1]);
++                // free variables
++                for (col++; col < numColumns - 1; col++) {
++                    if (Math.abs(matrix[row][col]) > percision) {
++                        freeVariables[col] = 1;
++                        if (matrix[row][col] > 0)
++                            toReturn += "+ ";
++                        else
++                            toReturn += "- ";
++                        toReturn += String.format("%.5f ", Math.abs(matrix[row][col])) + "(x" + (col + 1) + ") ";
++                    }
++                }
++            }
++            for (int i = 0; i < numVariables; i++) {
++                if (freeVariables[i] == 1)
++                    toReturn += "\nx" + (i + 1) + " is free";
++            }
++            return toReturn;
++        }
++    }

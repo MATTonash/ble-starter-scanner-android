@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="SymJava">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/release/SymJava.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
