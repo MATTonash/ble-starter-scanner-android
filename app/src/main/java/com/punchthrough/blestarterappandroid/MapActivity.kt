@@ -99,8 +99,8 @@ class MapActivity : AppCompatActivity() {
             },
             continuous = true,
             //TODO: this is too frequent and will trigger the OS 30s timeout
-            period = 1000L,    // Scan every second
-            interval = 200L    // Small interval between scans
+            period = 9500L,    // Scan every second
+            interval = 500L    // Small interval between scans
         )
     }
 
@@ -170,9 +170,16 @@ class MapActivity : AppCompatActivity() {
 //
 //        val userCoordinates = trilaterationFunction.solve()
 
-        val position = positionCalculator.calculatePosition(BeaconData.getBeaconProjects().values.toList())
+        val position =
+            positionCalculator.calculatePosition(BeaconData.getBeaconProjects().values.toList())
 
-        userMapView.setUserPosition(position?.latitude!!.toFloat(), position?.longitude!!.toFloat(), 0.00f)
+        if (position != null) {
+            userMapView.setUserPosition(
+                position.latitude.toFloat(),
+                position.longitude.toFloat(),
+                0.00f
+            )
+        }
     }
 
     override fun onStart() { super.onStart() }
