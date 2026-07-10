@@ -51,14 +51,14 @@ class BluetoothWorkerClass private constructor() {
         private var instance: BluetoothWorkerClass? = null
 
         /**
-         * Scan for 5 seconds.
+         * Scan for 9.5 seconds.
          */
-        private const val DEFAULT_SCAN_PERIOD = 5000L
+        private const val DEFAULT_SCAN_PERIOD = 9500L
 
         /**
-         * Wait 10 seconds between scans.
+         * Wait 0.5 seconds between scans.
          */
-        private const val DEFAULT_SCAN_INTERVAL = 10000L
+        private const val DEFAULT_SCAN_INTERVAL = 500L
 
         fun getInstance(): BluetoothWorkerClass {
             return instance ?: synchronized(this) {
@@ -139,6 +139,7 @@ class BluetoothWorkerClass private constructor() {
         scanPeriod = DEFAULT_SCAN_PERIOD
         scanInterval = DEFAULT_SCAN_INTERVAL
         isScanning = false
+        isInScanPeriod = false
 
         for (beacon in beaconProjects.values) {
             beacon.resetKalmanFilter()
@@ -161,7 +162,7 @@ class BluetoothWorkerClass private constructor() {
                 if (continuousScanning) {
                     Timber.d("Stopping and waiting ${scanInterval}ms until next scan")
                     bleScanner?.stopScan(bleScanCallback)
-                    // Schedule next scan after interval
+                    // Schedule next scan after scanInterval
                     isInScanPeriod = false
                     scanLoopHandler.postDelayed(this, scanInterval)
                 } else stopScanning()

@@ -16,6 +16,7 @@
 
 package com.punchthrough.blestarterappandroid
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.le.ScanResult
 import android.os.Build
@@ -26,6 +27,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 
 import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.services.BuzzerVibration
@@ -47,6 +49,7 @@ class MapActivity : AppCompatActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_map)
@@ -90,15 +93,13 @@ class MapActivity : AppCompatActivity() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     private fun startRssiTracking() {
         bluetoothWorker.startScanning(
             callback = { results ->
                 handleScanResults(results)
             },
-            continuous = true,
-            //TODO: this is too frequent and will trigger the OS 30s timeout
-            period = 1000L,    // Scan every second
-            interval = 200L    // Small interval between scans
+            continuous = true
         )
     }
 
@@ -179,6 +180,7 @@ class MapActivity : AppCompatActivity() {
         // startRssiTracking()
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onPause() {
         super.onPause()
         bluetoothWorker.stopScanning()
@@ -186,6 +188,7 @@ class MapActivity : AppCompatActivity() {
 
     override fun onStop() { super.onStop() }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onDestroy() {
         super.onDestroy()
         bluetoothWorker.stopScanning()

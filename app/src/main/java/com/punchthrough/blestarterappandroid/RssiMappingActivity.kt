@@ -1,9 +1,11 @@
 package com.punchthrough.blestarterappandroid
 
+import android.Manifest
 import android.bluetooth.le.ScanResult
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import com.matt.guidebeacons.beacons.RssiCollection
@@ -36,6 +38,7 @@ class RssiMappingActivity : AppCompatActivity() {
             distanceEditText.isEnabled = !value
         }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ActivityRssiMappingBinding.inflate(layoutInflater)
@@ -135,14 +138,13 @@ class RssiMappingActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     private fun startRssiTracking() {
         bluetoothWorker.startScanning(
             callback = { results ->
                 handleScanResults(results)
             },
-            continuous = true,
-            period = 5000L,
-            interval = 2000L
+            continuous = true
         )
     }
 
@@ -223,11 +225,13 @@ class RssiMappingActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onPause() {
         super.onPause()
         bluetoothWorker.stopScanning()
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onDestroy() {
         super.onDestroy()
         bluetoothWorker.stopScanning()
