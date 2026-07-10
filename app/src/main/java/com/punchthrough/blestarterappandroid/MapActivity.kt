@@ -19,7 +19,6 @@ package com.punchthrough.blestarterappandroid
 import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.le.ScanResult
-import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -30,10 +29,10 @@ import android.view.MotionEvent
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
+import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.services.BuzzerVibration
 import com.matt.guidebeacons.services.NEARBY_BUZZER_RSSI
-import timber.log.Timber
 
 
 class MapActivity : AppCompatActivity() {
@@ -130,25 +129,16 @@ class MapActivity : AppCompatActivity() {
         // Build coordinates and distances arrays aligned by index
         val coords = Array(knownResults.size) { DoubleArray(3) }
         val distances = DoubleArray(knownResults.size)
-        val overrideColours = Array<Int?>(knownResults.size) { null }
+        val beacons = Array<Beacon>(knownResults.size) { Beacon("?", 0, 0.0, 0.0, 0.0) }
         knownResults.forEachIndexed { index, res ->
             val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed
             coords[index] = beacon.getCoordinates()
             distances[index] = beacon.calculateDistance(res.rssi, 4, this)
-            Timber.d("Found ${beacon} @ (${coords[index][0]}, ${coords[index][1]})")
-            if (beacon.toString() == "Bee") {
-                overrideColours[index] = Color.YELLOW
-            }
-            else if (beacon.toString() == "Visual Clutter") {
-                overrideColours[index] = Color.GREEN
-            }
-            else if (beacon.toString() == "STEM") {
-                overrideColours[index] = Color.BLUE
-            }
+            beacons[index] = beacon
         }
 
         userMapView.clearBeacons()
-        userMapView.addBeacons(coords, overrideColours)
+        userMapView.addBeacons(beacons)
         solveForUser(coords, distances)
 
         // add here to show the angle that the user is facing
