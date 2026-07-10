@@ -44,7 +44,7 @@ private const val PREV_POSITION_WEIGHT = 0.9f
 
 enum class POIState { START, END, PATH, NONE }
 
-data class ConfigPoint(val x: Float, val y: Float, val z: Float = 1f)
+class ConfigPoint(val x: Float, val y: Float, val z: Float = 1f, val overrideColour: Paint? = null)
 
 data class UserMapConfig(
     val beacons: List<ConfigPoint> = emptyList(),
@@ -360,9 +360,12 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         beacons.clear()
     }
 
-    fun addBeacons(newBeacons: Array<DoubleArray>) {
+    fun addBeacons(newBeacons: Array<DoubleArray>, overrideColours: Array<Int?>? = null) {
+        var i = 0
         for (beaconLoc: DoubleArray in newBeacons) {
-            beacons.add(ConfigPoint(beaconLoc[0].toFloat(), beaconLoc[1].toFloat()))
+            val paint = if (overrideColours != null && overrideColours[i] != null) Paint().apply { color = overrideColours[i]!!; style = Paint.Style.FILL } else null
+            beacons.add(ConfigPoint(beaconLoc[0].toFloat(), beaconLoc[1].toFloat(), overrideColour = paint))
+            i++
         }
     }
 
@@ -387,7 +390,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         beacons.forEach { point ->
             val px = offsetX + point.x * scale
             val py = offsetY + point.y * scale
-            canvas.drawCircle(px, py, 0.2f * scale, beaconPaint)
+            canvas.drawCircle(px, py, 0.2f * scale, point.overrideColour ?: beaconPaint)
         }
 
         paths.forEach { points ->
