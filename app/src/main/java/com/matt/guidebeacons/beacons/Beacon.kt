@@ -24,6 +24,7 @@ class Beacon(beaconName: String,
     private var beaconType = BeaconType.DEFAULT
 
     private var regressionFunction: DistanceRegression? = null
+    private var triedInitialisingRegressionFunction = false
 
     // Kalman filter variables
     private var filteredRSSI: Double = calibrationRSSI.toDouble() // Arbitrary value
@@ -79,6 +80,10 @@ class Beacon(beaconName: String,
      * @return whether or not a regression function was successfully generated.
      */
     public fun generateRegressionFunction(rssi: Int, txPower: Int, context: Context): Boolean {
+        if (triedInitialisingRegressionFunction) return false
+
+        triedInitialisingRegressionFunction = true
+
         val rssiCollection = RssiCollection.readFromFile(
             context,
             BeaconData.getBeaconMacAddress(this).toString(),
@@ -112,6 +117,7 @@ class Beacon(beaconName: String,
 
     public fun clearRegression() {
         regressionFunction = null
+        triedInitialisingRegressionFunction = false
     }
 
     public fun getCalibrationRSSI(): Int {

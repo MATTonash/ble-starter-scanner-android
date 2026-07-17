@@ -30,6 +30,7 @@ import android.util.Xml
 import android.view.MotionEvent
 import android.view.View
 import androidx.annotation.RawRes
+import com.matt.guidebeacons.beacons.Beacon
 import org.xmlpull.v1.XmlPullParser
 import kotlin.math.hypot
 import kotlin.math.min
@@ -46,8 +47,10 @@ enum class POIState { START, END, PATH, NONE }
 
 data class ConfigPoint(val x: Float, val y: Float, val z: Float = 1f)
 
+data class BeaconPoint(val x: Float, val y: Float, val z: Float = 1f, val name: String)
+
 data class UserMapConfig(
-    val beacons: List<ConfigPoint> = emptyList(),
+    val beacons: List<BeaconPoint> = emptyList(),
     val polygons: List<List<ConfigPoint>> = emptyList(),
     val paths: List<List<ConfigPoint>> = emptyList(),
     val startRectangles: List<List<ConfigPoint>> = emptyList(),
@@ -74,6 +77,8 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     private val screenBackgroundPaint = Paint().apply { color = Color.DKGRAY; style = Paint.Style.FILL }
     private val mapBackgroundPaint = Paint().apply { color = Color.LTGRAY; style = Paint.Style.FILL }
     private val beaconPaint = Paint().apply { color = Color.CYAN; style = Paint.Style.FILL }
+    private val textSize = 30f;
+    private val beaconTextPaint = Paint().apply { color = Color.MAGENTA; style = Paint.Style.FILL; this.textSize = this@UserMapView.textSize; textAlign = Paint.Align.CENTER; isAntiAlias = true}
     private val polygonPaint = Paint().apply { color = Color.BLACK; style = Paint.Style.FILL }
     private val linePaint = Paint().apply { color = Color.BLUE; style = Paint.Style.STROKE; strokeWidth = LINE_WIDTH }
     private val startRectPaint = Paint().apply { color = Color.YELLOW; style = Paint.Style.FILL }
@@ -84,7 +89,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     // Geometry
     private var userPosition: ConfigPoint? = null
     private var userAngle: Float? = null
-    private val beacons = mutableListOf<ConfigPoint>()
+    private val beacons = mutableListOf<BeaconPoint>()
     private val polygons = mutableListOf<List<ConfigPoint>>()
     private val paths = mutableListOf<List<ConfigPoint>>()
     private val userDrawnPath = mutableListOf<ConfigPoint>()
@@ -170,7 +175,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
      * Returns userMapConfig object with values specified as from the given parser object
      */
     private fun parseXmlConfigFromParser(parser: XmlPullParser): UserMapConfig {
-        val beacons = mutableListOf<ConfigPoint>()
+        val beacons = mutableListOf<BeaconPoint>()
         val polygons = mutableListOf<List<ConfigPoint>>()
         val paths = mutableListOf<List<ConfigPoint>>()
         val startRects = mutableListOf<List<ConfigPoint>>()
@@ -193,7 +198,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
                         "beacon" -> {
                             val x = parser.getAttributeValue(null, "x").toFloat()
                             val y = parser.getAttributeValue(null, "y").toFloat()
-                            beacons.add(ConfigPoint(x, y))
+                            beacons.add(BeaconPoint(x, y, name = ""))
                         }
                         "polygon" -> currentPolygon = mutableListOf()
                         "path" -> currentPath = mutableListOf()
@@ -360,9 +365,11 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         beacons.clear()
     }
 
-    fun addBeacons(newBeacons: Array<DoubleArray>) {
-        for (beaconLoc: DoubleArray in newBeacons) {
-            beacons.add(ConfigPoint(beaconLoc[0].toFloat(), beaconLoc[1].toFloat()))
+    fun addBeacons(newBeacons: Array<Beacon>) {
+        for (beacon: Beacon in newBeacons) {
+            val beaconLoc = beacon.getCoordinates()
+            val name = beacon.toString().split(" ").fold("") { accumulator, next -> accumulator + next[0] }
+            beacons.add(BeaconPoint(beaconLoc[0].toFloat(), beaconLoc[1].toFloat(), name = name))
         }
     }
 
@@ -388,6 +395,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
             val px = offsetX + point.x * scale
             val py = offsetY + point.y * scale
             canvas.drawCircle(px, py, 0.2f * scale, beaconPaint)
+            canvas.drawText(point.name, px, py + (textSize / 3), beaconTextPaint)
         }
 
         paths.forEach { points ->
@@ -501,4 +509,3 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     }
 
 }
-

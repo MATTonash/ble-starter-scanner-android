@@ -16,6 +16,7 @@
 
 package com.punchthrough.blestarterappandroid
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.le.ScanResult
 import android.os.Build
@@ -26,7 +27,9 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 
 import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
+import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.services.BuzzerVibration
 import com.matt.guidebeacons.services.NEARBY_BUZZER_RSSI
@@ -47,6 +50,7 @@ class MapActivity : AppCompatActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_map)
@@ -90,15 +94,13 @@ class MapActivity : AppCompatActivity() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     private fun startRssiTracking() {
         bluetoothWorker.startScanning(
             callback = { results ->
                 handleScanResults(results)
             },
-            continuous = true,
-            //TODO: this is too frequent and will trigger the OS 30s timeout
-            period = 1000L,    // Scan every second
-            interval = 200L    // Small interval between scans
+            continuous = true
         )
     }
 
@@ -127,14 +129,16 @@ class MapActivity : AppCompatActivity() {
         // Build coordinates and distances arrays aligned by index
         val coords = Array(knownResults.size) { DoubleArray(3) }
         val distances = DoubleArray(knownResults.size)
+        val beacons = Array<Beacon>(knownResults.size) { Beacon("?", 0, 0.0, 0.0, 0.0) }
         knownResults.forEachIndexed { index, res ->
             val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed
             coords[index] = beacon.getCoordinates()
             distances[index] = beacon.calculateDistance(res.rssi, 4, this)
+            beacons[index] = beacon
         }
 
         userMapView.clearBeacons()
-        userMapView.addBeacons(coords)
+        userMapView.addBeacons(beacons)
         solveForUser(coords, distances)
 
         // add here to show the angle that the user is facing
@@ -179,6 +183,7 @@ class MapActivity : AppCompatActivity() {
         // startRssiTracking()
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onPause() {
         super.onPause()
         bluetoothWorker.stopScanning()
@@ -186,6 +191,7 @@ class MapActivity : AppCompatActivity() {
 
     override fun onStop() { super.onStop() }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onDestroy() {
         super.onDestroy()
         bluetoothWorker.stopScanning()
