@@ -172,7 +172,7 @@ class MapActivity : AppCompatActivity() {
 
         val position = positionCalculator.calculatePosition(BeaconData.getBeaconProjects().values.toList())
 
-        userMapView.setUserPosition(position?.latitude!!.toFloat(), position?.longitude!!.toFloat(), 0.00f)
+        userMapView.setUserPosition(position?.x!!.toFloat(), position?.y!!.toFloat(), 0.00f)
     }
 
     override fun onStart() { super.onStart() }

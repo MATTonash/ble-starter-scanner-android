@@ -24,8 +24,8 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 data class Position(
-    val latitude: Double,
-    val longitude: Double,
+    val x: Double,
+    val y: Double,
     val accuracy: Double,
     val timestamp: Long = System.currentTimeMillis()
 )
@@ -39,7 +39,7 @@ class IndoorPositioningCalculator : PositionCalculator {
         //        private const val TAG = "IndoorPositioning"
 //        private const val PATH_LOSS_EXPONENT = 1.45
         private const val SMOOTHING_FACTOR = 0.9
-        private const val DAMPING_FACTOR = 0.5
+        private const val DAMPING_FACTOR = 0.9
         private const val TOP_K_BEACONS = 10
         private const val MIN_VALID_DISTANCE = 0.001
         private const val MAX_VALID_DISTANCE = 1000.0
@@ -159,8 +159,8 @@ class IndoorPositioningCalculator : PositionCalculator {
 
     private fun calculateDistance(pos1: Position, pos2: Position): Double {
         return sqrt(
-            (pos1.latitude - pos2.latitude).pow(2) +
-                (pos1.longitude - pos2.longitude).pow(2)
+            (pos1.x - pos2.x).pow(2) +
+                (pos1.y - pos2.y).pow(2)
         )
     }
 
@@ -169,6 +169,7 @@ class IndoorPositioningCalculator : PositionCalculator {
         beacons: List<Beacon>,
         clusterFingerprints: List<Fingerprint>? = null
     ): Position {
+        // Create a new fingerprint from rudimentary basicPosition
         val currentFingerprint = createFingerprint(basicPosition, beacons)
 
         // Use either cluster fingerprints or find similar fingerprints
@@ -200,13 +201,13 @@ class IndoorPositioningCalculator : PositionCalculator {
         var refinedLon = 0.0
 
         similarFingerprints.forEachIndexed { index, fingerprint ->
-            refinedLat += fingerprint.position.latitude * weights[index]
-            refinedLon += fingerprint.position.longitude * weights[index]
+            refinedLat += fingerprint.position.x * weights[index]
+            refinedLon += fingerprint.position.y * weights[index]
         }
 
         val refinedPosition = Position(
-            latitude = refinedLat / totalWeight,
-            longitude = refinedLon / totalWeight,
+            x = refinedLat / totalWeight,
+            y = refinedLon / totalWeight,
             accuracy = calculateAccuracy(beacons, similarFingerprints)
         )
 
@@ -280,7 +281,8 @@ class IndoorPositioningCalculator : PositionCalculator {
         for (i in 0 until n) {
             for (j in 0 until n) {
                 similarities[i][j] = if (i != j) {
-                    -calculateDistance(fingerprints[i], fingerprints[j]).pow(2)
+                    val noise = (Math.random() - 0.5) * 1e-10
+                    -calculateDistance(fingerprints[i], fingerprints[j]).pow(2) + noise
                 } else {
                     // Preference for becoming an exemplar - use median of similarities
                     val medianSim = similarities.flatMap { row ->
@@ -433,6 +435,7 @@ class IndoorPositioningCalculator : PositionCalculator {
     // Update your existing position calculation to use clustering
     override fun calculatePosition(beacons: List<Beacon>): Position? {
         // First get basic position
+        // Finds the weight based on calculated distance from beacon, weights it to the closest beacon cluster
         val basicPosition = weightedCentroidCalculator.calculatePosition(beacons) ?: return null
 
         // If we don't have enough fingerprints, just return basic position
@@ -511,8 +514,8 @@ class WeightedCentroidCalculator : PositionCalculator {
 //                    RSSI: ${beacon.rssi}
 //                    Original Distance: ${beacon.distance}
 //                    Calculated Distance: $distance
-//                    Lat: ${beacon.latitude}
-//                    Lon: ${beacon.longitude}
+//                    Lat: ${beacon.x}
+//                    Lon: ${beacon.y}
 //                """.trimIndent()
                 )
                 beacon to distance
@@ -544,8 +547,8 @@ class WeightedCentroidCalculator : PositionCalculator {
 //                    Beacon: ${beacon.uuid}
 //                    Distance: $distance
 //                    Weight: $weight
-//                    Weighted Lat: ${beacon.latitude * weight}
-//                    Weighted Lon: ${beacon.longitude * weight}
+//                    Weighted Lat: ${beacon.x * weight}
+//                    Weighted Lon: ${beacon.y * weight}
 //                """.trimIndent())
                 Timber.tag(TAG).d(
                     """
@@ -575,11 +578,11 @@ class WeightedCentroidCalculator : PositionCalculator {
             val accuracy = calculateAccuracy(validBeacons)
 
             return Position(
-                latitude = finalLat,
-                longitude = finalLon,
+                x = finalLat,
+                y = finalLon,
                 accuracy = accuracy
             ).also {
-                Log.d(TAG, "Final Position: lat=${it.latitude}, lon=${it.longitude}, accuracy=${it.accuracy}")
+                Log.d(TAG, "Final Position: lat=${it.x}, lon=${it.y}, accuracy=${it.accuracy}")
             }
 
         } catch (e: Exception) {
