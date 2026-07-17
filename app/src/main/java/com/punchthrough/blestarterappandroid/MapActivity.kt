@@ -44,6 +44,7 @@ class MapActivity : AppCompatActivity() {
 
     private lateinit var userMapView: UserMapView
     private lateinit var trilaterationFunction : TrilaterationFunction
+    private var lastSolveTimestamp: Long = -1
 
     private lateinit var buzzer: BuzzerVibration
     private lateinit var vibrator: Vibrator
@@ -166,6 +167,11 @@ class MapActivity : AppCompatActivity() {
      * each element in distances denotes how far the user is from the corresponding element in coords
      */
     private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray) {
+        // attempt to limit solves to avoid slowing the app too long and becoming non-responsive
+        val currTime = System.currentTimeMillis()
+        if (currTime - lastSolveTimestamp < 60) return
+        lastSolveTimestamp = currTime
+
         // Create solver with current beacons and set distances
         val initial: DoubleArray? = userMapView.getUserPosition()
         trilaterationFunction = TrilaterationFunction(initial, coords, distances)
