@@ -416,7 +416,7 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
             val angleSize = 60f
             val relativeAngleLength = 0.8f
             userAngle?.let { angle ->
-                canvas.drawArc(px - relativeAngleLength * scale, py - relativeAngleLength * scale, px + relativeAngleLength * scale, py + relativeAngleLength * scale, angle - angleSize / 2, angleSize, true, userAnglePaint)
+                canvas.drawArc(px - relativeAngleLength * scale, py - relativeAngleLength * scale, px + relativeAngleLength * scale, py + relativeAngleLength * scale, angle - 90 - angleSize / 2, angleSize, true, userAnglePaint)
             }
             val relativeCircleSize = 0.25f
             canvas.drawCircle(px, py, relativeCircleSize * scale, userPaint)

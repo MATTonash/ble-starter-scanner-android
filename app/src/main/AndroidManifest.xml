@@ -37,6 +37,11 @@
         android:required="true"
         />
 
+    <!-- Access the compass sensor for user direction -->
+    <uses-feature android:name="android.hardware.sensor.accelerometer" />
+    <uses-feature android:name="android.hardware.sensor.compass" />
+    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS"/>
+
 <!-- APPLICATION =============================================================================== -->
 
     <application
