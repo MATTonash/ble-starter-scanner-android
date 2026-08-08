@@ -7,7 +7,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.punchthrough.blestarterappandroid.databinding.RowBeaconDetailedBinding
 
 class BeaconsAdapter(
-    private val onClickListener: (beacon: Beacon) -> Unit
+    private val onClickListener: (beacon: Beacon) -> Unit,
+    private val onLongClickListener: ((Beacon) -> Boolean)?
 ) : RecyclerView.Adapter<BeaconsAdapter.ViewHolder>() {
 
     private fun getBeacons(): List<Beacon> {
@@ -17,7 +18,7 @@ class BeaconsAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         val binding = RowBeaconDetailedBinding.inflate(inflater, parent, false)
-        return ViewHolder(binding, onClickListener)
+        return ViewHolder(binding, onClickListener, onLongClickListener)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -30,7 +31,8 @@ class BeaconsAdapter(
 
     class ViewHolder(
         private val binding: RowBeaconDetailedBinding,
-        private val onClickListener: (Beacon) -> Unit
+        private val onClickListener: (Beacon) -> Unit,
+        private val onLongClickListener: ((Beacon) -> Boolean)?
     ) : RecyclerView.ViewHolder(binding.root) {
 
         @SuppressLint("SetTextI18n")
@@ -44,6 +46,11 @@ class BeaconsAdapter(
             binding.root.setOnClickListener {
                 timber.log.Timber.i("Clicked on beacon \"${beacon}\"")
                 onClickListener.invoke(beacon)
+            }
+
+            binding.root.setOnLongClickListener {
+                timber.log.Timber.i("Long clicked on beacon \"${beacon}\"")
+                onLongClickListener?.invoke(beacon) ?: false
             }
         }
     }

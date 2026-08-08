@@ -95,12 +95,19 @@ class AdminPanelActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         val view = binding.beaconsList
 
-        view.adapter = BeaconsAdapter { beacon: Beacon ->
-            val editIntent = Intent(this, EditBeaconActivity::class.java)
-            val selectedBeaconMacAddress = BeaconData.getBeaconMacAddress(beacon) // TODO: handle if null; show warning toast and don't start activity
-            editIntent.putExtra(INTENT_EXTRA_SELECTED_BEACON_MAC, selectedBeaconMacAddress)
-            startActivityForResult(editIntent, REQUEST_EDIT)
-        }
+        view.adapter = BeaconsAdapter(
+            onClickListener = { beacon: Beacon ->
+                val editIntent = Intent(this, EditBeaconActivity::class.java)
+                val selectedBeaconMacAddress =
+                    BeaconData.getBeaconMacAddress(beacon) // TODO: handle if null; show warning toast and don't start activity
+                editIntent.putExtra(INTENT_EXTRA_SELECTED_BEACON_MAC, selectedBeaconMacAddress)
+                startActivityForResult(editIntent, REQUEST_EDIT)
+            },
+            onLongClickListener = { beacon: Beacon ->
+                timber.log.Timber.w("!")
+                true
+            }
+        )
 
         view.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
         view.isNestedScrollingEnabled = false
