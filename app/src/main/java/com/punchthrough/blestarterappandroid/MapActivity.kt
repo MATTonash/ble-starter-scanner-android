@@ -140,7 +140,7 @@ class MapActivity : AppCompatActivity() {
         }
 
         userMapView.clearBeacons()
-        userMapView.addBeacons(coords)
+        userMapView.addBeacons(visibleBeacons.toTypedArray())
         solveForUser(coords, distances, visibleBeacons)
 
         // add here to show the angle that the user is facing
