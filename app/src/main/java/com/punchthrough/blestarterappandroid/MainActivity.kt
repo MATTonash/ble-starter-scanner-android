@@ -170,8 +170,8 @@ class MainActivity : AppCompatActivity() {
                 handleScanResults(results)
             },
             continuous = true,
-            period = 5000L,    // Scan for 5 seconds
-            interval = 2000L   // Wait 2 seconds between scans
+            period = 29500L,   // Scan for 29.5 seconds
+            interval = 500L    // Wait 0.5 seconds between scans
         )
     }
 

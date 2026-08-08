@@ -1,14 +1,17 @@
 package com.punchthrough.blestarterappandroid
 
+import android.Manifest
 import android.bluetooth.le.ScanResult
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import com.matt.guidebeacons.beacons.RssiCollection
 import com.matt.guidebeacons.beacons.RssiValue
 import com.punchthrough.blestarterappandroid.databinding.ActivityRssiMappingBinding
+import kotlin.math.pow
 
 class RssiMappingActivity : AppCompatActivity() {
 
@@ -35,6 +38,7 @@ class RssiMappingActivity : AppCompatActivity() {
             distanceEditText.isEnabled = !value
         }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ActivityRssiMappingBinding.inflate(layoutInflater)
@@ -117,24 +121,30 @@ class RssiMappingActivity : AppCompatActivity() {
                     return@setOnClickListener
                 }
                 val distance = distanceEditText.text.toString().toDouble()
-                val averageRssi = calculateRecordedRssiAverage(rssiCollection!!, distance, true)
+                val averageRssi = calculateRecordedRssiAverage(rssiCollection!!, distance, false)
                 if (averageRssi != null) {
                     rssiCollection!!.getMeasurements().add(RssiValue(averageRssi, distance, RssiValue.CollectionType.AVERAGE))
                     rssiCollection!!.writeToFile(this, true)
-                    debugTextView.text = "Beacon: $selectedBeacon, RSSI: $averageRssi, Distance: $distance"
+                    val variance = calculateRecordedRssiVariance(averageRssi, rssiCollection!!, distance, true)
+                    if (variance != null) {
+                        debugTextView.text =
+                            "Beacon: $selectedBeacon, RSSI: $averageRssi, Distance: $distance, Variance: $variance"
+                    } else {
+                        debugTextView.text =
+                            "Beacon: $selectedBeacon, RSSI: $averageRssi, Distance: $distance"
+                    }
                 }
             }
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     private fun startRssiTracking() {
         bluetoothWorker.startScanning(
             callback = { results ->
                 handleScanResults(results)
             },
-            continuous = true,
-            period = 5000L,
-            interval = 2000L
+            continuous = true
         )
     }
 
@@ -172,6 +182,35 @@ class RssiMappingActivity : AppCompatActivity() {
         return sum / count
     }
 
+    private fun calculateRecordedRssiVariance(averageRssi: Double, rssiCollection: RssiCollection, recordedDistance: Double, deleteRecordedValues: Boolean): Double? {
+        val minimumCollectedValuesCount = 5
+        val predicate : (RssiValue) -> Boolean = { it.getType() == RssiValue.CollectionType.RECORDING && it.getMeasuredDistance() == recordedDistance }
+
+        val values = rssiCollection.getMeasurements()
+        var count = 0
+        var sum = 0.0
+        for (value in values) {
+            if (predicate(value)) {
+                count++
+                sum += (value.getMeasuredRssi() - averageRssi).pow(2.0)
+            }
+        }
+
+        if (count < minimumCollectedValuesCount) {
+            timber.log.Timber.w("err: not enough rssi values")
+            Toast.makeText(this, "err: not enough rssi values", Toast.LENGTH_SHORT).show()
+            return null
+        }
+
+        if (deleteRecordedValues) {
+            rssiCollection.getMeasurements().removeAll { predicate(it) }
+        }
+
+        return sum / count
+    }
+
+
+
     private fun handleScanResults(results: List<ScanResult>) {
         val selectedResult = results.find { it.device.address == selectedBeacon }
         if (selectedResult != null) {
@@ -186,11 +225,13 @@ class RssiMappingActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onPause() {
         super.onPause()
         bluetoothWorker.stopScanning()
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onDestroy() {
         super.onDestroy()
         bluetoothWorker.stopScanning()
