@@ -48,7 +48,7 @@ class MapActivity : AppCompatActivity() {
     private lateinit var gestureDetector: GestureDetector
 
     private lateinit var userMapView: UserMapView
-    private lateinit var trilaterationFunction : TrilaterationFunction
+    private lateinit var positionCalculator: PositionCalculator
 
     private lateinit var buzzer: BuzzerVibration
     private lateinit var vibrator: Vibrator
@@ -70,6 +70,8 @@ class MapActivity : AppCompatActivity() {
 
         userMapView = findViewById(R.id.user_map_view)
         userMapView.loadConfigFromRawXml(R.raw.user_map_config)
+
+        positionCalculator = PositionCalculatorFactory.getCalculator()
 
         buzzer = BuzzerVibration(this)
         vibrator = buzzer.getVibrator()
@@ -182,7 +184,6 @@ class MapActivity : AppCompatActivity() {
     // Posted by Mark B
     // Retrieved 2026-07-17, License - CC BY-SA 2.5
     private val SensorListener: SensorEventListener = object : SensorEventListener {
-        @RequiresPermission(Manifest.permission.VIBRATE)
         override fun onSensorChanged(e: SensorEvent) {
             when (e.sensor.type) {
                 Sensor.TYPE_ACCELEROMETER -> {
@@ -195,12 +196,19 @@ class MapActivity : AppCompatActivity() {
 
             if (SensorManager.getRotationMatrix(rotationMatrix, null, accelerometerReading, magnetometerReading)) {
                 SensorManager.getOrientation(rotationMatrix, userAngles)
+
+                // Update UI with new angle
+                if (!initialAngleSet) {
+                    initialAngleSet = true
+                    initialAngle = Math.toDegrees(userAngles[0].toDouble()).toFloat()
+                }
+                val angle = (Math.toDegrees(userAngles[0].toDouble()) + initialAngle.toDouble()).toFloat()
+                userMapView.setUserAngle(angle)
             }
         }
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
     }
 
-    @RequiresPermission(Manifest.permission.VIBRATE)
     private fun alertUser() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
@@ -224,13 +232,7 @@ class MapActivity : AppCompatActivity() {
 
         val position = positionCalculator.calculatePosition(beacons)
 
-        // Goes by cardinal direction
-        if (!initialAngleSet) {
-            initialAngleSet = true
-            initialAngle = Math.toDegrees(userAngles[0].toDouble()).toFloat()
-        }
-        userMapView.setUserAngle(Math.toDegrees(userAngles[0].toDouble()).toFloat() - initialAngle) // first index is the pitch (x axis rotation, parallel to ground)
-        userMapView.setUserPosition(userCoordinates[0].toFloat(), userCoordinates[1].toFloat(), userCoordinates[2].toFloat())
+        userMapView.setUserPosition(position?.x?.toFloat() ?: initial[0].toFloat(), position?.y?.toFloat() ?: initial[1].toFloat(), 0.00f)
     }
 
     override fun onStart() { super.onStart() }
@@ -239,19 +241,10 @@ class MapActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         // startRssiTracking()
-        sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)?.also { accelerometer ->
-            sensorManager.registerListener(
-                SensorListener,
-                accelerometer,
-                SensorManager.SENSOR_DELAY_NORMAL,
-                SensorManager.SENSOR_DELAY_UI
-            )
-        }
         sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.also { accelerometer ->
             sensorManager.registerListener(
                 SensorListener,
                 accelerometer,
-                SensorManager.SENSOR_DELAY_NORMAL,
                 SensorManager.SENSOR_DELAY_UI
             )
         }
@@ -259,7 +252,6 @@ class MapActivity : AppCompatActivity() {
             sensorManager.registerListener(
                 SensorListener,
                 magneticField,
-                SensorManager.SENSOR_DELAY_NORMAL,
                 SensorManager.SENSOR_DELAY_UI
             )
         }
