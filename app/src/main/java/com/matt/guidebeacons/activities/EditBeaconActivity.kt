@@ -123,6 +123,9 @@ class EditBeaconActivity : AppCompatActivity() {
 
     private fun updateDebugText() {
         val debugText = binding.debugTextView
-        debugText.text = if (beacon.getRegressionCoefficients() == null) "No regression function yet." else "Regression coefficients:\n${beacon.getRegressionCoefficients().contentToString()}"
+        debugText.text =
+            if (!beacon.getRegressionAttempted()) "No regression function yet."
+            else if (beacon.getRegressionCoefficients() == null) "No regression coefficients generated."
+            else "Regression coefficients:\n${beacon.getRegressionCoefficients().contentToString()}"
     }
 }

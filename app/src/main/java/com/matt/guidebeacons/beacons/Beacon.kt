@@ -115,6 +115,10 @@ class Beacon(beaconName: String,
         return regressionFunction?.coefficients
     }
 
+    public fun getRegressionAttempted(): Boolean {
+        return triedInitialisingRegressionFunction
+    }
+
     public fun clearRegression() {
         regressionFunction = null
         triedInitialisingRegressionFunction = false
