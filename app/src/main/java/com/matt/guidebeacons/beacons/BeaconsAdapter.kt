@@ -1,6 +1,7 @@
 package com.matt.guidebeacons.beacons
 
 import android.annotation.SuppressLint
+import android.graphics.Paint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -8,7 +9,7 @@ import com.punchthrough.blestarterappandroid.databinding.RowBeaconDetailedBindin
 
 class BeaconsAdapter(
     private val onClickListener: (beacon: Beacon) -> Unit,
-    private val onLongClickListener: ((Beacon) -> Boolean)? = null
+    private val onLongClickListener: ((Beacon, Int) -> Boolean)? = null
 ) : RecyclerView.Adapter<BeaconsAdapter.ViewHolder>() {
 
     private fun getBeacons(): List<Beacon> {
@@ -32,12 +33,15 @@ class BeaconsAdapter(
     class ViewHolder(
         private val binding: RowBeaconDetailedBinding,
         private val onClickListener: (Beacon) -> Unit,
-        private val onLongClickListener: ((Beacon) -> Boolean)?
+        private val onLongClickListener: ((Beacon, Int) -> Boolean)?
     ) : RecyclerView.ViewHolder(binding.root) {
 
         @SuppressLint("SetTextI18n")
         fun bind(beacon: Beacon) {
             binding.deviceName.text = beacon.toString()
+            if (beacon.getUseInMap()) binding.deviceName.paintFlags = (binding.deviceName.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv())
+            else binding.deviceName.paintFlags = (binding.deviceName.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG)
+
             binding.macAddress.text = BeaconData.getBeaconMacAddress(beacon)
             binding.beaconType.text = beacon.getBeaconType().toString()
             binding.coordinates.text = beacon.getCoordinatesString()
@@ -51,7 +55,7 @@ class BeaconsAdapter(
             if (onLongClickListener != null) {
                 binding.root.setOnLongClickListener {
                     timber.log.Timber.i("Long clicked on beacon \"${beacon}\"")
-                    onLongClickListener.invoke(beacon)
+                    onLongClickListener.invoke(beacon, bindingAdapterPosition)
                 }
             }
         }

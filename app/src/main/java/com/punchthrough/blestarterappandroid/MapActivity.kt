@@ -115,7 +115,7 @@ class MapActivity : AppCompatActivity() {
     private fun handleScanResults(rawResults: List<ScanResult>) {
         // Keep only known project beacons and sort by RSSI
         val knownResults = rawResults
-            .filter { beaconProjects.containsKey(it.device.address) }
+            .filter { beaconProjects.containsKey(it.device.address) && beaconProjects[it.device.address]!!.getUseInMap() }
             .sortedByDescending {
                 beaconProjects[it.device.address]?.updateFilteredRSSI(it.rssi)
                 beaconProjects[it.device.address]?.getFilteredRSSI()

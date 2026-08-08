@@ -103,7 +103,9 @@ class AdminPanelActivity : AppCompatActivity() {
                 editIntent.putExtra(INTENT_EXTRA_SELECTED_BEACON_MAC, selectedBeaconMacAddress)
                 startActivityForResult(editIntent, REQUEST_EDIT)
             },
-            onLongClickListener = { beacon: Beacon ->
+            onLongClickListener = { beacon: Beacon, adapterPosition: Int ->
+                beacon.setUseInMap(!beacon.getUseInMap())
+                view.adapter?.notifyItemChanged(adapterPosition)
                 true
             }
         )

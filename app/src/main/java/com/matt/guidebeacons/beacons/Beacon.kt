@@ -26,6 +26,12 @@ class Beacon(beaconName: String,
     private var regressionFunction: DistanceRegression? = null
     private var triedInitialisingRegressionFunction = false
 
+    /**
+     * Runtime-only variable for if a beacon should be considered when calculating position in map view.
+     * Intended to filter out beacons that have not been fully set up without needing to delete them from the list of saved beacons.
+     */
+    private var useInMap = true
+
     // Kalman filter variables
     private var filteredRSSI: Double = calibrationRSSI.toDouble() // Arbitrary value
     private var estimateError: Double = 50.0  // P - estimate uncertainty
@@ -188,5 +194,15 @@ class Beacon(beaconName: String,
     public fun resetKalmanFilter() {
         this.filteredRSSI = calibrationRSSI.toDouble()
         this.isInitialized = false
+    }
+
+
+
+    public fun getUseInMap(): Boolean {
+        return useInMap
+    }
+
+    public fun setUseInMap(shouldUseInMap: Boolean) {
+        useInMap = shouldUseInMap
     }
 }
