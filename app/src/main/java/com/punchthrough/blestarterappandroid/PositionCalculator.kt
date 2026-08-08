@@ -193,12 +193,14 @@ class IndoorPositioningCalculator : PositionCalculator {
             rssiSimilarity * beaconMatchScore
         }
 
-        val totalWeight = weights.sum()
+        // Include current measurement in the weighted average to prevent static "snapping"
+        val currentWeight = 1.0 // Base weight for current measurement
+        val totalWeight = weights.sum() + currentWeight
         if (totalWeight <= 0.0) return basicPosition
 
-        // Calculate weighted average position
-        var refinedLat = 0.0
-        var refinedLon = 0.0
+        // Calculate weighted average position including the current basic position
+        var refinedLat = basicPosition.x * currentWeight
+        var refinedLon = basicPosition.y * currentWeight
 
         similarFingerprints.forEachIndexed { index, fingerprint ->
             refinedLat += fingerprint.position.x * weights[index]
@@ -280,17 +282,18 @@ class IndoorPositioningCalculator : PositionCalculator {
         val similarities = Array(n) { DoubleArray(n) }
         for (i in 0 until n) {
             for (j in 0 until n) {
-                similarities[i][j] = if (i != j) {
+                if (i != j) {
                     val noise = (Math.random() - 0.5) * 1e-10
-                    -calculateDistance(fingerprints[i], fingerprints[j]).pow(2) + noise
-                } else {
-                    // Preference for becoming an exemplar - use median of similarities
-                    val medianSim = similarities.flatMap { row ->
-                        row.filter { it != 0.0 }
-                    }.median()
-                    medianSim
+                    similarities[i][j] = -calculateDistance(fingerprints[i], fingerprints[j]).pow(2) + noise
                 }
             }
+        }
+
+        // Set preferences (diagonal) to median of similarities
+        val allSims = similarities.flatMap { row -> row.filter { it != 0.0 } }
+        val medianSim = if (allSims.isNotEmpty()) allSims.median() else MIN_SIMILARITY
+        for (i in 0 until n) {
+            similarities[i][i] = medianSim
         }
 
         // Initialize messages
@@ -597,13 +600,15 @@ class WeightedCentroidCalculator : PositionCalculator {
             return null
         }
 
-        // Get distance either from beacon or calculate from RSSI
-        val distance = beacon.calculateDistanceGeneric(beacon.getFilteredRSSI().toInt(), beacon.getCalibrationRSSI())
+        // Calculate distance from RSSI preserving Double precision to prevent static jumps
+        val rssi = beacon.getFilteredRSSI()
+        val calRssi = beacon.getCalibrationRSSI().toDouble()
+        // Using common log-distance path loss model: RSSI = TxPower - 10 * n * log10(d)
+        // d = 10 ^ ((TxPower - RSSI) / (10 * n))
+        // Here we use calibrationRSSI as TxPower at 1m and assume path loss exponent n = 2.0 (standard indoor)
+        val distance = 10.0.pow((calRssi - rssi) / 20.0)
 
-
-        // Validate the final distance
         return distance
-
     }
 
     private fun calculateAccuracy(validBeacons: List<Pair<Beacon, Double>>): Double {

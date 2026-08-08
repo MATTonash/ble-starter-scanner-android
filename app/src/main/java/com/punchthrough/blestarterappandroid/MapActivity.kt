@@ -27,6 +27,7 @@ import android.view.MotionEvent
 
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.services.BuzzerVibration
 import com.matt.guidebeacons.services.NEARBY_BUZZER_RSSI
@@ -126,18 +127,21 @@ class MapActivity : AppCompatActivity() {
             return
         }
 
-        // Build coordinates and distances arrays aligned by index
+        // Build coordinates, distances and collect visible beacons
         val coords = Array(knownResults.size) { DoubleArray(3) }
         val distances = DoubleArray(knownResults.size)
+        val visibleBeacons = mutableListOf<Beacon>()
+
         knownResults.forEachIndexed { index, res ->
             val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed
             coords[index] = beacon.getCoordinates()
             distances[index] = beacon.calculateDistance(res.rssi, 4, this)
+            visibleBeacons.add(beacon)
         }
 
         userMapView.clearBeacons()
         userMapView.addBeacons(coords)
-        solveForUser(coords, distances)
+        solveForUser(coords, distances, visibleBeacons)
 
         // add here to show the angle that the user is facing
         userMapView.setUserAngle(null)
@@ -163,16 +167,16 @@ class MapActivity : AppCompatActivity() {
      * Updates user position based on given distances and coordinates:
      * each element in distances denotes how far the user is from the corresponding element in coords
      */
-    private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray) {
+    private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray, beacons: List<Beacon>) {
         // Create solver with current beacons and set distances
         val initial: DoubleArray = userMapView.getUserPosition()
 //        trilaterationFunction = TrilaterationFunction(initial, coords, distances)
 //
 //        val userCoordinates = trilaterationFunction.solve()
 
-        val position = positionCalculator.calculatePosition(BeaconData.getBeaconProjects().values.toList())
+        val position = positionCalculator.calculatePosition(beacons)
 
-        userMapView.setUserPosition(position?.x!!.toFloat(), position?.y!!.toFloat(), 0.00f)
+        userMapView.setUserPosition(position?.x?.toFloat() ?: initial[0].toFloat(), position?.y?.toFloat() ?: initial[1].toFloat(), 0.00f)
     }
 
     override fun onStart() { super.onStart() }
