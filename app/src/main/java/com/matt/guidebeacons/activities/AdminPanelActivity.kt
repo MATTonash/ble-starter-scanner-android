@@ -104,7 +104,6 @@ class AdminPanelActivity : AppCompatActivity() {
                 startActivityForResult(editIntent, REQUEST_EDIT)
             },
             onLongClickListener = { beacon: Beacon ->
-                timber.log.Timber.w("!")
                 true
             }
         )

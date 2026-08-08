@@ -8,7 +8,7 @@ import com.punchthrough.blestarterappandroid.databinding.RowBeaconDetailedBindin
 
 class BeaconsAdapter(
     private val onClickListener: (beacon: Beacon) -> Unit,
-    private val onLongClickListener: ((Beacon) -> Boolean)?
+    private val onLongClickListener: ((Beacon) -> Boolean)? = null
 ) : RecyclerView.Adapter<BeaconsAdapter.ViewHolder>() {
 
     private fun getBeacons(): List<Beacon> {
@@ -48,9 +48,11 @@ class BeaconsAdapter(
                 onClickListener.invoke(beacon)
             }
 
-            binding.root.setOnLongClickListener {
-                timber.log.Timber.i("Long clicked on beacon \"${beacon}\"")
-                onLongClickListener?.invoke(beacon) ?: false
+            if (onLongClickListener != null) {
+                binding.root.setOnLongClickListener {
+                    timber.log.Timber.i("Long clicked on beacon \"${beacon}\"")
+                    onLongClickListener.invoke(beacon)
+                }
             }
         }
     }
