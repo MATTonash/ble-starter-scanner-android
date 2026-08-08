@@ -16,7 +16,6 @@
 
 package com.punchthrough.blestarterappandroid
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.le.ScanResult
 import android.content.Context
@@ -32,7 +31,6 @@ import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import androidx.annotation.RequiresApi
-import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
@@ -66,7 +64,6 @@ class MapActivity : AppCompatActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     @RequiresApi(Build.VERSION_CODES.O)
-    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_map)
@@ -123,13 +120,15 @@ class MapActivity : AppCompatActivity() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     private fun startRssiTracking() {
         bluetoothWorker.startScanning(
             callback = { results ->
                 handleScanResults(results)
             },
-            continuous = true
+            continuous = true,
+            //TODO: this is too frequent and will trigger the OS 30s timeout
+            period = 9500L,    // Scan every second
+            interval = 500L    // Small interval between scans
         )
     }
 
@@ -155,20 +154,21 @@ class MapActivity : AppCompatActivity() {
             return
         }
 
-        // Build coordinates and distances arrays aligned by index
+        // Build coordinates, distances and collect visible beacons
         val coords = Array(knownResults.size) { DoubleArray(3) }
         val distances = DoubleArray(knownResults.size)
-        val beacons = Array<Beacon>(knownResults.size) { Beacon("?", 0, 0.0, 0.0, 0.0) }
+        val visibleBeacons = mutableListOf<Beacon>()
+
         knownResults.forEachIndexed { index, res ->
             val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed
             coords[index] = beacon.getCoordinates()
             distances[index] = beacon.calculateDistance(res.rssi, 4, this)
-            beacons[index] = beacon
+            visibleBeacons.add(beacon)
         }
 
         userMapView.clearBeacons()
-        userMapView.addBeacons(beacons)
-        solveForUser(coords, distances)
+        userMapView.addBeacons(visibleBeacons.toTypedArray())
+        solveForUser(coords, distances, visibleBeacons)
 
         rawResults.forEach { result ->
             if (result.rssi > NEARBY_BUZZER_RSSI) {
@@ -215,12 +215,14 @@ class MapActivity : AppCompatActivity() {
      * Updates user position based on given distances and coordinates:
      * each element in distances denotes how far the user is from the corresponding element in coords
      */
-    private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray) {
+    private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray, beacons: List<Beacon>) {
         // Create solver with current beacons and set distances
-        val initial: DoubleArray? = userMapView.getUserPosition()
-        trilaterationFunction = TrilaterationFunction(initial, coords, distances)
+        val initial: DoubleArray = userMapView.getUserPosition()
+//        trilaterationFunction = TrilaterationFunction(initial, coords, distances)
+//
+//        val userCoordinates = trilaterationFunction.solve()
 
-        val userCoordinates = trilaterationFunction.solve()
+        val position = positionCalculator.calculatePosition(beacons)
 
         // Goes by cardinal direction
         if (!initialAngleSet) {
@@ -263,7 +265,6 @@ class MapActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onPause() {
         super.onPause()
         bluetoothWorker.stopScanning()
@@ -272,7 +273,6 @@ class MapActivity : AppCompatActivity() {
 
     override fun onStop() { super.onStop() }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     override fun onDestroy() {
         super.onDestroy()
         bluetoothWorker.stopScanning()
