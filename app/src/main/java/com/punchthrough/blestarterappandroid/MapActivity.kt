@@ -18,13 +18,18 @@ package com.punchthrough.blestarterappandroid
 
 import android.annotation.SuppressLint
 import android.bluetooth.le.ScanResult
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
-
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import com.matt.guidebeacons.beacons.Beacon
@@ -35,6 +40,8 @@ import com.matt.guidebeacons.services.NEARBY_BUZZER_RSSI
 
 class MapActivity : AppCompatActivity() {
 
+    private var initialAngleSet = false
+    private var initialAngle = 0.00f
     private val bluetoothWorker = BluetoothWorkerClass.getInstance()
     private val beaconProjects = BeaconData.getBeaconProjects()
 
@@ -46,7 +53,14 @@ class MapActivity : AppCompatActivity() {
     private lateinit var buzzer: BuzzerVibration
     private lateinit var vibrator: Vibrator
 
-    private val positionCalculator: PositionCalculator = PositionCalculatorFactory.getCalculator()
+    private lateinit var sensorManager: SensorManager
+    private lateinit var magnetometer: Sensor
+    private lateinit var accelerometer: Sensor
+
+    private lateinit var accelerometerReading: FloatArray
+    private lateinit var magnetometerReading: FloatArray
+    private lateinit var rotationMatrix: FloatArray
+    private lateinit var userAngles: FloatArray
 
     @SuppressLint("ClickableViewAccessibility")
     @RequiresApi(Build.VERSION_CODES.O)
@@ -62,6 +76,19 @@ class MapActivity : AppCompatActivity() {
 
         bluetoothWorker.initialize(this)
         startRssiTracking()
+
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        if (sensorManager.getDefaultSensor(Sensor.TYPE_ALL) != null) {
+            magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)!!
+            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)!!
+        } else {
+            Log.d("Sensor fail", "Magnetic field and/or accelorometer not found")
+        }
+
+        accelerometerReading = FloatArray(3)
+        magnetometerReading = FloatArray(3)
+        rotationMatrix = FloatArray(9)
+        userAngles = FloatArray(3)
 
         gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
 
@@ -143,9 +170,6 @@ class MapActivity : AppCompatActivity() {
         userMapView.addBeacons(visibleBeacons.toTypedArray())
         solveForUser(coords, distances, visibleBeacons)
 
-        // add here to show the angle that the user is facing
-        userMapView.setUserAngle(null)
-
         rawResults.forEach { result ->
             if (result.rssi > NEARBY_BUZZER_RSSI) {
                 buzzer.buzzForNearbyDevice(result)
@@ -153,6 +177,30 @@ class MapActivity : AppCompatActivity() {
         }
     }
 
+
+    // Source - https://stackoverflow.com/a/4128736
+    // Posted by Mark B
+    // Retrieved 2026-07-17, License - CC BY-SA 2.5
+    private val SensorListener: SensorEventListener = object : SensorEventListener {
+        @RequiresPermission(Manifest.permission.VIBRATE)
+        override fun onSensorChanged(e: SensorEvent) {
+            when (e.sensor.type) {
+                Sensor.TYPE_ACCELEROMETER -> {
+                    System.arraycopy(e.values, 0, accelerometerReading, 0, e.values.size)
+                }
+                Sensor.TYPE_MAGNETIC_FIELD -> {
+                    System.arraycopy(e.values, 0, magnetometerReading, 0, e.values.size)
+                }
+            }
+
+            if (SensorManager.getRotationMatrix(rotationMatrix, null, accelerometerReading, magnetometerReading)) {
+                SensorManager.getOrientation(rotationMatrix, userAngles)
+            }
+        }
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+    }
+
+    @RequiresPermission(Manifest.permission.VIBRATE)
     private fun alertUser() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
@@ -176,7 +224,13 @@ class MapActivity : AppCompatActivity() {
 
         val position = positionCalculator.calculatePosition(beacons)
 
-        userMapView.setUserPosition(position?.x?.toFloat() ?: initial[0].toFloat(), position?.y?.toFloat() ?: initial[1].toFloat(), 0.00f)
+        // Goes by cardinal direction
+        if (!initialAngleSet) {
+            initialAngleSet = true
+            initialAngle = Math.toDegrees(userAngles[0].toDouble()).toFloat()
+        }
+        userMapView.setUserAngle(Math.toDegrees(userAngles[0].toDouble()).toFloat() - initialAngle) // first index is the pitch (x axis rotation, parallel to ground)
+        userMapView.setUserPosition(userCoordinates[0].toFloat(), userCoordinates[1].toFloat(), userCoordinates[2].toFloat())
     }
 
     override fun onStart() { super.onStart() }
@@ -185,11 +239,36 @@ class MapActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         // startRssiTracking()
+        sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)?.also { accelerometer ->
+            sensorManager.registerListener(
+                SensorListener,
+                accelerometer,
+                SensorManager.SENSOR_DELAY_NORMAL,
+                SensorManager.SENSOR_DELAY_UI
+            )
+        }
+        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.also { accelerometer ->
+            sensorManager.registerListener(
+                SensorListener,
+                accelerometer,
+                SensorManager.SENSOR_DELAY_NORMAL,
+                SensorManager.SENSOR_DELAY_UI
+            )
+        }
+        sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)?.also { magneticField ->
+            sensorManager.registerListener(
+                SensorListener,
+                magneticField,
+                SensorManager.SENSOR_DELAY_NORMAL,
+                SensorManager.SENSOR_DELAY_UI
+            )
+        }
     }
 
     override fun onPause() {
         super.onPause()
         bluetoothWorker.stopScanning()
+        sensorManager.unregisterListener(SensorListener)
     }
 
     override fun onStop() { super.onStop() }
