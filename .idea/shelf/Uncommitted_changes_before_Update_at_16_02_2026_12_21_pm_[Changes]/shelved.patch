@@ -1,0 +1,323 @@
+Index: app/src/main/java/com/punchthrough/blestarterappandroid/MapActivity.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>/*\r\n * Copyright 2025 Punch Through Design LLC\r\n *\r\n * Licensed under the Apache License, Version 2.0 (the \"License\");\r\n * you may not use this file except in compliance with the License.\r\n * You may obtain a copy of the License at\r\n *\r\n *     http://www.apache.org/licenses/LICENSE-2.0\r\n *\r\n * Unless required by applicable law or agreed to in writing, software\r\n * distributed under the License is distributed on an \"AS IS\" BASIS,\r\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\r\n * See the License for the specific language governing permissions and\r\n * limitations under the License.\r\n */\r\n\r\npackage com.punchthrough.blestarterappandroid\r\n\r\nimport android.bluetooth.le.ScanResult\r\nimport android.content.Context\r\nimport android.os.Build\r\nimport android.os.Bundle\r\nimport android.os.VibrationEffect\r\nimport android.os.Vibrator\r\nimport android.view.GestureDetector\r\nimport android.view.MotionEvent\r\n\r\nimport androidx.annotation.RequiresApi\r\nimport androidx.appcompat.app.AppCompatActivity\r\n\r\n\r\nclass MapActivity : AppCompatActivity() {\r\n\r\n    private val bluetoothWorker = BluetoothWorkerClass.getInstance()\r\n    private val beaconProjects = bluetoothWorker.getBeaconProjects()\r\n\r\n    private lateinit var gestureDetector: GestureDetector\r\n\r\n    private lateinit var userMapView: UserMapView\r\n    private lateinit var trilaterationFunction : TrilaterationFunction\r\n\r\n    private lateinit var vibrator: Vibrator\r\n\r\n    @RequiresApi(Build.VERSION_CODES.O)\r\n    override fun onCreate(savedInstanceState: Bundle?) {\r\n        super.onCreate(savedInstanceState)\r\n        setContentView(R.layout.activity_map)\r\n\r\n        userMapView = findViewById(R.id.user_map_view)\r\n        userMapView.loadConfigFromRawXml(R.raw.user_map_config)\r\n\r\n        vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator\r\n        bluetoothWorker.initialize(this)\r\n        startRssiTracking()\r\n\r\n        userMapView.setUserPosition(0.5f, 4.5f)\r\n\r\n        gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {\r\n\r\n            override fun onDown(e: MotionEvent): Boolean {\r\n                return true // REQUIRED for long press to work\r\n            }\r\n\r\n            override fun onLongPress(e: MotionEvent) {\r\n                userMapView.clearUserPath()\r\n            }\r\n        })\r\n\r\n        userMapView.setOnTouchListener { view, event ->\r\n\r\n            gestureDetector.onTouchEvent(event)\r\n\r\n            // ✅ event.x and event.y are NOW view-relative\r\n            val mapPoint = userMapView.screenToMap(event.x, event.y)\r\n            view.performClick()\r\n            when (event.actionMasked) {\r\n                MotionEvent.ACTION_DOWN -> {\r\n                    userMapView.beginUserPath()\r\n                    userMapView.addUserPathPoint(mapPoint)\r\n                }\r\n\r\n                MotionEvent.ACTION_MOVE -> {\r\n                    userMapView.addUserPathPoint(mapPoint)\r\n                }\r\n            }\r\n\r\n            true\r\n        }\r\n\r\n    }\r\n\r\n    @RequiresApi(Build.VERSION_CODES.O)\r\n    private fun startRssiTracking() {\r\n        bluetoothWorker.startScanning(\r\n            callback = { results ->\r\n                handleScanResults(results)\r\n            },\r\n            continuous = true,\r\n            period = 1000L,    // Scan every second\r\n            interval = 200L    // Small interval between scans\r\n        )\r\n    }\r\n\r\n    @RequiresApi(Build.VERSION_CODES.O)\r\n    /**\r\n     * Maps scanned devices to known mac addresses which each have a unique coordinate,\r\n     * then converts rssi to get the distance from each beacon.\r\n     * Then calls solveForUser to update user position\r\n     * rawResults: list of scanned devices\r\n     */\r\n    private fun handleScanResults(rawResults: List<ScanResult>) {\r\n        // Keep only known project beacons and sort by RSSI\r\n        val knownResults = rawResults\r\n            .filter { beaconProjects.containsKey(it.device.address) }\r\n            .sortedByDescending { it.rssi }\r\n            .take(3) // Limit to top 3 beacons for performance\r\n\r\n        // Need at least 3 beacons for trilateration\r\n        if (knownResults.size < 3) {\r\n            return\r\n        }\r\n\r\n        // Build coordinates and distances arrays aligned by index\r\n        val coords = Array(knownResults.size) { DoubleArray(0) }\r\n        val distances = DoubleArray(knownResults.size)\r\n        knownResults.forEachIndexed { index, res ->\r\n            val beacon = beaconProjects[res.device.address] ?: return@forEachIndexed\r\n            coords[index] = beacon.getCoordinates()\r\n            distances[index] = beacon.calculateDistance(res.rssi, res.txPower)\r\n        }\r\n\r\n        solveForUser(coords, distances)\r\n\r\n        // add here to show the angle that the user is facing\r\n        userMapView.setUserAngle(null)\r\n\r\n        if (!userMapView.isUserOnPath()) {\r\n           alertUser()\r\n        }\r\n    }\r\n\r\n    private fun alertUser() {\r\n        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {\r\n            vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))\r\n        } else {\r\n            @Suppress(\"DEPRECATION\")\r\n            vibrator.vibrate(200)\r\n        }\r\n\r\n    }\r\n\r\n    /**\r\n     * Updates user position based on given distances and coordinates:\r\n     * each element in distances denotes how far the user is from the corresponding element in coords\r\n     */\r\n    private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray) {\r\n        // Create solver with current beacons and set distances\r\n        trilaterationFunction = TrilaterationFunction(coords)\r\n        trilaterationFunction.setBeaconDistances(distances)\r\n\r\n        val userCoordinates = trilaterationFunction.solve()\r\n\r\n        userMapView.setUserPosition(userCoordinates[0].toFloat(), userCoordinates[1].toFloat())\r\n    }\r\n\r\n    override fun onStart() { super.onStart() }\r\n\r\n    @RequiresApi(Build.VERSION_CODES.O)\r\n    override fun onResume() {\r\n        super.onResume()\r\n        // startRssiTracking()\r\n    }\r\n\r\n    override fun onPause() {\r\n        super.onPause()\r\n        bluetoothWorker.stopScanning()\r\n    }\r\n\r\n    override fun onStop() { super.onStop() }\r\n\r\n    override fun onDestroy() {\r\n        super.onDestroy()\r\n        bluetoothWorker.stopScanning()\r\n    }\r\n\r\n    override fun onLowMemory() { super.onLowMemory() }\r\n\r\n    override fun onSaveInstanceState(outState: Bundle) { super.onSaveInstanceState(outState) }\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/punchthrough/blestarterappandroid/MapActivity.kt b/app/src/main/java/com/punchthrough/blestarterappandroid/MapActivity.kt
+--- a/app/src/main/java/com/punchthrough/blestarterappandroid/MapActivity.kt	(revision 288bfaed44e85934a9f1abdebe638010c4792231)
++++ b/app/src/main/java/com/punchthrough/blestarterappandroid/MapActivity.kt	(date 1771204533267)
+@@ -17,14 +17,12 @@
+ package com.punchthrough.blestarterappandroid
+ 
+ import android.bluetooth.le.ScanResult
+-import android.content.Context
+ import android.os.Build
+ import android.os.Bundle
+ import android.os.VibrationEffect
+ import android.os.Vibrator
+ import android.view.GestureDetector
+ import android.view.MotionEvent
+-
+ import androidx.annotation.RequiresApi
+ import androidx.appcompat.app.AppCompatActivity
+ 
+@@ -155,8 +153,7 @@
+      */
+     private fun solveForUser(coords : Array<DoubleArray>, distances : DoubleArray) {
+         // Create solver with current beacons and set distances
+-        trilaterationFunction = TrilaterationFunction(coords)
+-        trilaterationFunction.setBeaconDistances(distances)
++        trilaterationFunction = TrilaterationFunction(coords, distances)
+ 
+         val userCoordinates = trilaterationFunction.solve()
+ 
+Index: app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.punchthrough.blestarterappandroid;\r\n\r\nimport com.punchthrough.blestarterappandroid.AugmentedMatrix;\r\n\r\npublic class TrilaterationFunction {\r\n    // 2D trilateration just uses 2 functions\r\n\r\n    int numEquations = 2;\r\n    int numColumns = 3;\r\n    double precision = 1E-5;\r\n    double[][] fMatrix = new double[numEquations][1];\r\n    double[][] jacobianMatrix = new double[numEquations][numColumns];\r\n//    double[] beacon1;\r\n//    double[] beacon2;\r\n//    double[] beacon3;\r\n//    double beacon1dist;\r\n//    double beacon2dist;\r\n//    double beacon3dist;\r\n\r\n    double[][] beaconCoordinates;\r\n    double[] beaconDistances;\r\n\r\n    double[] initial = {1,1,1};\r\n\r\n    // 3D with variable number of beacons (Z assumed 0 for 2D inputs)\r\n    TrilaterationFunction(double[][] beaconCoordinates) {\r\n        this.beaconCoordinates = beaconCoordinates;\r\n        // Equations count is the number of beacons provided\r\n        this.numEquations = beaconCoordinates != null ? beaconCoordinates.length : 0;\r\n        // Columns: x, y, z and the function value column\r\n        this.numColumns = 4;\r\n        this.fMatrix = new double[numEquations][1];\r\n        this.jacobianMatrix = new double[numEquations][numColumns];\r\n        this.initial = new double[]{1, 1, 1};\r\n    }\r\n\r\n    public void setBeaconDistances(double[] beaconDistances) {\r\n        this.beaconDistances = beaconDistances;\r\n    }\r\n\r\n\r\n//    // For 3D!!!!!!!!! only takes 3 beacons manually\r\n//    // NOTE: ALL COORDINATES WILL NEED 3 VALUES [X,Y,Z]\r\n//    TrilaterationFunction(double[] coordinates1, double[] coordinates2, double[] coordinates3, double dist1, double dist2, double dist3) {\r\n//        this.beacon1 = coordinates1;\r\n//        this.beacon2 = coordinates2;\r\n//        this.beacon3 = coordinates3;\r\n//        this.beacon1dist = dist1;\r\n//        this.beacon2dist = dist2;\r\n//        this.beacon3dist = dist3;\r\n//        this.numEquations = 3;\r\n//        this.numColumns = 4;\r\n//        this.fMatrix = new double[numEquations][1];\r\n//        this.jacobianMatrix = new double[numEquations][numColumns];\r\n//        this.initial = new double[]{1, 1, 1};\r\n//    }\r\n//\r\n//    void setBeacon1Dist(double dist) {\r\n//        this.beacon1dist = dist;\r\n//    }\r\n//\r\n//    void setBeacon2Dist(double dist) {\r\n//        this.beacon2dist = dist;\r\n//    }\r\n//\r\n//    void setBeacon3Dist(double dist) {\r\n//        this.beacon3dist = dist;\r\n//    }\r\n//\r\n//    void setBeacon1(double[] coordinates) {\r\n//        this.beacon1 = coordinates;\r\n//    }\r\n//\r\n//    void setBeacon2(double[] coordinates) {\r\n//        this.beacon2 = coordinates;\r\n//    }\r\n//\r\n//    void setBeacon3(double[] coordinates) {\r\n//        this.beacon3 = coordinates;\r\n//    }\r\n\r\n    double[] solve() {\r\n        double[] next = this.iterate(initial);\r\n        while (!this.calcError(initial, next)) {\r\n            initial = next;\r\n            next = this.iterate(initial);\r\n        }\r\n        return next;\r\n    }\r\n\r\n    double[] iterate(double[] initial) {\r\n        buildFMatrix();\r\n        buildJacobian();\r\n\r\n        AugmentedMatrix reducedMatrix = new AugmentedMatrix(numEquations, numColumns);\r\n        for (int i = 0; i < numEquations; i ++) {\r\n            for (int a = 0; a < numColumns; a ++) {\r\n                reducedMatrix.set(i, a, jacobianMatrix[i][a]);\r\n            }\r\n        }\r\n\r\n        reducedMatrix.rowReduce();\r\n\r\n        double[] nextGuess = new double[reducedMatrix.matrix.length];\r\n\r\n        for (int i = 0; i < reducedMatrix.matrix.length; i ++) {\r\n            nextGuess[i] = reducedMatrix.matrix[i][this.numEquations] + initial[i];\r\n        }\r\n\r\n        return nextGuess; // return the last column = coordinates\r\n    }\r\n\r\n\r\n    public boolean calcError(double[] initial, double[] next) {\r\n        boolean sufficientError = false;\r\n        for (int i = 0; i <= this.numEquations-1; i++) {\r\n            double error = Math.abs((initial[i] - next[i])/initial[i]);\r\n            if (error < precision) {\r\n                return sufficientError = true;\r\n            }\r\n            sufficientError = false;\r\n        }\r\n        return sufficientError;\r\n    }\r\n\r\n    private void buildJacobian() {\r\n        for (int i = 0; i < numEquations; i ++) {\r\n            // 3D partial derivatives; if coordinates provided are 2D, assume z=0\r\n            double bx = beaconCoordinates[i].length > 0 ? beaconCoordinates[i][0] : 0;\r\n            double by = beaconCoordinates[i].length > 1 ? beaconCoordinates[i][1] : 0;\r\n            double bz = beaconCoordinates[i].length > 2 ? beaconCoordinates[i][2] : 0;\r\n\r\n            jacobianMatrix[i][0] = 2*(initial[0]-bx);\r\n            jacobianMatrix[i][1] = 2*(initial[1]-by);\r\n            jacobianMatrix[i][2] = 2*(initial[2]-bz);\r\n            jacobianMatrix[i][3] = -1*fMatrix[i][0];\r\n        }\r\n    }\r\n\r\n    private void buildFMatrix() {\r\n        if (beaconDistances == null || beaconDistances.length != numEquations) {\r\n            throw new IllegalStateException(\"beaconDistances must be set and match number of beacons before solving\");\r\n        }\r\n        for (int i = 0; i < numEquations; i ++) {\r\n            double bx = beaconCoordinates[i].length > 0 ? beaconCoordinates[i][0] : 0;\r\n            double by = beaconCoordinates[i].length > 1 ? beaconCoordinates[i][1] : 0;\r\n            double bz = beaconCoordinates[i].length > 2 ? beaconCoordinates[i][2] : 0;\r\n\r\n            fMatrix[i][0] = (Math.pow((initial[0]-bx), 2)\r\n                    + Math.pow((initial[1]-by), 2)\r\n                    + Math.pow((initial[2]-bz), 2)\r\n                    - Math.pow(beaconDistances[i], 2));\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java b/app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java
+--- a/app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java	(revision 288bfaed44e85934a9f1abdebe638010c4792231)
++++ b/app/src/main/java/com/punchthrough/blestarterappandroid/TrilaterationFunction.java	(date 1771204533288)
+@@ -1,83 +1,31 @@
+ package com.punchthrough.blestarterappandroid;
+ 
+-import com.punchthrough.blestarterappandroid.AugmentedMatrix;
++import java.io.OptionalDataException;
+ 
+ public class TrilaterationFunction {
+     // 2D trilateration just uses 2 functions
+ 
+     int numEquations = 2;
+-    int numColumns = 3;
+-    double precision = 1E-5;
++    int numUnknowns;
++    double precision = 1E-3;
+     double[][] fMatrix = new double[numEquations][1];
+-    double[][] jacobianMatrix = new double[numEquations][numColumns];
+-//    double[] beacon1;
+-//    double[] beacon2;
+-//    double[] beacon3;
+-//    double beacon1dist;
+-//    double beacon2dist;
+-//    double beacon3dist;
++    double[][] jacobianMatrix = new double[numEquations][numUnknowns];
++
+ 
+     double[][] beaconCoordinates;
+     double[] beaconDistances;
+ 
+-    double[] initial = {1,1,1};
++    double[] initial = {1,1,1,1};
+ 
+-    // 3D with variable number of beacons (Z assumed 0 for 2D inputs)
+-    TrilaterationFunction(double[][] beaconCoordinates) {
++    // 3D!!! but w variable number of beacons
++    TrilaterationFunction(double[][] beaconCoordinates, double[] beaconDistances) {
+         this.beaconCoordinates = beaconCoordinates;
+-        // Equations count is the number of beacons provided
+-        this.numEquations = beaconCoordinates != null ? beaconCoordinates.length : 0;
+-        // Columns: x, y, z and the function value column
+-        this.numColumns = 4;
+-        this.fMatrix = new double[numEquations][1];
+-        this.jacobianMatrix = new double[numEquations][numColumns];
+-        this.initial = new double[]{1, 1, 1};
+-    }
+-
+-    public void setBeaconDistances(double[] beaconDistances) {
+         this.beaconDistances = beaconDistances;
++        numEquations = beaconDistances.length;
++        this.numUnknowns = 4;
++        this.fMatrix = new double[numEquations][1];
++        this.jacobianMatrix = new double[numEquations][numUnknowns];
+     }
+-
+-
+-//    // For 3D!!!!!!!!! only takes 3 beacons manually
+-//    // NOTE: ALL COORDINATES WILL NEED 3 VALUES [X,Y,Z]
+-//    TrilaterationFunction(double[] coordinates1, double[] coordinates2, double[] coordinates3, double dist1, double dist2, double dist3) {
+-//        this.beacon1 = coordinates1;
+-//        this.beacon2 = coordinates2;
+-//        this.beacon3 = coordinates3;
+-//        this.beacon1dist = dist1;
+-//        this.beacon2dist = dist2;
+-//        this.beacon3dist = dist3;
+-//        this.numEquations = 3;
+-//        this.numColumns = 4;
+-//        this.fMatrix = new double[numEquations][1];
+-//        this.jacobianMatrix = new double[numEquations][numColumns];
+-//        this.initial = new double[]{1, 1, 1};
+-//    }
+-//
+-//    void setBeacon1Dist(double dist) {
+-//        this.beacon1dist = dist;
+-//    }
+-//
+-//    void setBeacon2Dist(double dist) {
+-//        this.beacon2dist = dist;
+-//    }
+-//
+-//    void setBeacon3Dist(double dist) {
+-//        this.beacon3dist = dist;
+-//    }
+-//
+-//    void setBeacon1(double[] coordinates) {
+-//        this.beacon1 = coordinates;
+-//    }
+-//
+-//    void setBeacon2(double[] coordinates) {
+-//        this.beacon2 = coordinates;
+-//    }
+-//
+-//    void setBeacon3(double[] coordinates) {
+-//        this.beacon3 = coordinates;
+-//    }
+ 
+     double[] solve() {
+         double[] next = this.iterate(initial);
+@@ -89,22 +37,31 @@
+     }
+ 
+     double[] iterate(double[] initial) {
++
+         buildFMatrix();
+         buildJacobian();
++        double[][] transposedMatrix = transposeJacobMatrix();
++        double[][] ATb = matrixMultiply(transposedMatrix, fMatrix);
++        double[][] ATA = matrixMultiply(transposedMatrix, jacobianMatrix);
+ 
+-        AugmentedMatrix reducedMatrix = new AugmentedMatrix(numEquations, numColumns);
+-        for (int i = 0; i < numEquations; i ++) {
+-            for (int a = 0; a < numColumns; a ++) {
+-                reducedMatrix.set(i, a, jacobianMatrix[i][a]);
++        AugmentedMatrix reducedMatrix = new AugmentedMatrix(ATA.length, numUnknowns+1);
++        // for (int i = 0; i < numEquations; i ++) {
++        for (int i = 0; i < ATA.length; i ++) {
++            for (int a = 0; a < numUnknowns; a ++) {
++                reducedMatrix.set(i, a, ATA[i][a]);
+             }
+         }
++        for (int i = 0; i < ATb.length; i ++) {
++            reducedMatrix.set(i, numUnknowns, ATb[i][0]);
++        }
+ 
+         reducedMatrix.rowReduce();
+ 
+         double[] nextGuess = new double[reducedMatrix.matrix.length];
+ 
+         for (int i = 0; i < reducedMatrix.matrix.length; i ++) {
+-            nextGuess[i] = reducedMatrix.matrix[i][this.numEquations] + initial[i];
++            // NOTE: this.numUnknowns used to be this.numEquations (transposition method changes stuff)
++            nextGuess[i] = reducedMatrix.matrix[i][this.numUnknowns] + initial[i];
+         }
+ 
+         return nextGuess; // return the last column = coordinates
+@@ -113,7 +70,7 @@
+ 
+     public boolean calcError(double[] initial, double[] next) {
+         boolean sufficientError = false;
+-        for (int i = 0; i <= this.numEquations-1; i++) {
++        for (int i = 0; i <= this.numUnknowns-1; i++) {
+             double error = Math.abs((initial[i] - next[i])/initial[i]);
+             if (error < precision) {
+                 return sufficientError = true;
+@@ -125,31 +82,59 @@
+ 
+     private void buildJacobian() {
+         for (int i = 0; i < numEquations; i ++) {
+-            // 3D partial derivatives; if coordinates provided are 2D, assume z=0
+-            double bx = beaconCoordinates[i].length > 0 ? beaconCoordinates[i][0] : 0;
+-            double by = beaconCoordinates[i].length > 1 ? beaconCoordinates[i][1] : 0;
+-            double bz = beaconCoordinates[i].length > 2 ? beaconCoordinates[i][2] : 0;
+-
+-            jacobianMatrix[i][0] = 2*(initial[0]-bx);
+-            jacobianMatrix[i][1] = 2*(initial[1]-by);
+-            jacobianMatrix[i][2] = 2*(initial[2]-bz);
+-            jacobianMatrix[i][3] = -1*fMatrix[i][0];
++            // 3D partial diff
++            jacobianMatrix[i][0] = -(initial[0] - beaconCoordinates[i][0])/Math.sqrt(Math.pow((initial[0] - beaconCoordinates[i][0]),2) + Math.pow((initial[1] - beaconCoordinates[i][1]),2) + Math.pow((initial[2] - beaconCoordinates[i][2]),2));
++            jacobianMatrix[i][1] = -(initial[1] - beaconCoordinates[i][1])/Math.sqrt(Math.pow((initial[0] - beaconCoordinates[i][0]),2) + Math.pow((initial[1] - beaconCoordinates[i][1]),2) + Math.pow((initial[2] - beaconCoordinates[i][2]),2));
++            jacobianMatrix[i][2] = -(initial[2] - beaconCoordinates[i][2])/Math.sqrt(Math.pow((initial[0] - beaconCoordinates[i][0]),2) + Math.pow((initial[1] - beaconCoordinates[i][1]),2) + Math.pow((initial[2] - beaconCoordinates[i][2]),2));
++            jacobianMatrix[i][3] = -initial[3]*299792458; //hmmmhmhmhmmhmh
+         }
+     }
+-
++    // 'b' Matrix
+     private void buildFMatrix() {
+-        if (beaconDistances == null || beaconDistances.length != numEquations) {
+-            throw new IllegalStateException("beaconDistances must be set and match number of beacons before solving");
+-        }
+         for (int i = 0; i < numEquations; i ++) {
+-            double bx = beaconCoordinates[i].length > 0 ? beaconCoordinates[i][0] : 0;
+-            double by = beaconCoordinates[i].length > 1 ? beaconCoordinates[i][1] : 0;
+-            double bz = beaconCoordinates[i].length > 2 ? beaconCoordinates[i][2] : 0;
++            fMatrix[i][0] = beaconDistances[i] - Math.sqrt(Math.pow((initial[0]-beaconCoordinates[i][0]), 2) + Math.pow((initial[1]-beaconCoordinates[i][1]), 2) + Math.pow((initial[2]-beaconCoordinates[i][2]), 2)) - 299792458*initial[3];
++        }
++    }
+ 
+-            fMatrix[i][0] = (Math.pow((initial[0]-bx), 2)
+-                    + Math.pow((initial[1]-by), 2)
+-                    + Math.pow((initial[2]-bz), 2)
+-                    - Math.pow(beaconDistances[i], 2));
++    // 'A' matrix
++    private double[][] transposeJacobMatrix() {
++        double[][] transposedFMatrix = new double[jacobianMatrix[0].length][jacobianMatrix.length];
++        for (int i = 0; i <= jacobianMatrix[0].length; i ++) {
++            for (int u = 0; u < jacobianMatrix.length-1; u ++) {
++                transposedFMatrix[u][i] = jacobianMatrix[i][u];
++            }
+         }
++        return transposedFMatrix;
+     }
++
++    // This function multiplies mat1[][]
++    // and mat2[][], and stores the result
++    // in res[][]
++    public double[][] matrixMultiply(double[][] mat1, double[][] mat2) {
++        int N = mat1.length;
++        int M = mat2[0].length;
++        double[][] res = new double[N][M];
++        int i, j, k;
++//        for (i = 0; i < N; i++) {
++//            for (j = 0; j < N; j++) {
++//                res[i][j] = 0;
++//                for (k = 0; k < M; k++)
++//                    res[i][j] += mat1[i][k]
++//                            * mat2[k][j];
++//            }
++//        }
++        if (mat2.length != mat1[0].length) {
++            System.out.println("matrices not compatible: make sure no. rows in matrix 1 = no. columns in matrix 2");
++            return res;
++        }
++
++        for (i=0; i < N; i ++) {
++            for (j=0; j < mat1[0].length; j ++) {
++                // k is index used just for mat2 - keeping it to column 1 while i and j can be used for mat 1
++                for (k=0; k < M; k ++)
++                    res[i][k] += mat1[i][j] * mat2[j][k];
++            }
++        }
++        return res;
++    }
+ }
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><project version=\"4\">\r\n  <component name=\"CMakeSettings\">\r\n    <configurations>\r\n      <configuration PROFILE_NAME=\"Debug\" CONFIG_NAME=\"Debug\" />\r\n    </configurations>\r\n  </component>\r\n  <component name=\"ExternalStorageConfigurationManager\" enabled=\"true\" />\r\n  <component name=\"ProjectInspectionProfilesVisibleTreeState\">\r\n    <entry key=\"Project Default\">\r\n      <profile-state>\r\n        <expanded-state>\r\n          <State />\r\n          <State>\r\n            <id>Android</id>\r\n          </State>\r\n          <State>\r\n            <id>Code style issuesJava</id>\r\n          </State>\r\n          <State>\r\n            <id>CorrectnessLintAndroid</id>\r\n          </State>\r\n          <State>\r\n            <id>Declaration redundancyJava</id>\r\n          </State>\r\n          <State>\r\n            <id>HTML</id>\r\n          </State>\r\n          <State>\r\n            <id>J2ME issuesJava</id>\r\n          </State>\r\n          <State>\r\n            <id>Java</id>\r\n          </State>\r\n          <State>\r\n            <id>Kotlin</id>\r\n          </State>\r\n          <State>\r\n            <id>LintAndroid</id>\r\n          </State>\r\n          <State>\r\n            <id>MigrationKotlin</id>\r\n          </State>\r\n          <State>\r\n            <id>Resource managementJava</id>\r\n          </State>\r\n          <State>\r\n            <id>SecurityJava</id>\r\n          </State>\r\n          <State>\r\n            <id>Serialization issuesJava</id>\r\n          </State>\r\n          <State>\r\n            <id>Style issuesKotlin</id>\r\n          </State>\r\n          <State>\r\n            <id>Threading issuesJava</id>\r\n          </State>\r\n          <State>\r\n            <id>UsabilityLintAndroid</id>\r\n          </State>\r\n        </expanded-state>\r\n      </profile-state>\r\n    </entry>\r\n  </component>\r\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_17\" default=\"true\" project-jdk-name=\"jbr-17\" project-jdk-type=\"JavaSDK\">\r\n    <output url=\"file://$PROJECT_DIR$/build/classes\" />\r\n  </component>\r\n  <component name=\"ProjectType\">\r\n    <option name=\"id\" value=\"Android\" />\r\n  </component>\r\n  <component name=\"VisualizationToolProject\">\r\n    <option name=\"state\">\r\n      <ProjectState>\r\n        <option name=\"scale\" value=\"0.6312622070312501\" />\r\n      </ProjectState>\r\n    </option>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision 288bfaed44e85934a9f1abdebe638010c4792231)
++++ b/.idea/misc.xml	(date 1771204533302)
+@@ -62,7 +62,7 @@
+       </profile-state>
+     </entry>
+   </component>
+-  <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="jbr-17" project-jdk-type="JavaSDK">
++  <component name="ProjectRootManager" version="2" languageLevel="JDK_17" project-jdk-name="jbr-21" project-jdk-type="JavaSDK">
+     <output url="file://$PROJECT_DIR$/build/classes" />
+   </component>
+   <component name="ProjectType">
+Index: .idea/compiler.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"CompilerConfiguration\">\r\n    <bytecodeTargetLevel target=\"17\" />\r\n  </component>\r\n  <component name=\"JavacSettings\">\r\n    <option name=\"ADDITIONAL_OPTIONS_OVERRIDE\">\r\n      <module name=\"BLE_Starter.lib.main\" options=\"--add-exports java.xml/com.sun.org.apache.bcel.internal.generic=ALL-UNNAMED\" />\r\n    </option>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/compiler.xml b/.idea/compiler.xml
+--- a/.idea/compiler.xml	(revision 288bfaed44e85934a9f1abdebe638010c4792231)
++++ b/.idea/compiler.xml	(date 1771204533314)
+@@ -3,9 +3,4 @@
+   <component name="CompilerConfiguration">
+     <bytecodeTargetLevel target="17" />
+   </component>
+-  <component name="JavacSettings">
+-    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+-      <module name="BLE_Starter.lib.main" options="--add-exports java.xml/com.sun.org.apache.bcel.internal.generic=ALL-UNNAMED" />
+-    </option>
+-  </component>
+ </project>
+\ No newline at end of file
+Index: app/src/main/res/values/strings.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><!--\r\n  ~ Copyright 2024 Punch Through Design LLC\r\n  ~\r\n  ~ Licensed under the Apache License, Version 2.0 (the \"License\");\r\n  ~ you may not use this file except in compliance with the License.\r\n  ~ You may obtain a copy of the License at\r\n  ~\r\n  ~     http://www.apache.org/licenses/LICENSE-2.0\r\n  ~\r\n  ~ Unless required by applicable law or agreed to in writing, software\r\n  ~ distributed under the License is distributed on an \"AS IS\" BASIS,\r\n  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\r\n  ~ See the License for the specific language governing permissions and\r\n  ~ limitations under the License.\r\n  -->\r\n\r\n<resources>\r\n    <string name=\"app_name\">BLE Starter</string>\r\n    <string name=\"ble_playground\">BLE Playground</string>\r\n    <string name=\"location_permission_required\">Location Permission Required</string>\r\n    <string name=\"location_permission_rationale\">Starting from Android 6, the system requires apps to be granted location access in order to scan for BLE devices.\\n\\nYour location is never used aside from enabling the app to perform BLE scans.</string>\r\n    <string name=\"bluetooth_permission_required\">Nearby Devices Permission Required</string>\r\n    <string name=\"bluetooth_permission_rationale\">Starting from Android 12, the system requires apps to be granted Nearby Devices access in order to scan for and connect to BLE devices.</string>\r\n    <string name=\"please_grant_relevant_permissions\">Please grant required permissions</string>\r\n    <string name=\"app_settings_rationale\">Prior requests for required permissions have been repeatedly or permanently denied. You\\'ll need to manually grant the app these permissions from the app\\'s Settings screen.</string>\r\n    <string name=\"cannot_launch_app_settings\">Unable to launch app settings, please navigate to app settings manually</string>\r\n    <string name=\"app_settings\">App Settings</string>\r\n    <string name=\"quit\">Quit</string>\r\n    <string name=\"disconnected\">Disconnected</string>\r\n    <string name=\"disconnected_or_unable_to_connect_to_device\">Disconnected or unable to connect to %1$s.</string>\r\n    <string name=\"ok\">OK</string>\r\n</resources>\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/values/strings.xml b/app/src/main/res/values/strings.xml
+--- a/app/src/main/res/values/strings.xml	(revision 288bfaed44e85934a9f1abdebe638010c4792231)
++++ b/app/src/main/res/values/strings.xml	(date 1771204533327)
+@@ -29,4 +29,5 @@
+     <string name="disconnected">Disconnected</string>
+     <string name="disconnected_or_unable_to_connect_to_device">Disconnected or unable to connect to %1$s.</string>
+     <string name="ok">OK</string>
++    <string name="bluetooth_permission_denied_permanently">You need to manually enable bluetooth and location services for this app in settings</string>
+ </resources>
