@@ -6,7 +6,7 @@ import com.punchthrough.blestarterappandroid.R
 class MapData(context: Context) {
 
     private val maps = mutableMapOf(
-        "matt" to Map("matt", "matt_map_beacons.json", 30, R.drawable.map, context)
+        "matt" to Map("matt", "matt_map_beacons.json", 30, R.drawable.map, context, 9f, 16f)
     )
 
     fun getMaps(): MutableMap<String, Map> {

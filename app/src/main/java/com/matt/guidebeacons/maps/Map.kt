@@ -9,7 +9,9 @@ class Map(
     beaconDataFileName: String,
     pixelsPerMetre: Int,
     drawableResourceId: Int,
-    context: Context
+    context: Context,
+    maxX: Float,
+    maxY: Float
     ) {
 
     private val mapName = mapName
@@ -18,6 +20,9 @@ class Map(
     private val drawableResourceName = context.resources.getResourceEntryName(drawableResourceId)
 
     private val context = context
+
+    private val maxX = maxX
+    private val maxY = maxY
 
     fun getName(): String {
         return mapName
@@ -37,5 +42,13 @@ class Map(
 
     fun getPixelsPerMetre(): Int {
         return pixelsPerMetre
+    }
+
+    fun getMaxX(): Float {
+        return maxX
+    }
+
+    fun getMaxY(): Float {
+        return maxY
     }
 }

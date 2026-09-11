@@ -18,7 +18,6 @@ package com.punchthrough.blestarterappandroid
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -34,14 +33,13 @@ import android.view.View
 import androidx.annotation.RawRes
 import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.maps.Map
-import com.matt.guidebeacons.maps.MapData
 import org.xmlpull.v1.XmlPullParser
 import kotlin.math.hypot
 import kotlin.math.min
 
 private const val LINE_WIDTH = 20f
-private const val DEFAULT_MAX_X = 9f
-private const val DEFAULT_MAX_Y = 16f
+private const val DEFAULT_MAX_X = 5f
+private const val DEFAULT_MAX_Y = 5f
 private const val DEFAULT_MAX_Z = 3f
 private const val PREV_POSITION_WEIGHT = 0.9f
 // For simple moving average
@@ -156,6 +154,11 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     fun loadFromMap(map: Map?) {
         this.map = map
         bitmap = this.map?.getBitmap()
+        // todo: more robust scaling and image positioning
+        if (this.map != null) {
+            maxX = this.map!!.getMaxX()
+            maxY = this.map!!.getMaxY()
+        }
     }
 
     /**
