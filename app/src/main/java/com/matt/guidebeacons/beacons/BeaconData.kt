@@ -95,7 +95,12 @@ class BeaconData {
         }
 
         fun readBeaconsFromFile(context: Context, fileName: String) {
-            readBeaconsFromInputStream(context.openFileInput(fileName))
+            if (File(context.filesDir.path, fileName).exists()) {
+                readBeaconsFromInputStream(context.openFileInput(fileName))
+            }
+            else {
+                timber.log.Timber.i("Could not find ${context.filesDir.path}/${fileName}")
+            }
         }
 
         private fun readBeaconsFromInputStream(stream: InputStream) {
@@ -112,15 +117,12 @@ class BeaconData {
         }
 
         fun initialiseBeaconData(context: Context, fileName: String) {
-            // Test serialization (saves to /data/data/com.punchthrough.blestarterappandroid/files/default_beacons.json); use this to update /res/raw/default_beacons.json ?
-            writeBeaconsToFile(context, "default_beacons.json", true)
-
             if (File(context.filesDir.path, fileName).exists()) {
                 timber.log.Timber.i("Loading beacons from ${context.filesDir.path}/${fileName}")
                 readBeaconsFromFile(context, fileName)
             }
             else {
-                timber.log.Timber.i("Could not find ${context.filesDir.path}/${fileName}, loading default_beacons.json")
+                timber.log.Timber.w("Could not find ${context.filesDir.path}/${fileName}, loading default_beacons.json")
                 readBeaconsFromInputStream(context.resources.openRawResource(R.raw.default_beacons))
             }
         }

@@ -1,0 +1,26 @@
+{
+  "80:EC:CC:CD:33:7C": {
+    "name": "Happy Mornings",
+    "calibrationRSSI": -57,
+    "x": 8.0,
+    "y": 15.0
+  },
+  "80:EC:CC:CD:33:7E": {
+    "name": "STEM",
+    "calibrationRSSI": -59,
+    "x": 5.0,
+    "y": 15.0
+  },
+  "80:EC:CC:CD:33:58": {
+    "name": "Visual Clutter",
+    "calibrationRSSI": -60,
+    "x": 0.5,
+    "y": 12
+  },
+  "6C:B2:FD:34:CE:9E": {
+    "name": "Bee",
+    "calibrationRSSI": -75,
+    "x": 0.5,
+    "y": 2.5
+  }
+}

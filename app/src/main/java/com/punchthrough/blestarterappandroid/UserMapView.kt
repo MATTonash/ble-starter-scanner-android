@@ -17,6 +17,8 @@
 package com.punchthrough.blestarterappandroid
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -31,13 +33,15 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.annotation.RawRes
 import com.matt.guidebeacons.beacons.Beacon
+import com.matt.guidebeacons.maps.Map
+import com.matt.guidebeacons.maps.MapData
 import org.xmlpull.v1.XmlPullParser
 import kotlin.math.hypot
 import kotlin.math.min
 
 private const val LINE_WIDTH = 20f
-private const val DEFAULT_MAX_X = 5f
-private const val DEFAULT_MAX_Y = 5f
+private const val DEFAULT_MAX_X = 9f
+private const val DEFAULT_MAX_Y = 16f
 private const val DEFAULT_MAX_Z = 3f
 private const val PREV_POSITION_WEIGHT = 0.9f
 // For simple moving average
@@ -101,7 +105,10 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
     // variable for the text to speech
     private var tts: TextToSpeech? = null
 
-    init{
+    private var map: Map? = null
+    private var bitmap: Bitmap? = null
+
+    init {
         tts = TextToSpeech(context, this)
     }
 
@@ -144,6 +151,11 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
             val config = parseXmlConfigFromParser(parser)
             applyConfig(config)
         }
+    }
+
+    fun loadFromMap(map: Map?) {
+        this.map = map
+        bitmap = this.map?.getBitmap()
     }
 
     /**
@@ -386,6 +398,10 @@ class UserMapView(context: Context, attrs: AttributeSet? = null) : View(context,
         // Screen and map backgrounds
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), screenBackgroundPaint)
         canvas.drawRect(offsetX, offsetY, offsetX + maxX * scale, offsetY + maxY * scale, mapBackgroundPaint)
+
+        bitmap?.let {
+            canvas.drawBitmap(it, -180f, -265f, beaconPaint)
+        }
 
         polygons.forEach { drawPolygon(canvas, it, polygonPaint) }
         startRectangles.forEach { drawPolygon(canvas, it, startRectPaint) }

@@ -18,6 +18,7 @@ import com.matt.guidebeacons.activities.AdminPanelActivity
 import com.matt.guidebeacons.activities.PermissionsCheckActivity
 import com.matt.guidebeacons.beacons.BeaconData
 import com.matt.guidebeacons.constants.FILE_NAME_BEACONS
+import com.matt.guidebeacons.maps.MapData
 import com.matt.guidebeacons.services.BuzzerVibration
 import com.matt.guidebeacons.services.NEARBY_BUZZER_RSSI
 import com.punchthrough.blestarterappandroid.databinding.ActivityMainBinding
@@ -67,7 +68,11 @@ class MainActivity : AppCompatActivity() {
 
         if (Timber.treeCount() <= 0) Timber.plant(Timber.DebugTree()) // show Timber log messages in Logcat
 
+        // Test serialization (saves hard-coded data to /data/data/com.punchthrough.blestarterappandroid/files/default_beacons.json); use this to update /res/raw/default_beacons.json ?
+        BeaconData.writeBeaconsToFile(this, "default_beacons.json", true)
+
         BeaconData.initialiseBeaconData(this, FILE_NAME_BEACONS)
+        MapData.initContext(this)
 
         // Initialize BluetoothWorker
         bluetoothWorker.initialize(this)

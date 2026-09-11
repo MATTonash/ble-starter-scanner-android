@@ -31,6 +31,7 @@ import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import com.matt.guidebeacons.beacons.Beacon
 import com.matt.guidebeacons.beacons.BeaconData
+import com.matt.guidebeacons.maps.MapData
 import com.matt.guidebeacons.services.BuzzerVibration
 import com.matt.guidebeacons.services.NEARBY_BUZZER_RSSI
 
@@ -57,7 +58,13 @@ class MapActivity : AppCompatActivity() {
         setContentView(R.layout.activity_map)
 
         userMapView = findViewById(R.id.user_map_view)
-        userMapView.loadConfigFromRawXml(R.raw.user_map_config)
+        // userMapView.loadConfigFromRawXml(R.raw.user_map_config)
+
+        val map = MapData.getMap("matt")
+        userMapView.loadFromMap(map)
+        if (map != null) {
+            BeaconData.readBeaconsFromFile(this, map.getBeaconDataFileName())
+        }
 
         buzzer = BuzzerVibration(this)
         vibrator = buzzer.getVibrator()
